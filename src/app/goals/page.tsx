@@ -1,0 +1,361 @@
+import Link from "next/link";
+import { revalidatePath } from "next/cache";
+import { Hint, PageHead, Section, SectionHead } from "@/components/ui/Layout";
+import { Bar } from "@/components/ui/Metric";
+import { DeleteGoalButton } from "@/components/DeleteGoalButton";
+import { fmtDate, fmtDuration, fmtPace } from "@/lib/format";
+import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth";
+import { STANDARD_DISTANCES } from "@/lib/records";
+import { raceReadiness, readinessFacts } from "@/lib/goal";
+import { athleteContext } from "@/lib/plan-store";
+
+export const dynamic = "force-dynamic";
+
+const PRIORITY_STYLE: Record<string, string> = {
+  A: "bg-clay/15 text-clay",
+  B: "bg-info/12 text-info",
+  C: "bg-sunken text-ink2",
+};
+
+export default async function GoalsPage() {
+  const now = new Date();
+  const userId = await requireUserId();
+  const [goals, ctx, plans] = await Promise.all([
+    prisma.raceGoal.findMany({ where: { userId }, orderBy: { raceDate: "asc" } }),
+    athleteContext(now, userId),
+    prisma.trainingPlan.findMany({
+      where: { userId, status: { in: ["active", "paused"] }, raceGoalId: { not: null } },
+      select: { id: true, raceGoalId: true },
+    }),
+  ]);
+
+  const planByGoal = new Map(plans.map((p) => [p.raceGoalId as string, p.id]));
+  const upcoming = goals.filter((g) => g.raceDate >= now);
+  const past = goals.filter((g) => g.raceDate < now);
+
+  async function createGoal(formData: FormData) {
+    "use server";
+    const name = String(formData.get("name") ?? "").trim();
+    const raceDate = String(formData.get("raceDate") ?? "");
+    const distanceKm = Number(formData.get("distanceKm"));
+    const hours = Number(formData.get("hours") || 0);
+    const minutes = Number(formData.get("minutes") || 0);
+    const seconds = Number(formData.get("seconds") || 0);
+    const priority = String(formData.get("priority") ?? "A");
+
+    if (!name || !raceDate || !Number.isFinite(distanceKm) || distanceKm <= 0) return;
+
+    const targetTime = hours * 3600 + minutes * 60 + seconds;
+
+    // L'action serveur revalide sa propre session : le userId capturé plus haut
+    // n'est pas une autorisation, c'en est juste une lecture.
+    const owner = await requireUserId();
+    await prisma.raceGoal.create({
+      data: {
+        userId: owner,
+        name,
+        raceDate: new Date(raceDate),
+        distance: distanceKm * 1000,
+        targetTime: targetTime > 0 ? targetTime : null,
+        priority,
+      },
+    });
+    revalidatePath("/goals");
+  }
+
+  return (
+    <div className="space-y-6">
+      <PageHead
+        title="Objectifs de course"
+        meta="Prépare tes échéances et suis ton niveau de préparation en temps réel"
+      />
+
+      {/* -------------------------------------------------- Nouvel objectif */}
+      <Section>
+        <SectionHead title="Nouvel objectif" />
+        <form action={createGoal} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="sm:col-span-2">
+            <label className="field-label" htmlFor="name">
+              Nom de la course
+            </label>
+            <input
+              id="name"
+              name="name"
+              required
+              placeholder="Semi-marathon de Paris"
+              className="field"
+            />
+          </div>
+          <div>
+            <label className="field-label" htmlFor="raceDate">
+              Date
+            </label>
+            <input id="raceDate" name="raceDate" type="date" required className="field" />
+          </div>
+          <div>
+            <label className="field-label" htmlFor="distanceKm">
+              Distance (km)
+            </label>
+            <input
+              id="distanceKm"
+              name="distanceKm"
+              type="number"
+              step="0.1"
+              min="0.4"
+              required
+              defaultValue="21.1"
+              list="distances"
+              className="field"
+            />
+            <datalist id="distances">
+              {STANDARD_DISTANCES.filter((d) => d.major).map((d) => (
+                <option key={d.key} value={(d.meters / 1000).toFixed(1)}>
+                  {d.name}
+                </option>
+              ))}
+            </datalist>
+          </div>
+          <div className="sm:col-span-2">
+            <span className="field-label">Chrono visé (optionnel)</span>
+            <div className="flex gap-2">
+              <input name="hours" type="number" min="0" max="23" placeholder="h" className="field" />
+              <input name="minutes" type="number" min="0" max="59" placeholder="min" className="field" />
+              <input name="seconds" type="number" min="0" max="59" placeholder="s" className="field" />
+            </div>
+          </div>
+          <div>
+            <label className="field-label" htmlFor="priority">
+              Priorité
+            </label>
+            <select id="priority" name="priority" className="field">
+              <option value="A">A — objectif principal</option>
+              <option value="B">B — course intermédiaire</option>
+              <option value="C">C — entraînement</option>
+            </select>
+          </div>
+          <div className="flex items-end">
+            <button type="submit" className="btn-solid w-full">
+              Ajouter l&apos;objectif
+            </button>
+          </div>
+        </form>
+      </Section>
+
+      {/* -------------------------------------------------- À venir */}
+      {upcoming.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="section-title">À venir</h2>
+          {upcoming.map((goal) => {
+            const p = raceReadiness({
+              goal,
+              fitness: ctx.fitness,
+              records: ctx.records,
+              profile: ctx.profile,
+              endurance: ctx.endurance,
+              now,
+            });
+            const facts = readinessFacts(p);
+            const planId = planByGoal.get(goal.id);
+            return (
+              <Section key={goal.id}>
+                <div className="flex flex-wrap items-start justify-between gap-5">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-lg font-semibold tracking-tight ">
+                        {goal.name}
+                      </h3>
+                      <span className={`badge ${PRIORITY_STYLE[goal.priority]}`}>
+                        Priorité {goal.priority}
+                      </span>
+                      <span className="badge bg-sunken text-ink2">
+                        {p.phase}
+                      </span>
+                    </div>
+                    <p className="mt-1.5 text-sm text-ink2">
+                      {fmtDate(goal.raceDate)} · {(goal.distance / 1000).toFixed(1)} km
+                      {goal.targetTime && (
+                        <>
+                          {" · objectif "}
+                          <span className="font-medium text-ink">
+                            {fmtDuration(goal.targetTime)}
+                          </span>
+                          {p.targetPace && ` (${fmtPace(p.targetPace)})`}
+                        </>
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="flex items-start gap-5">
+                    <div className="text-right">
+                      <div className="display text-d3">{p.daysRemaining}</div>
+                      <div className="text-micro text-ink3">
+                        jour{p.daysRemaining > 1 ? "s" : ""} · {p.weeksRemaining} sem.
+                      </div>
+                    </div>
+                    <DeleteGoalButton id={goal.id} />
+                  </div>
+                </div>
+
+                {/* Préparation */}
+                <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+                  <div>
+                    <div className="mb-2 flex items-baseline justify-between">
+                      <span className="section-title">Préparation</span>
+                      <span className="text-sm font-semibold ">
+                        {p.readiness}
+                        <span className="text-ink3">/100</span>
+                      </span>
+                    </div>
+                    <Bar value={p.readiness} height={7} />
+                    <ul className="mt-2.5 space-y-0.5">
+                      {facts.map((f, i) => (
+                        <li
+                          key={i}
+                          className="font-mono text-micro leading-relaxed tabular-nums text-ink2"
+                        >
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="mt-4 space-y-2.5">
+                      {p.factors.map((b) => (
+                        <div key={b.label}>
+                          <div className="flex items-baseline justify-between text-micro">
+                            <span className="text-ink2">{b.label}</span>
+                            <span className="font-mono tabular-nums text-ink3">
+                              {b.score}/{b.max}
+                            </span>
+                          </div>
+                          <div className="mt-1">
+                            <Bar value={b.score} max={b.max} height={3} />
+                          </div>
+                          <div className="mt-0.5 font-mono text-micro tabular-nums text-ink3">
+                            {b.unit === "s/km"
+                              ? b.target > 0
+                                ? `${fmtPace(b.value)} vs ${fmtPace(b.target)} visés`
+                                : fmtPace(b.value)
+                              : `${b.value} / ${b.target} ${b.unit}`}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Metric
+                      label="Volume hebdo"
+                      value={`${ctx.fitness.weeklyKm} km`}
+                      note={`référence ${p.needs.weeklyKm} km`}
+                      ok={ctx.fitness.weeklyKm >= p.needs.weeklyKm}
+                    />
+                    <Metric
+                      label="Sortie la plus longue"
+                      value={`${ctx.fitness.longestRunKm} km`}
+                      note={`cible ${p.needs.longRunKm} km`}
+                      ok={ctx.fitness.longestRunKm >= p.needs.longRunKm}
+                    />
+                    <Metric
+                      label="Chrono réaliste"
+                      value={p.prediction ? fmtDuration(p.prediction.realistic) : "—"}
+                      note={
+                        p.prediction
+                          ? `potentiel ${fmtDuration(p.prediction.potential)}`
+                          : undefined
+                      }
+                      ok={
+                        p.targetSeconds && p.prediction
+                          ? p.prediction.realistic <= p.targetSeconds
+                          : undefined
+                      }
+                    />
+                    <Metric
+                      label="Niveau requis"
+                      value={p.gap ? `VDOT ${p.gap.requiredVdot}` : "—"}
+                      note={p.gap ? `actuel ${p.gap.currentVdot}` : undefined}
+                      ok={p.gap ? p.gap.gap <= 0 : undefined}
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-5 flex flex-wrap gap-2 border-t border-hair pt-4">
+                  <Link href={`/goals/${goal.id}`} className="btn-outline btn-sm">
+                    Détail de la préparation →
+                  </Link>
+                  {planId ? (
+                    <Link href={`/training/${planId}`} className="btn-quiet btn-sm">
+                      Plan séance par séance
+                    </Link>
+                  ) : (
+                    <Link href={`/goals/${goal.id}`} className="btn-quiet btn-sm">
+                      Aucun plan · en générer un
+                    </Link>
+                  )}
+                </div>
+              </Section>
+            );
+          })}
+        </div>
+      )}
+
+      {/* -------------------------------------------------- Passées */}
+      {past.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="section-title">Passées</h2>
+          <Section>
+            <table className="data-table">
+              <tbody>
+                {past.map((goal) => (
+                  <tr key={goal.id}>
+                    <td className="font-medium text-ink">{goal.name}</td>
+                    <td className="text-ink2">{fmtDate(goal.raceDate)}</td>
+                    <td className="text-right font-mono tabular-nums text-ink2">
+                      {(goal.distance / 1000).toFixed(1)} km
+                    </td>
+                    <td className="text-right font-mono tabular-nums ">
+                      {goal.resultTime ? fmtDuration(goal.resultTime) : "—"}
+                    </td>
+                    <td className="w-10 text-right">
+                      <DeleteGoalButton id={goal.id} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Section>
+        </div>
+      )}
+
+      {goals.length === 0 && (
+        <Hint height={140}>
+          Aucun objectif pour le moment — ajoute ta prochaine course ci-dessus.
+        </Hint>
+      )}
+    </div>
+  );
+}
+
+function Metric({
+  label,
+  value,
+  note,
+  ok,
+}: {
+  label: string;
+  value: string;
+  note?: string;
+  ok?: boolean;
+}) {
+  const tone =
+    ok === undefined ? "text-white" : ok ? "text-sage" : "text-ochre";
+  return (
+    <div className="rounded-lg border border-hair bg-sunken p-3.5">
+      <div className="text-micro uppercase tracking-wider text-ink3">{label}</div>
+      <div className={`mt-1.5 font-mono text-lg font-semibold tabular-nums ${tone}`}>
+        {value}
+      </div>
+      {note && <div className="mt-0.5 text-micro text-ink3">{note}</div>}
+    </div>
+  );
+}

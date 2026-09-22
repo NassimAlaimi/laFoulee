@@ -1,0 +1,421 @@
+// Foulée — schéma de données
+// Multi-utilisateur : toute donnée appartient à un User.
+// `pnpm db:push` pour appliquer.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Le provider est aligné sur DATABASE_PROVIDER par `scripts/db-provider.mjs`
+// (Prisma interdit env() ici). sqlite en local, postgresql en déploiement.
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// Un utilisateur de l'instance. Créé à la première connexion Strava.
+model User {
+  id        String  @id @default(cuid())
+  /// Identifiant athlète Strava — c'est l'identité de connexion
+  athleteId BigInt  @unique
+  firstname String?
+  lastname  String?
+  avatarUrl String?
+  email     String?
+  /// Rôle applicatif : user | admin (le premier compte créé est admin)
+  role      String  @default("user")
+
+  lastSeenAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  sessions      Session[]
+  stravaAccount StravaAccount?
+  settings      Settings?
+  activities    Activity[]
+  raceGoals     RaceGoal[]
+  plans         TrainingPlan[]
+  gear          Gear[]
+  syncLogs      SyncLog[]
+}
+
+/// Session de connexion. Le cookie ne contient que le token, jamais l'identité.
+model Session {
+  id        String   @id @default(cuid())
+  /// Empreinte SHA-256 du token présent dans le cookie
+  tokenHash String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+
+  userAgent String?
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  lastUsed  DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+/// Compte Strava connecté — un par utilisateur
+model StravaAccount {
+  id         Int     @id @default(autoincrement())
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String  @unique
+  athleteId  BigInt  @unique
+  firstname  String?
+  lastname   String?
+  profileUrl String?
+  city       String?
+  country    String?
+  weightKg   Float?
+
+  accessToken  String
+  refreshToken String
+  expiresAt    Int // epoch seconds
+  scope        String?
+
+  lastSyncAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+/// Une activité importée de Strava (ou saisie manuellement)
+model Activity {
+  id       String  @id @default(cuid())
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String
+  /// Identifiant Strava — unique *par utilisateur*, deux comptes peuvent
+  /// parfaitement avoir couru la même sortie de groupe.
+  stravaId BigInt?
+  source   String  @default("strava") // strava | manual
+
+  name      String
+  type      String // Run, TrailRun, Ride, WeightTraining, Workout...
+  sportType String? // sport_type Strava, plus précis
+  startDate DateTime
+  timezone  String?
+
+  // Métriques principales (SI : mètres, secondes)
+  distance       Float // m
+  movingTime     Int // s
+  elapsedTime    Int // s
+  totalElevation Float @default(0) // m
+
+  // Allure / vitesse
+  averageSpeed Float? // m/s
+  maxSpeed     Float? // m/s
+
+  // Cardio
+  averageHr    Float?
+  maxHr        Float?
+  hasHeartrate Boolean @default(false)
+  sufferScore  Float? // relative effort Strava
+
+  // Course à pied
+  averageCadence Float?
+  calories       Float?
+
+  // Ressenti / charge
+  perceivedExertion Int? // RPE 1-10 saisi manuellement
+  trainingLoad      Float? // TRIMP calculé
+
+  // Divers
+  isRace    Boolean @default(false)
+  isCommute Boolean @default(false)
+  isTrainer Boolean @default(false)
+  gearId    String?
+  polyline  String? // summary_polyline encodé
+  notes     String?
+
+  bestEfforts BestEffort[]
+  splits      Split[]
+
+  raceGoal   RaceGoal? @relation(fields: [raceGoalId], references: [id], onDelete: SetNull)
+  raceGoalId String?
+
+  /// Séance planifiée que cette activité vient valider
+  plannedSession PlannedSession?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, stravaId])
+  @@index([userId, startDate])
+  @@index([userId, type, startDate])
+}
+
+/// Meilleur effort sur une distance standard dans une activité (1k, 5k, 10k...)
+model BestEffort {
+  id         String   @id @default(cuid())
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  activityId String
+
+  name        String // "5k", "10k", "Half-Marathon"
+  distance    Float // m
+  movingTime  Int // s
+  elapsedTime Int // s
+  startDate   DateTime
+  prRank      Int? // 1 = PB all-time selon Strava
+
+  @@index([name, movingTime])
+  @@index([activityId])
+}
+
+/// Split kilométrique d'une activité
+model Split {
+  id         String   @id @default(cuid())
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  activityId String
+
+  index         Int
+  distance      Float // m
+  movingTime    Int // s
+  elapsedTime   Int // s
+  elevationDiff Float  @default(0)
+  averageSpeed  Float? // m/s
+  averageHr     Float?
+
+  @@index([activityId, index])
+}
+
+/// Objectif de course (préparation)
+model RaceGoal {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  name       String
+  raceDate   DateTime
+  distance   Float // m
+  targetTime Int? // s — chrono visé
+  targetPace Float? // s/km — dérivé si targetTime absent
+  elevation  Float? // m D+ du parcours
+  priority   String   @default("A") // A | B | C
+  status     String   @default("upcoming") // upcoming | done | abandoned
+
+  resultTime Int? // s — chrono réalisé
+  notes      String?
+
+  activities Activity[]
+  weeks      PlanWeek[]
+  plans      TrainingPlan[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, raceDate])
+}
+
+/// Semaine du plan d'entraînement rattachée à un objectif
+model PlanWeek {
+  id         String   @id @default(cuid())
+  raceGoal   RaceGoal @relation(fields: [raceGoalId], references: [id], onDelete: Cascade)
+  raceGoalId String
+
+  weekStart      DateTime // lundi de la semaine
+  weekNumber     Int // 1 = première semaine du plan
+  phase          String   @default("base") // base | build | peak | taper | race
+  targetKm       Float
+  targetSessions Int      @default(3)
+  notes          String?
+
+  @@unique([raceGoalId, weekStart])
+  @@index([weekStart])
+}
+
+/// Plan d'entraînement séance par séance.
+/// mode = "race" (rattaché à un objectif) | "open" (progression libre, sans course)
+model TrainingPlan {
+  id     String @id @default(cuid())
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  name   String
+  mode  String @default("open") // race | open
+  /// Orientation quand mode = open : base | endurance | speed | maintain | comeback | hills
+  focus String @default("base")
+
+  raceGoal   RaceGoal? @relation(fields: [raceGoalId], references: [id], onDelete: Cascade)
+  raceGoalId String?
+
+  startDate    DateTime
+  endDate      DateTime?
+  /// Horizon glissant en semaines pour les plans sans objectif
+  horizonWeeks Int       @default(8)
+
+  /// 0 = automatique : le nombre de sorties suit le volume de la semaine
+  daysPerWeek     Int @default(0)
+  /// 0 = lundi … 6 = dimanche
+  longRunDay      Int @default(6)
+  strengthPerWeek Int @default(0)
+
+  /// Volume hebdo de départ (km), mesuré au moment de la création
+  startWeeklyKm Float
+  /// Charge déclarée des semaines précédant le plan (JSON: [S-4, S-3, S-2, S-1])
+  priorLoad     String?
+  /// Sortie la plus longue au démarrage (km) — déclarée ou mesurée
+  startLongRunKm Float?
+  /// Pic visé (km/sem) — déjà plafonné par la progression réalisable
+  targetPeakKm  Float
+  /// Plafond personnel : l'app ne proposera jamais plus (0 = pas de plafond)
+  ceilingKm     Float @default(0)
+  /// Progression hebdo maximale autorisée (fraction, 0.08 = +8 %/sem)
+  rampPct       Float @default(0.08)
+
+  /// Réadaptation automatique selon les ressentis et le réalisé
+  autoAdapt Boolean @default(true)
+  status    String  @default("active") // active | paused | done | archived
+  notes     String?
+
+  /// Instantané de la faisabilité au moment de la création (JSON)
+  feasibility String?
+
+  sessions PlannedSession[]
+  checkins WeekCheckin[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([userId, startDate])
+}
+
+/// Une séance planifiée, datée, avec sa structure détaillée
+model PlannedSession {
+  id     String       @id @default(cuid())
+  plan   TrainingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  planId String
+
+  date       DateTime
+  weekStart  DateTime
+  weekNumber Int
+  phase      String   @default("base") // base | build | peak | deload | taper | race
+
+  /// easy | long | recovery | tempo | threshold | intervals | hills | fartlek
+  /// | strides | race | strength | cross | mobility | rest
+  kind      String
+  title     String
+  tagline   String?
+  /// Étapes détaillées (échauffement, blocs, récup…) sérialisées en JSON
+  structure String?
+
+  distanceKm  Float  @default(0)
+  durationMin Int    @default(0)
+  /// Allure cible en s/km (indicative)
+  paceTarget  Float?
+  paceFast    Float?
+  /// 1 = très facile … 5 = maximal
+  intensity   Int    @default(1)
+
+  status    String  @default("planned") // planned | done | skipped | moved
+  /// Ressenti après séance
+  rpe       Int?
+  feeling   Int? // 1-5
+  painLevel Int     @default(0) // 0-3
+  painArea  String?
+  comment   String?
+
+  /// Activité réalisée rattachée
+  activity   Activity? @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  activityId String?   @unique
+
+  /// Séance issue d'une réadaptation automatique
+  adapted     Boolean @default(false)
+  adaptReason String?
+  /// Séance déplacée/modifiée à la main : la régénération ne l'écrase pas
+  locked      Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([planId, date])
+  @@index([date])
+  @@index([weekStart])
+}
+
+/// Point hebdomadaire : fatigue, douleur, disponibilité. Pilote la réadaptation.
+model WeekCheckin {
+  id     String       @id @default(cuid())
+  plan   TrainingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  planId String
+
+  weekStart     DateTime
+  /// 0 = rien, 1 = gêne, 2 = douleur qui gêne la course, 3 = douleur qui empêche
+  painLevel     Int      @default(0)
+  painArea      String?
+  /// 1 = frais … 5 = vidé
+  fatigue       Int      @default(3)
+  /// 1 = aucune envie … 5 = à fond
+  motivation    Int      @default(3)
+  /// 1 = très mauvais … 5 = excellent
+  sleep         Int      @default(3)
+  /// Jours réellement disponibles la semaine à venir
+  availableDays Int?
+  note          String?
+
+  /// Décision appliquée par le moteur (JSON)
+  applied String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([planId, weekStart])
+  @@index([weekStart])
+}
+
+/// Profil athlète / réglages
+model Settings {
+  id           String @id @default(cuid())
+  user         User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String @unique
+  maxHr        Int?
+  restHr       Int    @default(55)
+  birthYear    Int?
+  weightKg     Float?
+  vmaKmh       Float? // saisie manuelle, sinon estimée
+  weeklyKmGoal Float  @default(40)
+  units        String @default("metric")
+
+  /// Préférences d'entraînement par défaut
+  daysPerWeek Int   @default(4)
+  longRunDay  Int   @default(6)
+  ceilingKm   Float @default(0)
+
+  updatedAt DateTime @updatedAt
+}
+
+/// Équipement (chaussures) rattaché aux activités
+model Gear {
+  id             String  @id @default(cuid())
+  user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  /// Identifiant Strava (ex: "g1234567") — unique par utilisateur seulement
+  stravaGearId   String
+  name           String
+  brand          String?
+  model          String?
+  /// Distance totale déclarée par Strava, en mètres
+  stravaDistance Float   @default(0)
+  retired        Boolean @default(false)
+  /// Seuil de remplacement personnalisé, en km
+  retireAtKm     Float   @default(700)
+  primary        Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, stravaGearId])
+  @@index([userId])
+}
+
+/// Journal des synchronisations Strava
+model SyncLog {
+  id         String    @id @default(cuid())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  status     String    @default("running") // running | success | error
+  imported   Int       @default(0)
+  updated    Int       @default(0)
+  message    String?
+
+  @@index([userId, startedAt])
+}
