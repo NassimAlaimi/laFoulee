@@ -126,6 +126,31 @@ export async function getValidAccessToken(userId: string): Promise<string> {
   return data.access_token;
 }
 
+/**
+ * Révoque l'autorisation Strava de l'utilisateur.
+ *
+ * Supprimer les tokens en base ne suffit pas : côté Strava le grant reste
+ * actif et l'athlète continue d'occuper un des sièges de l'application (quota
+ * « athletes currently connected »). Seul `/oauth/deauthorize` le libère.
+ *
+ * Ne lève jamais : la déconnexion locale doit aboutir même si Strava est
+ * injoignable ou si le token est déjà mort. Le booléen permet à l'appelant de
+ * signaler à l'utilisateur qu'une révocation manuelle reste nécessaire.
+ */
+export async function deauthorize(userId: string): Promise<boolean> {
+  try {
+    const token = await getValidAccessToken(userId);
+    const res = await fetch(`${STRAVA_OAUTH}/deauthorize`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 async function stravaFetch<T>(path: string, token: string): Promise<T> {
   const res = await fetch(`${STRAVA_API}${path}`, {
     headers: { Authorization: `Bearer ${token}` },
