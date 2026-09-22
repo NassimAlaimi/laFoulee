@@ -28,6 +28,20 @@ export {
 /** Au-delà de ce seuil, on rafraîchit `lastUsed` (évite une écriture par requête) */
 const TOUCH_AFTER_MS = 6 * 60 * 60 * 1000;
 
+/**
+ * Le cookie de session ne porte `Secure` que si l'instance est réellement
+ * servie en HTTPS.
+ *
+ * Se fier à NODE_ENV ne marche pas : une instance de production exposée en
+ * clair (http://host:3000) enverrait un cookie `Secure` que le navigateur
+ * refuse de stocker — connexion réussie, puis retour immédiat sur /login, en
+ * boucle. En dérivant le flag de l'URL publique, le passage à HTTPS le
+ * réactive tout seul.
+ */
+function useSecureCookie(): boolean {
+  return (process.env.NEXT_PUBLIC_APP_URL ?? "").startsWith("https://");
+}
+
 export type SessionUser = {
   id: string;
   athleteId: bigint;
@@ -66,7 +80,7 @@ export async function setSessionCookie(token: string, expiresAt: Date) {
   jar.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: useSecureCookie(),
     path: "/",
     expires: expiresAt,
   });
