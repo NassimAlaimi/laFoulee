@@ -73,7 +73,15 @@ export default async function SettingsPage({
 
   return (
     <div className="max-w-4xl space-y-6">
-      <PageHead title="Réglages" />
+      <PageHead
+        title="Réglages"
+        kicker="Ton compte"
+        meta={
+          account
+            ? `${account.firstname} ${account.lastname} · ${activityCount} activités · ${planCount} plan${planCount > 1 ? "s" : ""}`
+            : `${activityCount} activités importées`
+        }
+      />
 
       {params.error && (
         <div className="rounded-card border border-negative/35 bg-negative/8 px-4 py-3.5 text-sm text-rust">

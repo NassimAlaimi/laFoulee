@@ -19,6 +19,7 @@ export default async function CalculatorPage() {
     <>
       <PageHead
         title="Calculateur"
+        kicker="Calculateur express"
         meta={
           source
             ? `Pré-rempli avec ta meilleure performance : ${source.name}`

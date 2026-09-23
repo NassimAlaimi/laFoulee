@@ -114,26 +114,54 @@ export default async function GoalDetailPage({
   const splits = paceBase > 0 ? pacingPlan(goal.distance, paceBase) : [];
   const facts = readinessFacts(r);
 
+  const countdownTone = {
+    Préparation: "text-sage",
+    Spécifique: "text-ochre",
+    Affûtage: "text-clay",
+    "Jour J": "text-rust",
+    Passée: "text-ink3",
+  }[r.phase] ?? "text-clay";
+
   return (
     <div className="space-y-6">
-      <div>
-        <Link href="/goals" className="text-xs text-ink3 hover:text-clay">
-          ← Objectifs
-        </Link>
-        <h1 className="mt-2 text-[1.6rem] font-semibold tracking-tight">{goal.name}</h1>
-        <p className="mt-1 text-sm text-ink2">
-          {fmtDate(goal.raceDate)} · {(goal.distance / 1000).toFixed(1)} km
-          {goal.targetTime && ` · objectif ${fmtDuration(goal.targetTime)}`}
-          {r.targetPace && ` (${fmtPace(r.targetPace)})`}
-        </p>
-      </div>
+      {/* ---------------------------------------------- Affiche de l'objectif */}
+      <section className="rise grid gap-8 border-y border-hair py-8 lg:grid-cols-[minmax(0,1fr)_auto]">
+        <div className="min-w-0">
+          <Link href="/goals" className="text-micro uppercase tracking-[0.1em] text-ink3 hover:text-clay">
+            ← Objectifs
+          </Link>
+          <div className="eyebrow mt-4">{r.phase} · {fmtDate(goal.raceDate)}</div>
+          <h1 className="mt-3 text-[clamp(1.9rem,4vw,3rem)] font-semibold leading-[1.02] tracking-[-0.03em]">
+            {goal.name}
+          </h1>
+          <p className="mt-3 text-[0.9375rem] text-ink2">
+            {(goal.distance / 1000).toFixed(1)} km
+            {goal.targetTime && ` · objectif ${fmtDuration(goal.targetTime)}`}
+            {r.targetPace && ` · allure ${fmtPace(r.targetPace)}`}
+          </p>
+        </div>
+        <div className="flex flex-row items-end gap-6 lg:flex-col lg:items-end">
+          <div>
+            <div className="eyebrow">
+              {r.daysRemaining > 0 ? "Jours restants" : r.daysRemaining === 0 ? "C'est le jour J" : "Course passée"}
+            </div>
+            <div className={`display text-[clamp(4.5rem,10vw,8.5rem)] leading-[0.85] ${countdownTone}`}>
+              {r.daysRemaining > 0 ? r.daysRemaining : r.daysRemaining === 0 ? "J" : "—"}
+            </div>
+          </div>
+          <div className="pb-2 text-right text-sm text-ink3">
+            <div>{r.weeksRemaining > 0 ? `${r.weeksRemaining} semaine${r.weeksRemaining > 1 ? "s" : ""}` : "dernière ligne droite"}</div>
+            <div>préparation {r.readiness}/100</div>
+          </div>
+        </div>
+      </section>
 
       {/* ------------------------------------------------ KPI */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Kpi
-          label="Jours restants"
-          value={String(r.daysRemaining)}
-          note={`${r.phase.toLowerCase()} · ${r.weeksRemaining} semaines`}
+          label="Volume actuel"
+          value={`${ctx.fitness.weeklyKm} km`}
+          note={`${ctx.fitness.weeklyKm4w} km/sem sur 4 sem. · ${ctx.fitness.sessionsPerWeek} sorties/sem`}
         />
         <Kpi
           label="Préparation"
