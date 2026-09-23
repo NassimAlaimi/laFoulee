@@ -65,13 +65,18 @@ export async function POST(req: NextRequest) {
       // importée par deux coureurs donne bien deux lignes, une par compte.
       const existing = await prisma.activity.findUnique({
         where: { userId_stravaId: { userId, stravaId: BigInt(s.id) } },
-        select: { id: true },
+        select: { id: true, raceLocked: true },
       });
 
       const data = mapSummary(s);
 
       if (existing) {
-        await prisma.activity.update({ where: { id: existing.id }, data });
+        // Un drapeau « course » posé à la main l'emporte sur le workout_type Strava
+        const { isRace, ...rest } = data;
+        await prisma.activity.update({
+          where: { id: existing.id },
+          data: existing.raceLocked ? rest : { ...rest, isRace },
+        });
         updated++;
       } else {
         await prisma.activity.create({

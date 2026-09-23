@@ -1,22 +1,25 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Hint, Section, SectionHead } from "@/components/ui/Layout";
-import { Row } from "@/components/ui/Metric";
-import { SplitChart } from "@/components/charts/LazySplit";
-import {
-  fmtDate,
-  fmtDuration,
-  fmtPace,
-  pacePerKm,
-  speedToPace,
-} from "@/lib/format";
+import { Section } from "@/components/ui/Layout";
+import { Metric, MetricBand, Row } from "@/components/ui/Metric";
+import { ActivityRoute, type RouteGeometry } from "@/components/route/ActivityRoute";
+import { ActivityJournal } from "@/components/route/ActivityJournal";
+import { RouteGlyph } from "@/components/route/RouteGlyph";
+import { KeyNav } from "@/components/KeyNav";
+import { fmtDateShort, fmtDuration, fmtPace, pacePerKm, speedToPace } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
 import { getSettings } from "@/lib/queries";
+import { RUN_TYPES } from "@/lib/strava";
+import { kmSegments, niceScale, routeSignature, sameRoute } from "@/lib/polyline";
 import { estimateMaxHr, round, trainingLoad } from "@/lib/stats";
 import { vdotFromPerformance } from "@/lib/vdot";
+import { KIND_LABELS, type SessionKind } from "@/lib/workouts";
 
 export const dynamic = "force-dynamic";
+
+const MAP_W = 720;
+const MAP_H = 440;
 
 export default async function ActivityDetailPage({
   params,
@@ -32,298 +35,521 @@ export default async function ActivityDetailPage({
       include: {
         splits: { orderBy: { index: "asc" } },
         bestEfforts: { orderBy: { distance: "asc" } },
+        plannedSession: { include: { plan: { select: { id: true, name: true } } } },
       },
     }),
     getSettings(userId),
   ]);
-
   if (!activity) notFound();
+
+  const isRun = RUN_TYPES.has(activity.type);
+
+  // Voisines chronologiques + candidates « même parcours » en une requête
+  const siblings = await prisma.activity.findMany({
+    where: { userId, type: isRun ? { in: [...RUN_TYPES] } : activity.type },
+    orderBy: { startDate: "desc" },
+    select: {
+      id: true,
+      name: true,
+      startDate: true,
+      distance: true,
+      movingTime: true,
+      averageHr: true,
+      polyline: true,
+    },
+  });
+  const pos = siblings.findIndex((s) => s.id === activity.id);
+  const newer = pos > 0 ? siblings[pos - 1] : null;
+  const older = pos >= 0 && pos < siblings.length - 1 ? siblings[pos + 1] : null;
+
+  const gear = activity.gearId
+    ? await prisma.gear.findFirst({
+        where: { userId, stravaGearId: activity.gearId },
+        select: { name: true, brand: true, model: true },
+      })
+    : null;
 
   const pace = pacePerKm(activity.distance, activity.movingTime);
   const maxHr = settings.maxHr ?? estimateMaxHr([], settings.birthYear);
 
-  const splitRows = activity.splits.map((s) => ({
+  // ------------------------------------------------------------ Tracé
+  const seg = kmSegments(activity.polyline, activity.distance, MAP_W, MAP_H, 34);
+  const geometry: RouteGeometry | null = seg.segments.length
+    ? {
+        w: MAP_W,
+        h: MAP_H,
+        segments: seg.segments,
+        markers: seg.markers,
+        start: seg.start,
+        end: seg.end,
+        scaleBar: niceScale(seg.pxPerMeter, MAP_W * 0.16),
+      }
+    : null;
+
+  const splits = activity.splits.map((s) => ({
     index: s.index,
-    km: round(s.distance / 1000, 2),
+    meters: s.distance,
     pace: s.averageSpeed ? speedToPace(s.averageSpeed) : pacePerKm(s.distance, s.movingTime),
     hr: s.averageHr ? Math.round(s.averageHr) : null,
     elevation: s.elevationDiff,
     movingTime: s.movingTime,
   }));
 
-  // Régularité : écart-type des allures au km, en secondes
-  const paces = splitRows.map((s) => s.pace).filter((p) => p > 0);
+  // ------------------------------------------------------------ Analyse
+  const paces = splits.filter((s) => s.meters > 500).map((s) => s.pace);
   const meanPace = paces.reduce((a, b) => a + b, 0) / (paces.length || 1);
   const stdDev = paces.length
-    ? Math.sqrt(
-        paces.reduce((a, p) => a + (p - meanPace) ** 2, 0) / paces.length
-      )
+    ? Math.sqrt(paces.reduce((a, p) => a + (p - meanPace) ** 2, 0) / paces.length)
     : 0;
 
-  // Dérive cardiaque : FC moyenne seconde moitié vs première moitié
-  const withHr = splitRows.filter((s) => s.hr);
+  const withHr = splits.filter((s) => s.hr && s.meters > 500);
   let drift: number | null = null;
   if (withHr.length >= 4) {
+    // Efficience (vitesse / FC) de la 2e moitié vs la 1re : isole la dérive
+    // cardiaque des variations d'allure, contrairement à la FC brute.
     const half = Math.floor(withHr.length / 2);
-    const first = withHr.slice(0, half);
-    const second = withHr.slice(half);
-    const avg = (arr: typeof withHr) =>
-      arr.reduce((a, s) => a + (s.hr ?? 0), 0) / arr.length;
-    drift = round(((avg(second) - avg(first)) / avg(first)) * 100, 1);
+    const eff = (arr: typeof withHr) =>
+      arr.reduce((a, s) => a + 1000 / s.pace / (s.hr ?? 1), 0) / arr.length;
+    drift = round(((eff(withHr.slice(0, half)) - eff(withHr.slice(half))) / eff(withHr.slice(0, half))) * 100, 1);
   }
 
-  const load = trainingLoad(
-    {
-      id: activity.id,
-      name: activity.name,
-      type: activity.type,
-      startDate: activity.startDate,
-      distance: activity.distance,
-      movingTime: activity.movingTime,
-      elapsedTime: activity.elapsedTime,
-      totalElevation: activity.totalElevation,
-      averageSpeed: activity.averageSpeed,
-      maxSpeed: activity.maxSpeed,
-      averageHr: activity.averageHr,
-      maxHr: activity.maxHr,
-      sufferScore: activity.sufferScore,
-      averageCadence: activity.averageCadence,
-      isRace: activity.isRace,
-    },
-    { maxHr, restHr: settings.restHr }
-  );
+  // Négative split : 2e moitié plus rapide que la 1re
+  let splitDelta: number | null = null;
+  if (splits.length >= 4) {
+    const half = Math.floor(splits.length / 2);
+    const t = (arr: typeof splits) =>
+      arr.reduce((a, s) => a + s.movingTime, 0) / (arr.reduce((a, s) => a + s.meters, 0) / 1000);
+    splitDelta = Math.round(t(splits.slice(half)) - t(splits.slice(0, half)));
+  }
 
-  const vdot = vdotFromPerformance(activity.distance, activity.movingTime);
+  const load = trainingLoad(activity, { maxHr, restHr: settings.restHr });
+  const vdot = isRun ? vdotFromPerformance(activity.distance, activity.movingTime) : 0;
+
+  // ------------------------------------------------------------ Même parcours
+  const sig = routeSignature(activity.polyline);
+  const sameRouteRuns = sig.length
+    ? siblings.filter(
+        (s) =>
+          s.id !== activity.id &&
+          sameRoute(activity, s, sig, routeSignature(s.polyline))
+      )
+    : [];
+  const routeHistory = sameRouteRuns.length
+    ? [...sameRouteRuns, activity]
+        .map((s) => ({ ...s, pace: pacePerKm(s.distance, s.movingTime) }))
+        .sort((a, b) => b.startDate.getTime() - a.startDate.getTime())
+    : [];
+  const routeRank = routeHistory.length
+    ? [...routeHistory].sort((a, b) => a.pace - b.pace).findIndex((s) => s.id === activity.id) + 1
+    : 0;
+
+  // Rang parmi les sorties de distance comparable (±15 %)
+  const comparable = siblings.filter(
+    (s) => s.distance > 0 && Math.abs(s.distance / activity.distance - 1) <= 0.15
+  );
+  const compRank =
+    [...comparable]
+      .sort((a, b) => pacePerKm(a.distance, a.movingTime) - pacePerKm(b.distance, b.movingTime))
+      .findIndex((s) => s.id === activity.id) + 1;
+
+  const planned = activity.plannedSession;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <Link href="/activities" className="text-xs text-ink3 hover:text-clay">
-          ← Activités
-        </Link>
-        <div className="mt-2 flex flex-wrap items-center gap-2.5">
-          <h1 className="text-[1.6rem] font-semibold tracking-tight ">
-            {activity.isRace && <span className="mr-2">🏁</span>}
-            {activity.name}
-          </h1>
-          <span className="badge bg-sunken text-ink2">
-            {activity.sportType ?? activity.type}
-          </span>
+    <div>
+      <KeyNav
+        left={older ? `/activities/${older.id}` : undefined}
+        right={newer ? `/activities/${newer.id}` : undefined}
+        escape="/activities"
+      />
+
+      {/* ------------------------------------------------ En-tête */}
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <Link href="/activities" className="text-micro uppercase tracking-[0.1em] text-ink3 hover:text-clay">
+            ← Activités
+          </Link>
+          <h1 className="mt-2 text-[1.75rem] font-semibold tracking-[-0.02em]">{activity.name}</h1>
+          <p className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-ink2">
+            <span className="inline-block first-letter:uppercase">
+              {activity.startDate.toLocaleDateString("fr-FR", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}{" "}
+              ·{" "}
+              {activity.startDate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+            </span>
+            <span className="tag">{activity.sportType ?? activity.type}</span>
+            {activity.isRace && <span className="tag border-clay/40 text-clay">course</span>}
+            {planned && (
+              <span className="tag border-sage/40 text-sage">
+                plan · {KIND_LABELS[planned.kind as SessionKind] ?? planned.kind}
+              </span>
+            )}
+            {gear && <span className="text-micro text-ink3">chaussures · {gear.name}</span>}
+          </p>
         </div>
-        <p className="mt-1 text-sm text-ink2">
-          {fmtDate(activity.startDate)} à{" "}
-          {activity.startDate.toLocaleTimeString("fr-FR", {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </p>
+        <nav className="flex items-center gap-1" aria-label="Séances voisines">
+          <NeighbourLink href={older ? `/activities/${older.id}` : null} label="Précédente" dir="←" hint={older ? fmtDateShort(older.startDate) : undefined} />
+          <NeighbourLink href={newer ? `/activities/${newer.id}` : null} label="Suivante" dir="→" hint={newer ? fmtDateShort(newer.startDate) : undefined} />
+        </nav>
       </div>
 
-      {/* ------------------------------------------------ Chiffres clés */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <BigStat label="Distance" value={(activity.distance / 1000).toFixed(2)} unit="km" />
-        <BigStat label="Temps" value={fmtDuration(activity.movingTime)} />
-        <BigStat label="Allure" value={fmtPace(pace, "")} unit="/km" />
-        <BigStat label="Dénivelé" value={Math.round(activity.totalElevation)} unit="m D+" />
-      </div>
+      <MetricBand>
+        <Metric label="Distance" value={(activity.distance / 1000).toFixed(2)} unit="km" size="d2" />
+        <Metric label="Temps" value={fmtDuration(activity.movingTime)} size="d2" />
+        <Metric label="Allure" value={fmtPace(pace, "")} unit="/km" size="d2" />
+        <Metric
+          label={activity.averageHr ? "FC moyenne" : "Dénivelé"}
+          value={activity.averageHr ? Math.round(activity.averageHr) : Math.round(activity.totalElevation)}
+          unit={activity.averageHr ? "bpm" : "m D+"}
+          note={
+            activity.averageHr
+              ? `${Math.round((activity.averageHr / maxHr) * 100)} % FCmax · ${Math.round(activity.totalElevation)} m D+`
+              : undefined
+          }
+          size="d2"
+        />
+      </MetricBand>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        {/* ------------------------------------------------ Splits */}
-        <Section className="lg:col-span-2">
-          <SectionHead title="Allure par kilomètre"
-            note={
-              splitRows.length
-                ? "Vert = plus rapide que la moyenne de la séance"
-                : undefined
+      <div className="mt-10 space-y-10">
+        {/* ---------------------------------------------- Parcours */}
+        {(geometry || splits.length > 0) && (
+          <Section title="Parcours">
+            <ActivityRoute
+              geometry={geometry}
+              splits={splits}
+              avgPace={pace}
+              summary={{
+                pace,
+                time: activity.movingTime,
+                hr: activity.averageHr,
+                elevation: activity.totalElevation,
+                km: activity.distance / 1000,
+              }}
+            />
+          </Section>
+        )}
+
+        {/* ---------------------------------------------- Prévu vs fait */}
+        {planned && (
+          <Section
+            title="Prévu · réalisé"
+            note={`Séance « ${planned.title} » du plan ${planned.plan.name}, validée automatiquement par cette activité.`}
+            action={
+              <Link href={`/training/${planned.plan.id}`} className="btn-quiet">
+                Voir le plan →
+              </Link>
             }
-          />
-          {splitRows.length ? (
-            <SplitChart data={splitRows} avgPace={pace} />
-          ) : (
-            <Hint height={260}>
-              Splits non disponibles — relance une synchronisation pour les importer.
-            </Hint>
-          )}
-        </Section>
-
-        {/* ------------------------------------------------ Détails */}
-        <div className="space-y-4">
-          <Section>
-            <SectionHead title="Données de séance" />
-            <div className="divide-y divide-hair/60">
-              <Row label="Temps écoulé" value={fmtDuration(activity.elapsedTime)} />
-              <Row
-                label="Temps à l'arrêt"
-                value={fmtDuration(activity.elapsedTime - activity.movingTime)}
+          >
+            <div className="grid gap-x-10 sm:grid-cols-3">
+              <PlanCompare
+                label="Distance"
+                planned={planned.distanceKm > 0 ? `${round(planned.distanceKm, 1)} km` : "—"}
+                actual={`${round(activity.distance / 1000, 1)} km`}
+                delta={planned.distanceKm > 0 ? activity.distance / 1000 / planned.distanceKm - 1 : null}
               />
-              <Row
-                label="Vitesse max"
-                value={activity.maxSpeed ? fmtPace(speedToPace(activity.maxSpeed)) : "—"}
+              <PlanCompare
+                label="Durée"
+                planned={planned.durationMin ? `${planned.durationMin} min` : "—"}
+                actual={`${Math.round(activity.movingTime / 60)} min`}
+                delta={planned.durationMin ? activity.movingTime / 60 / planned.durationMin - 1 : null}
               />
-              <Row
-                label="FC moyenne"
-                value={activity.averageHr ? `${Math.round(activity.averageHr)} bpm` : "—"}
-                note={
-                  activity.averageHr
-                    ? `${Math.round((activity.averageHr / maxHr) * 100)} % FCmax`
-                    : undefined
-                }
-              />
-              <Row
-                label="FC max"
-                value={activity.maxHr ? `${Math.round(activity.maxHr)} bpm` : "—"}
-              />
-              <Row
-                label="Cadence"
-                value={
-                  activity.averageCadence
-                    ? `${Math.round(activity.averageCadence)} pas/min`
-                    : "—"
-                }
-              />
-              <Row
-                label="Calories"
-                value={activity.calories ? `${Math.round(activity.calories)} kcal` : "—"}
+              <PlanCompare
+                label="Allure"
+                planned={planned.paceTarget ? fmtPace(planned.paceTarget) : "libre"}
+                actual={fmtPace(pace)}
+                delta={planned.paceTarget ? planned.paceTarget / pace - 1 : null}
+                paceMode
               />
             </div>
           </Section>
+        )}
 
-          <Section>
-            <SectionHead title="Analyse" />
-            <div className="divide-y divide-hair/60">
-              <Row label="Charge d'entraînement" value={Math.round(load)} />
-              <Row
-                label="Effort relatif Strava"
-                value={activity.sufferScore ? Math.round(activity.sufferScore) : "—"}
-              />
-              <Row
-                label="VDOT de la séance"
-                value={vdot > 0 ? vdot.toFixed(1) : "—"}
-                note={activity.isRace ? "course" : "sortie"}
-              />
-              <Row
-                label="Régularité"
-                value={stdDev > 0 ? `± ${Math.round(stdDev)} s/km` : "—"}
-                tone={stdDev === 0 ? "default" : stdDev < 10 ? "sage" : stdDev < 25 ? "ochre" : "rust"}
-                note={
-                  stdDev === 0
-                    ? undefined
-                    : stdDev < 10
-                      ? "très régulier"
-                      : stdDev < 25
-                        ? "correct"
-                        : "irrégulier"
-                }
-              />
-              <Row
-                label="Dérive cardiaque"
-                value={drift !== null ? `${drift > 0 ? "+" : ""}${drift} %` : "—"}
-                tone={
-                  drift === null
-                    ? "default"
-                    : drift < 3
-                      ? "sage"
-                      : drift < 8
-                        ? "ochre"
-                        : "rust"
-                }
-                note={
-                  drift === null
-                    ? undefined
-                    : drift < 3
-                      ? "bonne endurance"
-                      : drift < 8
-                        ? "fatigue modérée"
-                        : "forte dérive"
-                }
-              />
+        {/* ---------------------------------------------- Contexte */}
+        {(routeHistory.length > 1 || comparable.length > 2) && (
+          <Section
+            title="En contexte"
+            note="Cette séance comparée à tes autres passages sur le même parcours, et à tes sorties de distance voisine."
+          >
+            <div className="grid gap-10 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+              {routeHistory.length > 1 ? (
+                <div>
+                  <div className="mb-3 flex items-baseline justify-between">
+                    <span className="eyebrow">Sur ce parcours · {routeHistory.length} passages</span>
+                    <span className="text-micro text-ink3">
+                      {routeRank === 1 ? "ton meilleur passage" : `${routeRank}ᵉ plus rapide`}
+                    </span>
+                  </div>
+                  <RouteHistory rows={routeHistory} current={activity.id} />
+                </div>
+              ) : (
+                <div className="flex items-center gap-4 text-[0.8125rem] text-ink3">
+                  <RouteGlyph polyline={activity.polyline} size={56} stroke="rgb(var(--ink-3))" />
+                  Premier passage sur ce parcours : les prochains y seront comparés.
+                </div>
+              )}
+              {comparable.length > 2 && (
+                <div>
+                  <div className="eyebrow mb-3">
+                    Sorties de {round((activity.distance * 0.85) / 1000, 0)} à {round((activity.distance * 1.15) / 1000, 0)} km
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="display text-d2">{compRank}</span>
+                    <span className="text-sm text-ink2">
+                      {compRank === 1 ? "ʳᵉ" : "ᵉ"} sur {comparable.length} en allure
+                    </span>
+                  </div>
+                  <RankDots total={comparable.length} rank={compRank} />
+                </div>
+              )}
             </div>
+          </Section>
+        )}
+
+        {/* ---------------------------------------------- Données + analyse */}
+        <div className="grid gap-10 lg:grid-cols-2">
+          <Section title="Données de séance">
+            <Row label="Temps écoulé" value={fmtDuration(activity.elapsedTime)} />
+            <Row label="Temps à l'arrêt" value={fmtDuration(activity.elapsedTime - activity.movingTime)} />
+            <Row label="Vitesse max" value={activity.maxSpeed ? fmtPace(speedToPace(activity.maxSpeed)) : "—"} />
+            <Row label="FC max" value={activity.maxHr ? `${Math.round(activity.maxHr)} bpm` : "—"} />
+            <Row label="Cadence" value={activity.averageCadence ? `${Math.round(activity.averageCadence)} pas/min` : "—"} />
+            <Row label="Dénivelé" value={`${Math.round(activity.totalElevation)} m`} />
+            <Row label="Calories" value={activity.calories ? `${Math.round(activity.calories)} kcal` : "—"} />
+          </Section>
+
+          <Section title="Analyse">
+            <Row label="Charge d'entraînement" value={Math.round(load)} note={activity.averageHr ? "TRIMP" : "équiv. km"} />
+            {isRun && (
+              <Row label="VDOT de la séance" value={vdot > 0 ? vdot.toFixed(1) : "—"} note={activity.isRace ? "course" : "sortie"} />
+            )}
+            <Row
+              label="Régularité"
+              value={stdDev > 0 ? `± ${Math.round(stdDev)} s/km` : "—"}
+              tone={stdDev === 0 ? "default" : stdDev < 10 ? "sage" : stdDev < 25 ? "ochre" : "rust"}
+              note={stdDev === 0 ? undefined : stdDev < 10 ? "très régulier" : stdDev < 25 ? "correct" : "irrégulier"}
+            />
+            <Row
+              label="Découpage"
+              value={
+                splitDelta === null
+                  ? "—"
+                  : Math.abs(splitDelta) < 3
+                    ? "égal"
+                    : `${splitDelta > 0 ? "+" : "−"}${Math.abs(splitDelta)} s/km`
+              }
+              tone={splitDelta === null ? "default" : splitDelta < -2 ? "sage" : splitDelta > 15 ? "ochre" : "default"}
+              note={
+                splitDelta === null ? undefined : splitDelta < -2 ? "négatif · fini plus vite" : splitDelta > 2 ? "positif · fini plus lent" : undefined
+              }
+            />
+            <Row
+              label="Découplage cardiaque"
+              value={drift !== null ? `${drift > 0 ? "+" : ""}${drift} %` : "—"}
+              tone={drift === null ? "default" : drift < 5 ? "sage" : drift < 10 ? "ochre" : "rust"}
+              note={drift === null ? undefined : drift < 5 ? "endurance solide" : drift < 10 ? "dérive modérée" : "forte dérive"}
+            />
+            <Row label="Effort relatif Strava" value={activity.sufferScore ? Math.round(activity.sufferScore) : "—"} />
             <p className="mt-3 text-micro leading-relaxed text-ink3">
-              La dérive cardiaque compare la FC de la seconde moitié à celle de la
-              première, à allure comparable. Plus elle est basse, meilleure est
-              l&apos;endurance aérobie.
+              Le découplage compare l&apos;efficience (vitesse ÷ FC) de la seconde moitié à
+              la première. Sous 5 %, la base aérobie tient la durée de la séance.
             </p>
           </Section>
         </div>
-      </div>
 
-      {/* ------------------------------------------------ Best efforts */}
-      {activity.bestEfforts.length > 0 && (
-        <Section>
-          <div className="px-5 py-4">
-            <h2 className="section-title">Meilleurs efforts de cette séance</h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Segment</th>
-                  <th className="text-right">Temps</th>
-                  <th className="text-right">Allure</th>
-                  <th className="text-right">VDOT</th>
-                  <th>Record</th>
-                </tr>
-              </thead>
-              <tbody>
-                {activity.bestEfforts.map((e) => (
-                  <tr key={e.id}>
-                    <td className="text-ink">{e.name}</td>
-                    <td className="text-right font-mono font-medium tabular-nums ">
-                      {fmtDuration(e.movingTime)}
-                    </td>
-                    <td className="text-right font-mono tabular-nums text-ink2">
-                      {fmtPace(pacePerKm(e.distance, e.movingTime), "")}
-                    </td>
-                    <td className="text-right font-mono tabular-nums text-ink2">
-                      {vdotFromPerformance(e.distance, e.movingTime).toFixed(1)}
-                    </td>
-                    <td>
-                      {e.prRank === 1 ? (
-                        <span className="badge bg-clay/15 text-clay">🏆 record</span>
-                      ) : e.prRank ? (
-                        <span className="badge bg-sunken text-ink2">
-                          {e.prRank}ᵉ meilleur
-                        </span>
-                      ) : (
-                        <span className="text-ink3">—</span>
-                      )}
-                    </td>
+        {/* ---------------------------------------------- Meilleurs efforts */}
+        {activity.bestEfforts.length > 0 && (
+          <Section title="Meilleurs efforts de cette séance">
+            <div className="overflow-x-auto">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Segment</th>
+                    <th className="text-right">Temps</th>
+                    <th className="text-right">Allure</th>
+                    <th className="text-right">VDOT</th>
+                    <th className="text-right">Record</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Section>
-      )}
+                </thead>
+                <tbody>
+                  {activity.bestEfforts.map((e) => (
+                    <tr key={e.id}>
+                      <td>{e.name}</td>
+                      <td className="num text-right font-medium">{fmtDuration(e.movingTime)}</td>
+                      <td className="num text-right text-ink2">{fmtPace(pacePerKm(e.distance, e.movingTime), "")}</td>
+                      <td className="num text-right text-ink2">{vdotFromPerformance(e.distance, e.movingTime).toFixed(1)}</td>
+                      <td className="text-right">
+                        {e.prRank === 1 ? (
+                          <span className="tag border-clay/40 text-clay">record</span>
+                        ) : e.prRank ? (
+                          <span className="tag">{e.prRank}ᵉ meilleur</span>
+                        ) : (
+                          <span className="text-ink3">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Section>
+        )}
 
-      {activity.notes && (
-        <Section>
-          <SectionHead title="Notes" />
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink2">
-            {activity.notes}
-          </p>
+        {/* ---------------------------------------------- Carnet */}
+        <Section
+          title="Carnet"
+          note="Ce que ta montre ne mesure pas. Enregistré au fil de la saisie."
+        >
+          <ActivityJournal
+            id={activity.id}
+            initial={{
+              privateNote: activity.privateNote,
+              perceivedExertion: activity.perceivedExertion,
+              feeling: activity.feeling,
+              isRace: activity.isRace,
+            }}
+          />
+          {activity.notes && (
+            <div className="mt-6 border-l-2 border-hairStrong pl-4">
+              <div className="eyebrow mb-1.5">Description Strava</div>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink2">{activity.notes}</p>
+            </div>
+          )}
         </Section>
+
+        <p className="text-center text-micro text-ink3">
+          <kbd className="kbd">←</kbd> <kbd className="kbd">→</kbd> séance précédente / suivante ·{" "}
+          <kbd className="kbd">Échap</kbd> retour à la liste
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function NeighbourLink({
+  href,
+  label,
+  dir,
+  hint,
+}: {
+  href: string | null;
+  label: string;
+  dir: string;
+  hint?: string;
+}) {
+  if (!href) {
+    return (
+      <span className="btn-outline pointer-events-none opacity-35" aria-disabled>
+        {dir === "←" && dir} {label} {dir === "→" && dir}
+      </span>
+    );
+  }
+  return (
+    <Link href={href} className="btn-outline" title={hint}>
+      {dir === "←" && <span aria-hidden>←</span>}
+      <span>
+        {label}
+        {hint && <span className="ml-1.5 text-micro text-ink3">{hint}</span>}
+      </span>
+      {dir === "→" && <span aria-hidden>→</span>}
+    </Link>
+  );
+}
+
+function PlanCompare({
+  label,
+  planned,
+  actual,
+  delta,
+  paceMode = false,
+}: {
+  label: string;
+  planned: string;
+  actual: string;
+  delta: number | null;
+  paceMode?: boolean;
+}) {
+  // Pour l'allure, delta > 0 = plus rapide que prévu
+  const pct = delta === null ? null : Math.round(delta * 100);
+  const tone =
+    pct === null || Math.abs(pct) <= 5 ? "text-sage" : Math.abs(pct) <= 12 ? "text-ochre" : "text-rust";
+  return (
+    <div className="border-b border-hair py-3 sm:border-b-0">
+      <div className="eyebrow">{label}</div>
+      <div className="mt-2 flex items-baseline gap-2">
+        <span className="text-sm text-ink3 line-through decoration-hairStrong">{planned}</span>
+        <span className="text-ink3" aria-hidden>→</span>
+        <span className="display text-d4">{actual}</span>
+      </div>
+      {pct !== null && (
+        <div className={`mt-1 text-micro font-medium ${tone}`}>
+          {Math.abs(pct) <= 2
+            ? "conforme"
+            : paceMode
+              ? `${Math.abs(pct)} % ${pct > 0 ? "plus rapide" : "plus lent"} que prévu`
+              : `${pct > 0 ? "+" : "−"}${Math.abs(pct)} % vs prévu`}
+        </div>
       )}
     </div>
   );
 }
 
-function BigStat({
-  label,
-  value,
-  unit,
+function RouteHistory({
+  rows,
+  current,
 }: {
-  label: string;
-  value: string | number;
-  unit?: string;
+  rows: Array<{ id: string; startDate: Date; pace: number; movingTime: number; averageHr: number | null; distance: number }>;
+  current: string;
 }) {
+  const best = Math.min(...rows.map((r) => r.pace));
+  const worst = Math.max(...rows.map((r) => r.pace));
+  const span = worst - best || 1;
   return (
-    <div className="card card-pad">
-      <div className="section-title">{label}</div>
-      <div className="mt-2.5 flex items-baseline gap-1.5">
-        <span className="display text-d3">{value}</span>
-        {unit && <span className="text-sm text-ink3">{unit}</span>}
-      </div>
+    <div>
+      {rows.slice(0, 8).map((r) => {
+        const on = r.id === current;
+        const w = 30 + (1 - (r.pace - best) / span) * 70;
+        return (
+          <Link
+            key={r.id}
+            href={`/activities/${r.id}`}
+            className={`group grid grid-cols-[72px_minmax(0,1fr)_64px_48px] items-center gap-3 border-b border-hair py-2 text-[0.8125rem] last:border-b-0 ${
+              on ? "font-medium" : "text-ink2 hover:text-ink"
+            }`}
+          >
+            <span className="whitespace-nowrap">{fmtDateShort(r.startDate)}</span>
+            <span className="h-[5px] rounded-full bg-sunken">
+              <span
+                className="block h-full rounded-full transition-all"
+                style={{
+                  width: `${w}%`,
+                  background: on ? "rgb(var(--clay))" : r.pace === best ? "rgb(var(--sage))" : "rgb(var(--hair-strong))",
+                }}
+              />
+            </span>
+            <span className="num text-right">{fmtPace(r.pace, "")}</span>
+            <span className="num text-right text-ink3">{r.averageHr ? Math.round(r.averageHr) : "—"}</span>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
+function RankDots({ total, rank }: { total: number; rank: number }) {
+  return (
+    <div className="mt-4 flex flex-wrap gap-1" aria-hidden>
+      {Array.from({ length: Math.min(total, 60) }, (_, i) => (
+        <span
+          key={i}
+          className="h-2.5 w-2.5 rounded-full"
+          style={{
+            background: i + 1 === rank ? "rgb(var(--clay))" : i + 1 < rank ? "rgb(var(--ink-3))" : "rgb(var(--hair-strong))",
+          }}
+        />
+      ))}
     </div>
   );
 }

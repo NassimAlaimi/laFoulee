@@ -106,10 +106,9 @@
 
   /* ------------------------------------------------------------- Structure */
 
-  /* Bloc de contenu : filet fin en haut, pas de boîte fermée */
-  .block {
-    @apply border-t border-hair pt-5;
-  }
+  /* NB : pas de composant `.block` ici — il écraserait l'utilitaire
+     Tailwind `block` (display) et ajoutait un filet + 20 px de marge à tout
+     élément qui voulait simplement passer en display:block. */
 
   /* Panneau, utilisé avec parcimonie pour ce qui doit vraiment être détaché */
   .panel {
@@ -118,6 +117,31 @@
 
   .rule {
     @apply border-t border-hair;
+  }
+
+  /* Papier millimétré : quadrillage discret sous les tracés GPS */
+  /* Carte de chaleur : toujours sur fond nuit, dans les deux thèmes — les
+     traces lumineuses ne se lisent que sur du sombre. */
+  .heat-canvas {
+    --heat-bg: 17 16 15;
+    --heat: 236 118 74;
+    --heat-hi: 255 228 176;
+    --heat-ink: 242 240 236;
+    background:
+      radial-gradient(ellipse at 50% 45%, rgb(255 255 255 / 0.035), transparent 70%),
+      rgb(var(--heat-bg));
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.05);
+  }
+
+  .route-paper {
+    background-color: rgb(var(--panel));
+    background-image:
+      linear-gradient(rgb(var(--hair) / 0.55) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--hair) / 0.55) 1px, transparent 1px),
+      linear-gradient(rgb(var(--hair) / 0.35) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--hair) / 0.35) 1px, transparent 1px);
+    background-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px;
+    background-position: -1px -1px;
   }
 
   /* ------------------------------------------------------------- Contrôles */
@@ -220,6 +244,13 @@
   }
   .data-table tbody tr:hover {
     background: rgb(var(--sunken) / 0.6);
+  }
+
+  /* Touche de clavier */
+  .kbd {
+    @apply inline-flex min-w-[1.25rem] items-center justify-center rounded-[4px] border border-hairStrong
+           bg-panel px-1 font-sans text-[0.6875rem] font-medium leading-[1.1rem] text-ink2;
+    box-shadow: 0 1px 0 rgb(var(--hair-strong));
   }
 
   .num {

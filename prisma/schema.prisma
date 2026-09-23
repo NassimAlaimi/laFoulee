@@ -127,6 +127,14 @@ model Activity {
   polyline  String? // summary_polyline encodé
   notes     String?
 
+  /// Note personnelle, jamais écrasée par la synchro (contrairement à `notes`,
+  /// qui reflète la description Strava)
+  privateNote String?
+  /// 1 = très mauvaises sensations … 5 = excellentes
+  feeling     Int?
+  /// Le drapeau « course » a été posé à la main : la synchro ne le touche plus
+  raceLocked  Boolean @default(false)
+
   bestEfforts BestEffort[]
   splits      Split[]
 
