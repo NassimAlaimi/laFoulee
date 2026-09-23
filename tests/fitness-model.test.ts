@@ -271,3 +271,17 @@ describe("formHeadline", () => {
     assert.match(formHeadline({ tsb: -5, ctl: 30, zone: "neutral", rampPerWeek: 9 }, "danger").body, /risque de blessure/);
   });
 });
+
+describe("formAtStart", () => {
+  it("prend la fraîcheur de la veille, pas celle qui inclut la course", async () => {
+    const { formAtStart, formSeries, formOn } = await import("../src/lib/fitness-model.ts");
+    const now = new Date(2026, 8, 1, 12);
+    const race = new Date(2026, 8, 10, 9);
+    const series = formSeries({ activities: [], days: 5, now, future: [{ date: race, load: 500 }] });
+    const day = formOn(series, race)!;
+    const start = formAtStart(series, race)!;
+    assert.ok(day.tsb < start.tsb, "le jour J inclut la charge de la course");
+    assert.equal(start.label, day.label);
+    assert.equal(start.date.getDate(), 10);
+  });
+});

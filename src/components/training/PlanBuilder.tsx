@@ -7,6 +7,7 @@ import {
   buildBlueprint,
   DAY_NAMES,
   FOCUS_PRESETS,
+  PHASE_COLOR,
   startFromPriorWeeks,
   suggestDaysPerWeek,
   targetPeakFor,
@@ -538,14 +539,6 @@ export function VolumeCurve({
   );
 }
 
-export const PHASE_COLOR: Record<string, string> = {
-  base: "rgb(var(--slate))",
-  build: "rgb(var(--sage))",
-  peak: "rgb(var(--clay))",
-  deload: "rgb(var(--hair-strong))",
-  taper: "rgb(var(--ochre))",
-  race: "rgb(var(--rust))",
-};
 
 // ---------------------------------------------------------------- Petits blocs
 

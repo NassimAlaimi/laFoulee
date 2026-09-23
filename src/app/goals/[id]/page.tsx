@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FormChart } from "@/components/charts/Lazy";
-import { PHASE_COLOR, VolumeCurve } from "@/components/training/PlanBuilder";
+import { VolumeCurve } from "@/components/training/PlanBuilder";
+import { PHASE_COLOR } from "@/lib/training";
 import { CreatePlanForGoal } from "@/components/training/CreatePlanForGoal";
 import { Section, SectionHead } from "@/components/ui/Layout";
 import { Bar } from "@/components/ui/Metric";
 import {
-  formOn,
+  formAtStart,
   formSeries,
   plannedLoad,
   ZONE_LABEL,
@@ -94,7 +95,7 @@ export default async function GoalDetailPage({
     .map((s) => ({ date: s.date, load: plannedLoad(s) }));
 
   const series = formSeries({ activities: ctx.runs, days: 90, future, now });
-  const raceForm = formOn(series, goal.raceDate);
+  const raceForm = formAtStart(series, goal.raceDate);
   const formRows = series.map((p) => ({
     label: p.label,
     ctl: p.ctl,

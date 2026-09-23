@@ -45,6 +45,16 @@ export function daysBetween(a: Date, b: Date): number {
   return Math.round((b.getTime() - a.getTime()) / 86_400_000);
 }
 
+/**
+ * Jours calendaires entre deux dates (minuit à minuit) : mercredi 21 h →
+ * lundi 0 h donne 5, là où `daysBetween` arrondirait à 4.
+ */
+export function calendarDaysBetween(a: Date, b: Date): number {
+  const da = new Date(a.getFullYear(), a.getMonth(), a.getDate());
+  const db = new Date(b.getFullYear(), b.getMonth(), b.getDate());
+  return Math.round((db.getTime() - da.getTime()) / 86_400_000);
+}
+
 export function isoWeekKey(date: Date): string {
   const monday = startOfWeek(date);
   return monday.toISOString().slice(0, 10);

@@ -4,6 +4,7 @@ import { Bar } from "@/components/ui/Metric";
 import { CheckinForm } from "@/components/training/CheckinForm";
 import { PlanBuilder, VolumeCurve } from "@/components/training/PlanBuilder";
 import { SessionCard, type SessionView } from "@/components/training/SessionCard";
+import { WeekBoard } from "@/components/training/WeekBoard";
 import { fmtDateShort } from "@/lib/format";
 import {
   actualKmForWeek,
@@ -16,9 +17,10 @@ import {
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
 import { getSettings } from "@/lib/queries";
-import { addDays, daysBetween, round, startOfWeek } from "@/lib/stats";
+import { addDays, calendarDaysBetween, daysBetween, round, startOfWeek } from "@/lib/stats";
 import {
   intensityBalance,
+  PHASE_COLOR,
   PHASE_LABELS,
   TONE_STYLE,
   weekCompliance,
@@ -47,10 +49,17 @@ export default async function TrainingPage() {
   const nextMonday = addDays(thisMonday, 7);
   const lastMonday = addDays(thisMonday, -7);
 
+  // Semaine « au tableau » : la semaine en cours, ou la première du plan s'il
+  // n'a pas encore commencé (sinon la page s'ouvrirait sur une semaine vide).
+  const planStartMonday = startOfWeek(plan.startDate);
+  const focusMonday = planStartMonday > thisMonday ? planStartMonday : thisMonday;
+  const afterFocus = addDays(focusMonday, 7);
+  const upcomingPlan = focusMonday > thisMonday;
+
   const [ctx, sessions, nextSessions, weeks, checkin, allSessions] = await Promise.all([
     athleteContext(now, userId),
-    loadWeek(plan.id, thisMonday),
-    loadWeek(plan.id, nextMonday),
+    loadWeek(plan.id, focusMonday),
+    loadWeek(plan.id, afterFocus),
     prisma.plannedSession.groupBy({
       by: ["weekNumber", "weekStart", "phase"],
       where: { planId: plan.id },
@@ -61,12 +70,12 @@ export default async function TrainingPage() {
       where: { planId_weekStart: { planId: plan.id, weekStart: thisMonday } },
     }),
     prisma.plannedSession.findMany({
-      where: { planId: plan.id, weekStart: thisMonday },
+      where: { planId: plan.id, weekStart: focusMonday },
       select: { distanceKm: true, status: true, kind: true },
     }),
   ]);
 
-  const doneKm = actualKmForWeek(ctx.runs, thisMonday);
+  const doneKm = upcomingPlan ? 0 : actualKmForWeek(ctx.runs, thisMonday);
   const compliance = weekCompliance(allSessions, doneKm);
   const lastWeekSessions = await prisma.plannedSession.findMany({
     where: { planId: plan.id, weekStart: lastMonday },
@@ -97,28 +106,23 @@ export default async function TrainingPage() {
   const todayKey = now.toDateString();
   const currentWeek = curve.find((c) => {
     const w = weeks.find((x) => x.weekNumber === c.weekNumber);
-    return w && new Date(w.weekStart).getTime() === thisMonday.getTime();
+    return w && new Date(w.weekStart).getTime() === focusMonday.getTime();
   });
+  const firstRun = sessions.find((x) => x.kind !== "rest");
+  const startsIn = upcomingPlan && firstRun ? calendarDaysBetween(now, new Date(firstRun.date)) : 0;
+  const focusKm = round(sessions.reduce((a, s) => a + s.distanceKm, 0), 1);
+  const runSessions = sessions.filter((s) => s.kind !== "rest");
 
   const daysToRace = plan.raceGoal ? daysBetween(now, plan.raceGoal.raceDate) : null;
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-12">
       <PageHead
         title="Entraînement"
-        meta={
+        kicker={
           <>
             {plan.name}
-            {plan.raceGoal && daysToRace !== null && daysToRace >= 0 && (
-              <> · J−{daysToRace}</>
-            )}
-            {currentWeek && (
-              <>
-                {" · "}
-                semaine {currentWeek.weekNumber} ·{" "}
-                {PHASE_LABELS[(currentWeek.phase as Phase) ?? "base"]}
-              </>
-            )}
+            {plan.raceGoal && daysToRace !== null && daysToRace >= 0 && <> · J−{daysToRace}</>}
           </>
         }
         action={
@@ -133,36 +137,54 @@ export default async function TrainingPage() {
         }
       />
 
-      {/* ------------------------------------------------ Semaine en cours */}
-      <Section
-        title="Cette semaine"
-        note={
-          <>
-            {compliance.doneKm} km réalisés sur {compliance.plannedKm} km prévus ·{" "}
-            {compliance.sessionsDone}/{compliance.sessionsPlanned} séances ·{" "}
-            {balance.easyPct} % facile / {balance.hardPct} % intensité ({balance.verdict})
-          </>
-        }
-      >
-        <div className="mb-4">
-          <Bar
-            value={compliance.plannedKm > 0 ? (compliance.doneKm / compliance.plannedKm) * 100 : 0}
-            height={3}
-          />
+      {/* ------------------------------------------------ La semaine au tableau */}
+      <section className="rise">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
+          <div>
+            <div className="text-micro font-medium uppercase tracking-[0.16em] text-ink3">
+              {upcomingPlan
+                ? `Le plan démarre ${startsIn <= 1 ? "demain" : `dans ${startsIn} jours`}`
+                : "Cette semaine"}
+            </div>
+            <h2 className="mt-2 text-[clamp(1.9rem,4vw,2.9rem)] font-semibold leading-none tracking-[-0.03em]">
+              {currentWeek ? (
+                <>
+                  Semaine {currentWeek.weekNumber}
+                  <span className="text-ink3"> / {curve.length}</span>
+                  <span className="ml-3 align-middle text-[0.45em] font-medium tracking-normal" style={{ color: PHASE_COLOR[currentWeek.phase] }}>
+                    ● {PHASE_LABELS[(currentWeek.phase as Phase) ?? "base"]}
+                  </span>
+                </>
+              ) : (
+                "Hors plan"
+              )}
+            </h2>
+          </div>
+          <dl className="flex gap-8">
+            <BoardFig label="prévus" value={`${focusKm}`} unit="km" />
+            {!upcomingPlan && <BoardFig label="faits" value={`${compliance.doneKm}`} unit="km" tone={compliance.ratio >= 0.9 ? "text-sage" : ""} />}
+            <BoardFig
+              label="séances"
+              value={upcomingPlan ? `${runSessions.length}` : `${compliance.sessionsDone}/${compliance.sessionsPlanned}`}
+            />
+            <BoardFig label="facile" value={`${balance.easyPct}`} unit="%" note={balance.verdict} />
+          </dl>
         </div>
+        {!upcomingPlan && (
+          <div className="mb-0">
+            <Bar value={compliance.plannedKm > 0 ? (compliance.doneKm / compliance.plannedKm) * 100 : 0} height={3} />
+          </div>
+        )}
+        <WeekBoard monday={focusMonday} sessions={sessions} now={now} />
+      </section>
 
+      <Section title="Séance par séance" note="Structure, allures et actions : marquer fait, sauter, noter ses sensations.">
         {sessions.length === 0 ? (
-          <p className="py-6 text-sm text-ink3">
-            Aucune séance planifiée cette semaine.
-          </p>
+          <p className="py-6 text-sm text-ink3">Aucune séance planifiée cette semaine.</p>
         ) : (
           <div>
             {sessions.map((s) => (
-              <SessionCard
-                key={s.id}
-                session={s}
-                today={new Date(s.date).toDateString() === todayKey}
-              />
+              <SessionCard key={s.id} session={s} today={new Date(s.date).toDateString() === todayKey} />
             ))}
           </div>
         )}
@@ -233,7 +255,7 @@ export default async function TrainingPage() {
       {/* ------------------------------------------------ Semaine suivante */}
       {nextSessions.length > 0 && (
         <Section
-          title="Semaine suivante"
+          title={upcomingPlan ? "La semaine d'après" : "Semaine suivante"}
           note={`${round(nextSessions.reduce((a, s) => a + s.distanceKm, 0), 1)} km prévus`}
         >
           <div className="grid gap-x-8 sm:grid-cols-2">
@@ -400,6 +422,21 @@ function Signal({
       <div className={`shrink-0 font-mono text-lg font-medium tabular-nums ${color}`}>
         {value}
       </div>
+    </div>
+  );
+}
+
+function BoardFig({ label, value, unit, note, tone = "" }: { label: string; value: string; unit?: string; note?: string; tone?: string }) {
+  return (
+    <div>
+      <dd className={`display text-d3 ${tone}`}>
+        {value}
+        {unit && <span className="ml-1 text-sm font-normal text-ink3">{unit}</span>}
+      </dd>
+      <dt className="mt-1 text-micro text-ink3">
+        {label}
+        {note && <span className="ml-1.5">· {note}</span>}
+      </dt>
     </div>
   );
 }

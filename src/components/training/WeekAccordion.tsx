@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Bar } from "@/components/ui/Metric";
 import { fmtDateShort } from "@/lib/format";
 import { PHASE_LABELS, type Phase } from "@/lib/training";
-import { PHASE_COLOR } from "./PlanBuilder";
+import { PHASE_COLOR } from "@/lib/training";
 import { SessionCard, type SessionView } from "./SessionCard";
 
 export type WeekView = {

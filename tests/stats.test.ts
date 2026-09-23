@@ -261,3 +261,13 @@ describe("compareTrend", () => {
     assert.ok(Number.isFinite(t.percent));
   });
 });
+
+describe("calendarDaysBetween", () => {
+  it("compte les jours calendaires, pas les tranches de 24 h", async () => {
+    const { calendarDaysBetween } = await import("../src/lib/stats.ts");
+    assert.equal(calendarDaysBetween(new Date(2026, 8, 23, 21), new Date(2026, 8, 28, 0)), 5);
+    assert.equal(calendarDaysBetween(new Date(2026, 8, 23, 1), new Date(2026, 8, 23, 23)), 0);
+    // passage à l'heure d'hiver (25 oct. 2026)
+    assert.equal(calendarDaysBetween(new Date(2026, 9, 24, 12), new Date(2026, 9, 26, 12)), 2);
+  });
+});

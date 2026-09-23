@@ -242,6 +242,20 @@ export function peakForm(
 }
 
 /**
+ * Fraîcheur au départ d'une course : celle du matin, donc celle de la veille
+ * au soir. Le point du jour J intègre déjà la charge de la course elle-même
+ * (un 50 km pèse lourd) et afficherait une « surcharge » absurde sur la ligne
+ * de départ. Le libellé reste celui du jour J pour le repère du graphique.
+ */
+export function formAtStart(series: FormPoint[], raceDate: Date): FormPoint | null {
+  const k = key(raceDate);
+  const i = series.findIndex((p) => key(p.date) === k);
+  if (i < 0) return null;
+  if (i === 0) return series[0];
+  return { ...series[i - 1], label: series[i].label, date: series[i].date };
+}
+
+/**
  * L'état de forme dit en une phrase, pour l'ouverture de la bande « forme »
  * du tableau de bord : un titre court et une explication qui cite le chiffre.
  */

@@ -77,7 +77,8 @@ export function SessionCard({
 
   return (
     <div
-      className={`border-t border-hair py-3.5 transition-colors ${
+      id={`seance-${session.id}`}
+      className={`scroll-mt-20 border-t border-hair py-3.5 transition-colors ${
         today ? "bg-clay/[.04]" : ""
       } ${skipped ? "opacity-55" : ""}`}
     >

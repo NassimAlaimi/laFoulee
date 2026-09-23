@@ -53,6 +53,16 @@ export const PHASE_LABELS: Record<Phase, string> = {
   race: "Course",
 };
 
+/** Couleur de chaque phase, partagée par tous les graphiques de plan. */
+export const PHASE_COLOR: Record<string, string> = {
+  base: "rgb(var(--slate))",
+  build: "rgb(var(--sage))",
+  peak: "rgb(var(--clay))",
+  deload: "rgb(var(--hair-strong))",
+  taper: "rgb(var(--ochre))",
+  race: "rgb(var(--rust))",
+};
+
 // ---------------------------------------------------------------- Forme actuelle
 
 export type CurrentFitness = {

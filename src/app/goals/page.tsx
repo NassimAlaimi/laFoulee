@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
-import { Hint, PageHead, Section, SectionHead } from "@/components/ui/Layout";
+import { Hint, NightBand, PageHead, Section, SectionHead } from "@/components/ui/Layout";
+import { RacePoster, type PosterWeek } from "@/components/goals/RacePoster";
 import { Bar } from "@/components/ui/Metric";
 import { DeleteGoalButton } from "@/components/DeleteGoalButton";
 import { fmtDate, fmtDuration, fmtPace } from "@/lib/format";
@@ -34,6 +35,30 @@ export default async function GoalsPage() {
   const upcoming = goals.filter((g) => g.raceDate >= now);
   const past = goals.filter((g) => g.raceDate < now);
 
+  // L'affiche : la prochaine course de priorité A, sinon la plus proche
+  const primary = upcoming.find((g) => g.priority === "A") ?? upcoming[0] ?? null;
+  const others = upcoming.filter((g) => g !== primary);
+  const readinessOf = (goal: (typeof goals)[number]) =>
+    raceReadiness({ goal, fitness: ctx.fitness, records: ctx.records, profile: ctx.profile, endurance: ctx.endurance, now });
+  const primaryPlan = primary ? planByGoal.get(primary.id) : undefined;
+  const posterWeeks: PosterWeek[] = primaryPlan
+    ? (
+        await prisma.plannedSession.groupBy({
+          by: ["weekStart", "phase"],
+          where: { planId: primaryPlan, plan: { userId } },
+          _sum: { distanceKm: true },
+          orderBy: { weekStart: "asc" },
+        })
+      ).map((w) => ({ weekStart: w.weekStart, phase: w.phase, km: w._sum.distanceKm ?? 0 }))
+    : [];
+  const firstSession = primaryPlan
+    ? await prisma.plannedSession.findFirst({
+        where: { planId: primaryPlan, plan: { userId }, kind: { not: "rest" } },
+        orderBy: { date: "asc" },
+        select: { date: true },
+      })
+    : null;
+
   async function createGoal(formData: FormData) {
     "use server";
     const name = String(formData.get("name") ?? "").trim();
@@ -65,97 +90,41 @@ export default async function GoalsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <PageHead
-        title="Objectifs de course"
-        meta="Prépare tes échéances et suis ton niveau de préparation en temps réel"
+        title="Objectifs"
+        meta={
+          upcoming.length
+            ? `${upcoming.length} course${upcoming.length > 1 ? "s" : ""} à venir${past.length ? ` · ${past.length} passée${past.length > 1 ? "s" : ""}` : ""}`
+            : "Prépare tes échéances et suis ton niveau de préparation en temps réel"
+        }
+        action={
+          <a href="#nouvel-objectif" className="btn-outline">
+            + Nouvel objectif
+          </a>
+        }
       />
 
-      {/* -------------------------------------------------- Nouvel objectif */}
-      <Section className="scroll-mt-24">
-        <div id="nouvel-objectif" className="scroll-mt-24" />
-        <SectionHead title="Nouvel objectif" />
-        <form action={createGoal} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="sm:col-span-2">
-            <label className="field-label" htmlFor="name">
-              Nom de la course
-            </label>
-            <input
-              id="name"
-              name="name"
-              required
-              placeholder="Semi-marathon de Paris"
-              className="field"
-            />
-          </div>
-          <div>
-            <label className="field-label" htmlFor="raceDate">
-              Date
-            </label>
-            <input id="raceDate" name="raceDate" type="date" required className="field" />
-          </div>
-          <div>
-            <label className="field-label" htmlFor="distanceKm">
-              Distance (km)
-            </label>
-            <input
-              id="distanceKm"
-              name="distanceKm"
-              type="number"
-              step="0.1"
-              min="0.4"
-              required
-              defaultValue="21.1"
-              list="distances"
-              className="field"
-            />
-            <datalist id="distances">
-              {STANDARD_DISTANCES.filter((d) => d.major).map((d) => (
-                <option key={d.key} value={(d.meters / 1000).toFixed(1)}>
-                  {d.name}
-                </option>
-              ))}
-            </datalist>
-          </div>
-          <div className="sm:col-span-2">
-            <span className="field-label">Chrono visé (optionnel)</span>
-            <div className="flex gap-2">
-              <input name="hours" type="number" min="0" max="23" placeholder="h" className="field" />
-              <input name="minutes" type="number" min="0" max="59" placeholder="min" className="field" />
-              <input name="seconds" type="number" min="0" max="59" placeholder="s" className="field" />
-            </div>
-          </div>
-          <div>
-            <label className="field-label" htmlFor="priority">
-              Priorité
-            </label>
-            <select id="priority" name="priority" className="field">
-              <option value="A">A — objectif principal</option>
-              <option value="B">B — course intermédiaire</option>
-              <option value="C">C — entraînement</option>
-            </select>
-          </div>
-          <div className="flex items-end">
-            <button type="submit" className="btn-solid w-full">
-              Ajouter l&apos;objectif
-            </button>
-          </div>
-        </form>
-      </Section>
+      {primary && (
+        <NightBand className="!mt-0">
+          <RacePoster
+            goal={primary}
+            p={readinessOf(primary)}
+            weeks={posterWeeks}
+            planId={primaryPlan}
+            now={now}
+            extra={<DeleteGoalButton id={primary.id} />}
+            startsOn={firstSession?.date ?? null}
+          />
+        </NightBand>
+      )}
 
       {/* -------------------------------------------------- À venir */}
-      {upcoming.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="section-title">À venir</h2>
-          {upcoming.map((goal) => {
-            const p = raceReadiness({
-              goal,
-              fitness: ctx.fitness,
-              records: ctx.records,
-              profile: ctx.profile,
-              endurance: ctx.endurance,
-              now,
-            });
+      {others.length > 0 && (
+        <div className="space-y-6">
+          <h2 className="text-[1.3125rem] font-semibold tracking-[-0.018em]">Aussi au programme</h2>
+          {others.map((goal) => {
+            const p = readinessOf(goal);
             const facts = readinessFacts(p);
             const planId = planByGoal.get(goal.id);
             return (
@@ -300,10 +269,82 @@ export default async function GoalsPage() {
         </div>
       )}
 
+      {/* -------------------------------------------------- Nouvel objectif */}
+      <Section className="scroll-mt-24">
+        <div id="nouvel-objectif" className="scroll-mt-24" />
+        <SectionHead title="Nouvel objectif" note="Une course à préparer : la préparation se calcule tout de suite, et tu peux en tirer un plan séance par séance." />
+        <form action={createGoal} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="sm:col-span-2">
+            <label className="field-label" htmlFor="name">
+              Nom de la course
+            </label>
+            <input
+              id="name"
+              name="name"
+              required
+              placeholder="Semi-marathon de Paris"
+              className="field"
+            />
+          </div>
+          <div>
+            <label className="field-label" htmlFor="raceDate">
+              Date
+            </label>
+            <input id="raceDate" name="raceDate" type="date" required className="field" />
+          </div>
+          <div>
+            <label className="field-label" htmlFor="distanceKm">
+              Distance (km)
+            </label>
+            <input
+              id="distanceKm"
+              name="distanceKm"
+              type="number"
+              step="0.1"
+              min="0.4"
+              required
+              defaultValue="21.1"
+              list="distances"
+              className="field"
+            />
+            <datalist id="distances">
+              {STANDARD_DISTANCES.filter((d) => d.major).map((d) => (
+                <option key={d.key} value={(d.meters / 1000).toFixed(1)}>
+                  {d.name}
+                </option>
+              ))}
+            </datalist>
+          </div>
+          <div className="sm:col-span-2">
+            <span className="field-label">Chrono visé (optionnel)</span>
+            <div className="flex gap-2">
+              <input name="hours" type="number" min="0" max="23" placeholder="h" className="field" />
+              <input name="minutes" type="number" min="0" max="59" placeholder="min" className="field" />
+              <input name="seconds" type="number" min="0" max="59" placeholder="s" className="field" />
+            </div>
+          </div>
+          <div>
+            <label className="field-label" htmlFor="priority">
+              Priorité
+            </label>
+            <select id="priority" name="priority" className="field">
+              <option value="A">A — objectif principal</option>
+              <option value="B">B — course intermédiaire</option>
+              <option value="C">C — entraînement</option>
+            </select>
+          </div>
+          <div className="flex items-end">
+            <button type="submit" className="btn-solid w-full">
+              Ajouter l&apos;objectif
+            </button>
+          </div>
+        </form>
+      </Section>
+
       {/* -------------------------------------------------- Passées */}
       {past.length > 0 && (
         <div className="space-y-3">
-          <h2 className="section-title">Passées</h2>
+          <h2 className="text-[1.3125rem] font-semibold tracking-[-0.018em]">Courses passées</h2>
           <Section>
             <table className="data-table">
               <tbody>
@@ -348,12 +389,13 @@ function Metric({
   note?: string;
   ok?: boolean;
 }) {
-  const tone =
-    ok === undefined ? "text-white" : ok ? "text-sage" : "text-ochre";
+  // Sans verdict, le chiffre reste à l'encre (c'était `text-white` :
+  // invisible en thème clair)
+  const tone = ok === undefined ? "text-ink" : ok ? "text-sage" : "text-ochre";
   return (
-    <div className="rounded-lg border border-hair bg-sunken p-3.5">
-      <div className="text-micro uppercase tracking-wider text-ink3">{label}</div>
-      <div className={`mt-1.5 font-mono text-lg font-semibold tabular-nums ${tone}`}>
+    <div className="border-t border-hair pt-3">
+      <div className="eyebrow">{label}</div>
+      <div className={`display mt-1.5 text-d4 ${tone}`}>
         {value}
       </div>
       {note && <div className="mt-0.5 text-micro text-ink3">{note}</div>}
