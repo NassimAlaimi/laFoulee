@@ -7,6 +7,8 @@ import { fmtDate, fmtDateShort, fmtDuration, fmtPace, pacePerKm } from "@/lib/fo
 import { prisma } from "@/lib/prisma";
 import { RUN_TYPES } from "@/lib/strava";
 import { tonnage } from "@/lib/strength";
+import { yearHeatmap } from "@/lib/heatmap";
+import { ConsistencyHeatmap } from "@/components/analysis/ConsistencyHeatmap";
 import {
   DAY_NAMES,
   bestWeek,
@@ -70,6 +72,7 @@ export default async function RecapPage({ searchParams }: { searchParams: Promis
   const when = whenYouRun(runs);
   const months = month == null ? monthlyKm(runs, year) : null;
   const bestMonth = months ? months.indexOf(Math.max(...months)) : -1;
+  const heatmap = month == null ? yearHeatmap(runs, year) : null;
 
   const [records, strength] = await Promise.all([
     prisma.bestEffort.findMany({
@@ -199,6 +202,22 @@ export default async function RecapPage({ searchParams }: { searchParams: Promis
               ))}
             </div>
           </section>
+
+          {heatmap && (
+            <section className="mt-16">
+              <h2 className="text-[clamp(1.5rem,3vw,2.25rem)] font-semibold tracking-[-0.02em]">
+                Toute l&apos;année d&apos;un coup d&apos;œil
+              </h2>
+              <p className="mt-2 text-[0.9375rem] text-ink2">
+                Chaque carré est un jour de {year} — plus il est foncé, plus tu as couru.{" "}
+                {Math.round(heatmap.activeRate * 100)} % des semaines avec au moins une sortie
+                {heatmap.bestStreak > 1 && <> · meilleure série {heatmap.bestStreak} semaines d&apos;affilée</>}.
+              </p>
+              <div className="mt-8">
+                <ConsistencyHeatmap grid={heatmap} />
+              </div>
+            </section>
+          )}
 
           <div className="mt-16 grid gap-14 lg:grid-cols-2">
             {/* -------------------------------------------- Mois par mois */}
