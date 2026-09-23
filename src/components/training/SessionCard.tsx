@@ -5,6 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { fmtPace } from "@/lib/format";
 import { KIND_LABELS, type SessionKind, type Step } from "@/lib/workouts";
+import { Frieze } from "./Frieze";
 
 export type SessionView = {
   id: string;
@@ -122,6 +123,16 @@ export function SessionCard({
             <p className="mt-1.5 text-[0.8125rem] leading-relaxed text-ink2">
               {session.tagline}
             </p>
+          )}
+
+          {steps.length > 1 && (
+            <Frieze
+              steps={steps}
+              fallbackPace={session.paceTarget ?? 360}
+              height={14}
+              scale={false}
+              className={`mt-2.5 max-w-md ${skipped ? "opacity-50" : ""}`}
+            />
           )}
 
           {open && steps.length > 0 && (

@@ -6,6 +6,7 @@ import { InsightList } from "@/components/InsightList";
 import { TrainingCalendar } from "@/components/TrainingCalendar";
 import { SyncButton } from "@/components/SyncButton";
 import { UpNext } from "@/components/training/UpNext";
+import { TodayHero } from "@/components/TodayHero";
 import {
   AcwrChart,
   ElevationChart,
@@ -28,7 +29,7 @@ import {
   ZONE_TONE as FORM_TONE,
 } from "@/lib/fitness-model";
 import { prisma } from "@/lib/prisma";
-import { requireUserId } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 import { vdotLevel } from "@/lib/vdot";
 import {
   ACWR_LABELS,
@@ -54,7 +55,8 @@ const ZONE_TONE: Record<string, string> = {
 };
 
 export default async function SummaryPage() {
-  const userId = await requireUserId();
+  const user = await requireUser();
+  const userId = user.id;
   const [runs, efforts, settings, account] = await Promise.all([
     getRuns(undefined, userId),
     getBestEfforts(userId),
@@ -172,6 +174,14 @@ export default async function SummaryPage() {
         action={<SyncButton />}
       />
 
+      <TodayHero
+        userId={userId}
+        firstname={user.firstname}
+        runs={runs}
+        now={now}
+        tsb={form ? form.tsb : null}
+      />
+
       {/* ---------------------------------------------------------- Chiffres */}
       <MetricBand>
         <Metric
@@ -207,7 +217,7 @@ export default async function SummaryPage() {
       </MetricBand>
 
       <div className="mt-10 space-y-10">
-        {/* -------------------------------------------------------- À venir */}
+        {/* -------------------------------------------------------- Ensuite */}
         <UpNext now={now} userId={userId} />
 
         {/* -------------------------------------------------------- Insights */}

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Section } from "@/components/ui/Layout";
-import { Bar } from "@/components/ui/Metric";
 import { fmtPace } from "@/lib/format";
 import { actualKmForWeek, getActivePlan, linkActivities } from "@/lib/plan-store";
 import { prisma } from "@/lib/prisma";
@@ -43,7 +42,8 @@ export async function UpNext({
 
   const [upcoming, weekSessions, runs] = await Promise.all([
     prisma.plannedSession.findMany({
-      where: { planId: plan.id, date: { gte: today }, status: { in: ["planned", "moved"] } },
+      // Aujourd'hui est traité par l'en-tête du tableau de bord : ici, la suite
+      where: { planId: plan.id, date: { gte: addDays(today, 1) }, status: { in: ["planned", "moved"] }, kind: { not: "rest" } },
       orderBy: { date: "asc" },
       take: 3,
     }),
@@ -59,21 +59,18 @@ export async function UpNext({
 
   return (
     <Section
-      title="À venir"
-      note={`${plan.name} · ${compliance.doneKm}/${compliance.plannedKm} km cette semaine`}
+      title="Ensuite"
+      note={
+        compliance.plannedKm > 0
+          ? `${plan.name} · ${compliance.doneKm}/${compliance.plannedKm} km cette semaine`
+          : plan.name
+      }
       action={
         <Link href="/training" className="btn-quiet">
           Tout voir
         </Link>
       }
     >
-      <div className="mb-4">
-        <Bar
-          value={compliance.plannedKm > 0 ? (compliance.doneKm / compliance.plannedKm) * 100 : 0}
-          height={3}
-        />
-      </div>
-
       {upcoming.length === 0 ? (
         <p className="py-4 text-sm text-ink3">Rien de planifié pour les jours qui viennent.</p>
       ) : (
