@@ -8,7 +8,7 @@ import { isTyping } from "./KeyNav";
 import { toggleTheme } from "./Theme";
 
 type Index = {
-  activities: Array<{ id: string; name: string; type: string; date: string; km: number; time: number; race: boolean }>;
+  activities: Array<{ id: string; name: string; type: string; date: string; km: number; time: number; race: boolean; note: string | null; feeling: number | null }>;
   goals: Array<{ id: string; name: string; date: string; km: number; status: string }>;
   plans: Array<{ id: string; name: string; status: string }>;
 };
@@ -44,6 +44,15 @@ const strip = (s: string) =>
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
+
+/** Ressenti (1-5) → mot cherchable. */
+const FEELING_WORD: Record<number, string> = {
+  1: "très dur",
+  2: "dur",
+  3: "correct",
+  4: "bien",
+  5: "excellent",
+};
 
 function score(item: Item, q: string): number {
   if (!q) return 1;
@@ -244,7 +253,7 @@ export function CommandPalette() {
       group: "Séances",
       label: a.name,
       hint: `${shortDate(a.date)} · ${a.km > 0 ? `${a.km} km · ` : ""}${fmtDuration(a.time)}`,
-      keywords: `${shortDate(a.date)} ${new Date(a.date).toLocaleDateString("fr-FR", { month: "long", year: "numeric", weekday: "long" })} ${a.km}km ${Math.round(a.km)}k ${a.type} ${a.race ? "course race compétition" : ""}`,
+      keywords: `${shortDate(a.date)} ${new Date(a.date).toLocaleDateString("fr-FR", { month: "long", year: "numeric", weekday: "long" })} ${a.km}km ${Math.round(a.km)}k ${a.type} ${a.race ? "course race compétition" : ""} ${a.note ?? ""} ${a.feeling ? FEELING_WORD[a.feeling] ?? "" : ""}`,
       run: () => go(`/activities/${a.id}`),
     }));
     const goals: Item[] = (index?.goals ?? []).map((g) => ({

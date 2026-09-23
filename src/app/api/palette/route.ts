@@ -26,6 +26,8 @@ export async function GET() {
         distance: true,
         movingTime: true,
         isRace: true,
+        privateNote: true,
+        feeling: true,
       },
     }),
     prisma.raceGoal.findMany({
@@ -49,6 +51,8 @@ export async function GET() {
       km: Math.round(a.distance / 100) / 10,
       time: a.movingTime,
       race: a.isRace,
+      note: a.privateNote,
+      feeling: a.feeling,
     })),
     goals: goals.map((g) => ({
       id: g.id,
