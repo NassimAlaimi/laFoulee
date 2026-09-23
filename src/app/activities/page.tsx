@@ -131,6 +131,7 @@ export default async function ActivitiesPage({
     <div className="space-y-6">
       <PageHead
         title="Activités"
+        kicker={PERIODS.find((x) => x.key === period)?.label ?? "Tout"}
         meta={`${stats.sessions} course${stats.sessions > 1 ? "s" : ""} · ${stats.km} km · ${stats.timeHours} h · ${stats.elevation} m D+`}
       />
 

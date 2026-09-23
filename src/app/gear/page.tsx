@@ -114,12 +114,59 @@ export default async function GearPage() {
   const active = rows.filter((r) => !r.g.retired);
   const retired = rows.filter((r) => r.g.retired);
 
+  const rotationKm = round(active.reduce((a, r) => a + r.totalKm, 0), 0);
+  const rotationSessions = active.reduce((a, r) => a + r.sessions, 0);
+  const next = [...active].sort((a, b) => b.wear - a.wear)[0] ?? null;
+
   return (
     <>
       <PageHead
         title="Matériel"
-        meta={`${active.length} paire${active.length > 1 ? "s" : ""} en service · suivi d'usure et de kilométrage`}
+        kicker="Tes chaussures"
+        meta={`${active.length} paire${active.length > 1 ? "s" : ""} en service · ${rotationKm} km cumulés · ${rotationSessions} séances`}
       />
+
+      {next && (
+        <section className="rise grid gap-8 border-y border-hair py-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <div>
+            <div className="eyebrow">La prochaine à remplacer</div>
+            <h2 className="mt-3 text-[clamp(1.8rem,4vw,2.9rem)] font-semibold leading-none tracking-[-0.03em]">
+              {next.g.name}
+            </h2>
+            <div className="mt-6 flex items-baseline gap-2">
+              <span className="display text-[clamp(3.5rem,8vw,6rem)] leading-[0.85]">{next.totalKm}</span>
+              <span className="text-xl text-ink3">km</span>
+            </div>
+            <p className="mt-4 text-[0.9375rem] text-ink2">
+              {next.wear >= 100
+                ? "Le seuil est dépassé : il est temps de passer à la paire suivante."
+                : next.weeksLeft !== null
+                  ? `Encore ${next.remaining} km avant le seuil, soit ~${next.weeksLeft} semaine${next.weeksLeft > 1 ? "s" : ""} à ${next.kmPerWeek} km/semaine.`
+                  : `Encore ${next.remaining} km avant le seuil.`}
+            </p>
+          </div>
+          <div className="flex flex-col justify-center">
+            <div className="flex items-baseline justify-between text-micro text-ink3">
+              <span>usure</span>
+              <span className="font-mono">{Math.round(next.wear)} % du seuil de {next.g.retireAtKm} km</span>
+            </div>
+            <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-hair">
+              <span
+                className="block h-full rounded-full transition-all"
+                style={{
+                  width: `${Math.min(100, next.wear)}%`,
+                  background: next.wear >= 100 ? "rgb(var(--rust))" : next.wear >= 80 ? "rgb(var(--ochre))" : "rgb(var(--sage))",
+                }}
+              />
+            </div>
+            <div className="mt-8 flex gap-10">
+              <OdoFig label="séances" value={String(next.sessions)} />
+              <OdoFig label="km / semaine" value={String(next.kmPerWeek)} />
+              <OdoFig label="allure moy." value={next.avgPace > 0 ? fmtPace(next.avgPace) : "—"} />
+            </div>
+          </div>
+        </section>
+      )}
 
       <div className="space-y-10">
         <Section
@@ -287,6 +334,15 @@ function Fig({
         {unit && <span className="text-micro text-ink3">{unit}</span>}
       </div>
       <div className="mt-1 whitespace-nowrap text-micro text-ink3">{label}</div>
+    </div>
+  );
+}
+
+function OdoFig({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div className="display text-d3">{value}</div>
+      <div className="mt-1 text-micro text-ink3">{label}</div>
     </div>
   );
 }

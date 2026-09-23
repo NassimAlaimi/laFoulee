@@ -19,6 +19,16 @@ import { danielsPaces, vdotLevel } from "@/lib/vdot";
 
 export const dynamic = "force-dynamic";
 
+const LEVEL_HEADLINE: Record<string, string> = {
+  Débutant: "Tout est à construire — et c'est la meilleure nouvelle : le niveau monte vite au début.",
+  Régulier: "Une base solide est posée. La marge est désormais dans la régularité.",
+  Confirmé: "Tu cours avec méthode. Les chronos suivront le volume, saison après saison.",
+  Avancé: "Un niveau sérieux. La marge se joue désormais sur les détails.",
+  Compétiteur: "Niveau compétiteur : tout se décide dans la finesse de la préparation.",
+  Élite: "Niveau élite. Protège la récupération, c'est elle qui fait la différence.",
+  default: "Chaque effort chronométré affine ton niveau réel.",
+};
+
 const CONF_TONE: Record<Confidence, string> = {
   high: "text-sage",
   medium: "text-ochre",
@@ -76,84 +86,69 @@ export default async function RecordsPage() {
   }).filter((p): p is NonNullable<typeof p> => p !== null);
   const history = trimLeadingEmpty(vdotHistory(efforts, 12, now), (r) => r.vdot == null);
   const paces = profile.vdot > 0 ? danielsPaces(profile.vdot) : [];
+  const marathon = preds.find((p) => p.key === "marathon");
+  const headline = LEVEL_HEADLINE[level.label] ?? LEVEL_HEADLINE.default;
 
   return (
     <>
       <PageHead
         title="Performance"
-        meta={`${efforts.length} efforts chronométrés sur ${runs.length} courses`}
+        kicker="Niveau de forme"
+        meta={`${efforts.length} efforts chronométrés · ${runs.length} courses`}
+        action={
+          <Link href="/calculator" className="btn-outline btn-sm">
+            Calculateur
+          </Link>
+        }
       />
 
-      {/* ------------------------------------------------ Niveau */}
-      <div className="grid gap-10 border-y border-hair py-8 lg:grid-cols-[300px_minmax(0,1fr)]">
+      {/* ------------------------------------------------ Le niveau, en grand */}
+      <section className="rise grid gap-12 border-y border-hair py-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <div>
-          <div className="eyebrow">Niveau de forme</div>
-          <div className="mt-3 flex items-baseline gap-3">
-            <span className="display text-d1">
+          <div className="flex items-baseline gap-3">
+            <span className="display text-[clamp(5rem,12vw,8.5rem)] leading-[0.82] tracking-[-0.05em]">
               {profile.vdot > 0 ? profile.vdotDisplay : "—"}
             </span>
-            <span className="text-sm text-ink3">VDOT</span>
+            <span className="text-[clamp(1.25rem,2.6vw,1.9rem)] font-medium text-ink3">VDOT</span>
           </div>
-          <div className="mt-2.5 text-sm font-medium" style={{ color: level.color }}>
-            {level.label}
+          <div className="mt-4 inline-flex items-center gap-2 text-sm font-medium" style={{ color: level.color }}>
+            <span className="h-2.5 w-2.5 rounded-full" style={{ background: level.color }} aria-hidden />
+            Coureur {level.label.toLowerCase()}
           </div>
-
-          {profile.source && (
-            <div className="mt-6 border-t border-hair pt-4">
-              <div className="eyebrow">Performance de référence</div>
-              <p className="mt-2 text-[0.9375rem]">
-                {profile.source.name} en{" "}
-                <span className="font-mono font-medium">
-                  {fmtDuration(profile.source.seconds!)}
-                </span>
-              </p>
-              <p className="mt-1 text-[0.8125rem] text-ink2">
-                {fmtPace(profile.source.pace!)} ·{" "}
-                {profile.source.date ? fmtDate(profile.source.date) : "—"}
-              </p>
-            </div>
+          <p className="mt-6 max-w-lg text-[clamp(1.1rem,2vw,1.5rem)] font-medium leading-snug tracking-[-0.01em]">
+            {headline}
+          </p>
+          {marathon && (
+            <p className="mt-3 text-[0.9375rem] text-ink2">
+              Tu vaux un marathon en{" "}
+              <span className="font-mono font-medium text-ink">{fmtDuration(marathon.realistic)}</span>
+              {" "}({fmtPace(marathon.pace)}) — <span className="text-ink3">à ton niveau actuel</span>
+            </p>
           )}
-
-          <div className="mt-5 border-t border-hair pt-4 text-[0.8125rem]">
-            <div className="flex justify-between py-1">
-              <span className="text-ink2">VMA estimée</span>
-              <span className="font-medium">
-                {profile.vma > 0 ? `${profile.vma} km/h` : "—"}
-              </span>
-            </div>
-            <div className="flex justify-between py-1">
-              <span className="text-ink2">Volume hebdomadaire</span>
-              <span className="font-medium">{fitness.weeklyKm} km</span>
-            </div>
-            <div className="flex justify-between py-1">
-              <span className="text-ink2">Indice d&apos;endurance</span>
-              <span className="font-medium">
-                {endurance.exponent.toFixed(3)}
-                <span className="ml-1.5 text-micro text-ink3">{endurance.label}</span>
-              </span>
-            </div>
-            <div className="flex justify-between py-1">
-              <span className="text-ink2">Sortie la plus longue</span>
-              <span className="font-medium">{fitness.longestRunKm} km</span>
-            </div>
-          </div>
-
-          <Link href="/calculator" className="btn-outline mt-6">
-            Ouvrir le calculateur
-          </Link>
+          {profile.source && (
+            <p className="mt-6 text-[0.8125rem] text-ink2">
+              Référence : <span className="font-medium text-ink">{profile.source.name}</span> en{" "}
+              <span className="font-mono">{fmtDuration(profile.source.seconds!)}</span>
+              {profile.source.date ? ` · ${fmtDate(profile.source.date)}` : ""}
+            </p>
+          )}
         </div>
 
         <div>
-          <div className="eyebrow mb-3">
-            Évolution · meilleure performance glissante sur 90 jours
-          </div>
+          <div className="eyebrow mb-3">Évolution · meilleure performance glissante sur 90 jours</div>
           {history.some((h) => h.vdot !== null) ? (
             <VdotChart data={history} />
           ) : (
             <Hint height={200}>Pas encore assez d&apos;historique.</Hint>
           )}
+          <dl className="mt-8 grid grid-cols-2 border-t border-hair">
+            <HeroStat label="VMA estimée" value={profile.vma > 0 ? `${profile.vma} km/h` : "—"} />
+            <HeroStat label="Volume hebdo" value={`${fitness.weeklyKm} km`} />
+            <HeroStat label="Endurance" value={endurance.exponent.toFixed(3)} note={endurance.label} />
+            <HeroStat label="Sortie la plus longue" value={`${fitness.longestRunKm} km`} />
+          </dl>
         </div>
-      </div>
+      </section>
 
       <div className="mt-10 space-y-10">
         {/* ------------------------------------------------ Records */}
@@ -355,5 +350,17 @@ export default async function RecordsPage() {
         )}
       </div>
     </>
+  );
+}
+
+function HeroStat({ label, value, note }: { label: string; value: string; note?: string }) {
+  return (
+    <div className="border-l border-hair py-4 pl-4 first:border-l-0 first:pl-0 [&:nth-child(n+3)]:border-t">
+      <dt className="eyebrow">{label}</dt>
+      <dd className="display mt-2 text-d3">
+        {value}
+        {note && <span className="ml-1.5 text-sm font-normal text-ink3">{note}</span>}
+      </dd>
+    </div>
   );
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Empty, Hint, NightBand, PageHead, Section } from "@/components/ui/Layout";
 import { RouteGlyph } from "@/components/route/RouteGlyph";
+import { seasonSentence } from "@/lib/narrative";
 import { Metric, MetricBand, Row } from "@/components/ui/Metric";
 import { MiniBars, Sparkline } from "@/components/ui/Spark";
 import { InsightList } from "@/components/InsightList";
@@ -169,6 +170,7 @@ export default async function SummaryPage() {
 
   const majors = records.filter((r) => r.major && r.seconds);
   const headline = form ? formHeadline(form, current.ready ? current.zone : undefined) : null;
+  const sentence = seasonSentence(runs, now);
   const recent = runs.slice(0, 8);
   const glyphs = new Map(
     (
@@ -210,6 +212,12 @@ export default async function SummaryPage() {
         </p>
         <SyncButton />
       </div>
+
+      {sentence && (
+        <p className="rise mb-8 max-w-3xl text-[clamp(1.05rem,2vw,1.375rem)] font-medium leading-snug tracking-[-0.01em]">
+          {sentence}
+        </p>
+      )}
 
       <TodayHero userId={userId} firstname={user.firstname} runs={runs} now={now} form={form ? { tsb: form.tsb, zone: form.zone } : null} />
 
