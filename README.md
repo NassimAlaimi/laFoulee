@@ -405,8 +405,14 @@ Un carnet pensé pour être rempli entre deux séries, téléphone en main :
 - Rattachement automatique à la séance Strava du même jour (durée, FC), et
   **coche automatique** de la séance « Renforcement » prévue par le plan
 - Vue d'ensemble : **la chaîne du coureur** (séries dures par semaine face à
-  une fourchette de complément à la course), tendance de 1RM par exercice,
-  régularité, historique fusionné avec les séances Strava à « détailler »
+  une fourchette de complément à la course), son **évolution sur 12 semaines**,
+  le **garde-fou de charge** (séries dures 7 j vs 28 j, sur le modèle de l'ACWR
+  course), la **force relative** (1RM ÷ poids de corps, avec repère de niveau),
+  les **objectifs de force** (cible de 1RM avec jauge), le nuage **RPE × charge**,
+  la tendance de 1RM par exercice, la régularité et l'historique fusionné avec
+  les séances Strava à « détailler »
+- **Exercices épinglés** en tête du sélecteur, et **séance planifiée pré-remplie**
+  (nom, durée) quand le plan prévoit un renforcement
 
 Une « série dure » est une série de travail à RIR ≤ 4 ; un muscle secondaire
 compte pour une demi-série.
