@@ -2,9 +2,11 @@
 
 Application d'analyse d'entraînement **multi-utilisateur**. Import automatique depuis Strava,
 statistiques de course à pied, **plan d'entraînement séance par séance** qui se
-recale chaque semaine sur ce que tu as réellement couru, et une **section analyse**
+recale chaque semaine sur ce que tu as réellement couru, une **section analyse**
 qui applique aux données les modèles utilisés en sport de haut niveau (PMC de
-Banister, vitesse critique, exposant d'endurance personnel). Musculation à venir.
+Banister, vitesse critique, exposant d'endurance personnel), des **cartes de
+parcours** sans aucun service de tuiles, un **carnet de musculation** pensé pour
+le coureur, et une **rétrospective** annuelle imprimable.
 
 Interface éditoriale, thème clair et sombre, aucune dépendance de composants UI.
 Déployée, chaque personne se connecte avec son compte Strava et ne voit que ses
@@ -324,15 +326,109 @@ commentaire) et se relie automatiquement à l'activité Strava du même jour.
 
 | Page | Contenu |
 |---|---|
-| **Résumé** | Observations automatiques, calendrier d'entraînement, charge, volume, allure, zones FC |
-| **Activités** | Liste filtrable (période, type, tri) et fiche détaillée par séance |
+| **Résumé** | Séance du jour en grand (frise, repères semaine / course / fraîcheur), observations automatiques, calendrier, charge, volume, allure, zones FC |
+| **Activités** | Liste filtrable avec vignettes de tracé, vues **Mosaïque** et **Carte** (chaleur + parcours récurrents), fiche détaillée par séance |
 | **Entraînement** | Plan séance par séance, point hebdo, réadaptation, trajectoire de volume |
 | **Analyse** | PMC (condition/fatigue/fraîcheur), potentiel vs réaliste, courbe allure-durée, vitesse critique, polarisation, comparatif annuel, régularité, barres passées |
 | **Performance** | Records, niveau de forme VDOT, prédictions potentiel/réaliste, allures d'entraînement |
 | **Calculateur** | Outil interactif : performance → VDOT, VMA, chronos équivalents, allures |
 | **Objectifs** | Préparation de course, score /100, fraîcheur projetée le jour J, plan d'allure, plan lié |
 | **Matériel** | Kilométrage et usure des chaussures, seuil de remplacement ajustable |
-| **Muscu** | Séances de renforcement (module de saisie à venir) |
+| **Muscu** | Carnet de séance (séries, charges, RIR), 1RM estimé, records, progression suggérée, équilibre de la chaîne du coureur |
+| **Rétrospective** | Année ou mois raconté : kilométrage et comparaison, la saison tracé par tracé, quand tu cours, les moments, records tombés |
+
+### Parcours et cartes — sans tuiles
+
+Strava fournit pour chaque sortie un `summary_polyline`. `lib/polyline.ts` le
+décode, le projette en Mercator, le simplifie (Ramer–Douglas–Peucker) et le
+dessine en SVG pur : aucune clé d'API, aucune tuile, rien qui sorte de l'instance.
+
+| Où | Ce qu'on voit |
+|---|---|
+| **Fiche séance** | Tracé sur papier millimétré, **coloré kilomètre par kilomètre selon l'allure** (vert = plus vite que la moyenne, terre cuite = plus lent), bornes kilométriques, nord, barre d'échelle. Survoler un kilomètre sur la carte le met en évidence dans la bande d'allure, et inversement (flèches ← → au clavier) |
+| **Liste** | Silhouette du tracé en tête de ligne |
+| **Mosaïque** | Une vignette par sortie : on reconnaît ses boucles habituelles d'un coup d'œil |
+| **Carte** | Toutes les sorties d'un secteur superposées en traits translucides sur fond nuit : les rues les plus courues s'illuminent. Secteurs regroupés par point de départ (25 km) |
+| **Parcours récurrents** | Sorties reconnues comme le même parcours, avec leur record |
+
+**Même parcours** : chaque tracé est rééchantillonné en 16 points équidistants ;
+deux sorties sont le même parcours si l'écart moyen point à point est sous 120 m
+(dans un sens ou dans l'autre) et la distance à ±12 %. La fiche séance affiche
+alors l'historique des passages et le rang de la séance, plus son rang en allure
+parmi les sorties de distance voisine.
+
+La polyline résumée étant plus courte que la distance réelle, les distances
+cumulées sont remises à l'échelle de la distance Strava : le tronçon n°5 de la
+carte correspond bien au split n°5.
+
+### Fiche séance
+
+En plus du tracé : **prévu · réalisé** quand la séance valide une séance du plan
+(distance, durée, allure, écart en %), **négative split**, **découplage
+cardiaque** calculé sur l'efficience (vitesse ÷ FC, pas la FC brute, pour ne pas
+confondre dérive et changement d'allure), et un **carnet** : effort perçu 1-10,
+sensations, note privée, drapeau « course ». Le carnet s'enregistre au fil de la
+saisie ; la note privée n'est jamais écrasée par la synchro (contrairement à la
+description Strava), et un drapeau « course » posé à la main est verrouillé.
+
+### Musculation
+
+Un carnet pensé pour être rempli entre deux séries, téléphone en main :
+
+- **Modèles** orientés coureur (Renfo A / B, prévention express, haut du corps)
+  et « répéter la dernière séance » ; 41 exercices, chacun avec ses muscles et
+  son intérêt pour la course (« soléaire : encaisse jusqu'à 8× le poids du
+  corps »)
+- **Préremplissage** depuis la dernière fois, **suggestion de double
+  progression** (toutes les séries réussies avec marge → +1 pas de charge ;
+  sinon même charge, +1 répétition), **1RM estimé en direct** (moyenne
+  Epley/Brzycki, répétitions en réserve incluses, rien au-delà de 12) et badge
+  « record en vue »
+- Séries d'échauffement (non comptées), **minuteur de repos** lancé en cochant
+  une série, **brouillon** conservé si la page se recharge
+- Rattachement automatique à la séance Strava du même jour (durée, FC), et
+  **coche automatique** de la séance « Renforcement » prévue par le plan
+- Vue d'ensemble : **la chaîne du coureur** (séries dures par semaine face à
+  une fourchette de complément à la course), tendance de 1RM par exercice,
+  régularité, historique fusionné avec les séances Strava à « détailler »
+
+Une « série dure » est une série de travail à RIR ≤ 4 ; un muscle secondaire
+compte pour une demi-série.
+
+### Palette de commandes et raccourcis
+
+`⌘K` / `Ctrl+K` (ou `/`) ouvre la palette : pages, actions (synchroniser,
+thème, nouvelle séance de muscu, agenda…), recherche des séances par nom, date
+ou distance, objectifs et plans. Elle fait aussi du **calcul express** :
+
+```
+5k 24:30        → VDOT 39,2 · 4'54"/km · 10 km 50'51" · semi 1h52 · marathon 3h53
+semi en 1h45    → idem depuis le semi
+4'45/km         → 12,6 km/h · temps de passage 5 km, 10 km, semi, marathon
+13 km/h         → idem
+```
+
+Raccourcis : `g` puis une lettre pour chaque page (`g r` résumé, `g a`
+activités, `g e` entraînement, `g k` carte, `g y` rétrospective…), `?` pour
+l'aide, `Maj+D` pour le thème, `←` `→` pour passer d'une séance à l'autre.
+Sur mobile, une barre d'onglets en bas donne les quatre pages du quotidien.
+
+### Agenda (iCalendar)
+
+Réglages → Agenda donne une **adresse secrète** à coller dans Google Agenda,
+Apple Calendrier ou Outlook. Les séances y sont des événements « journée
+entière » (on place sa séance dans sa journée), avec la structure et les
+allures en description, et les courses objectif avec un rappel à J−7. Les UID
+sont stables : quand le plan se réadapte, l'agenda met à jour l'événement au
+lieu de le dupliquer. L'adresse est révocable et régénérable ; elle n'ouvre
+qu'une lecture du plan.
+
+### Synchronisation automatique
+
+À l'ouverture de l'app, si la dernière synchro date de plus de 3 h, une synchro
+incrémentale part en arrière-plan. Rien ne s'affiche sauf s'il y a du nouveau
+(« 2 nouvelles activités · Voir »). Côté API, une seule synchro peut tourner à la
+fois par compte : le quota Strava est partagé par toute l'instance.
 
 ### Observations automatiques
 
@@ -361,7 +457,8 @@ src/
     goals/[id]/page.tsx         Préparation d'un objectif
     training/page.tsx           Semaine en cours + point hebdo
     training/[id]/page.tsx      Plan complet, semaine par semaine, réglages
-    strength/page.tsx           Muscu (v0)
+    strength/                   Muscu : vue d'ensemble, carnet (new, [id]/edit), séance, exercice
+    recap/page.tsx              Rétrospective annuelle / mensuelle
     settings/page.tsx           Connexion Strava + profil athlète
     api/strava/
       connect/                  Redirection OAuth
@@ -375,6 +472,11 @@ src/
     api/training/plans/         Création, régénération, pause, suppression
     api/training/sessions/[id]/ Statut, ressenti, édition d'une séance
     api/training/checkin/       Point hebdomadaire → réadaptation
+    api/activities/[id]/        Carnet d'une activité (RPE, sensations, note, course)
+    api/strength/workouts/      Séances de musculation (création, édition, suppression)
+    api/calendar/[token]/       Flux iCalendar public (jeton secret)
+    api/settings/calendar/      Activer / régénérer / désactiver le flux
+    api/palette/                Index de recherche de la palette
   components/
     charts/                     Recharts (volume, charge, allure, zones FC)
     charts/FormChart.tsx        Condition / fatigue / fraîcheur, avec projection
@@ -397,6 +499,13 @@ src/
     plan-store.ts               Persistance des plans, liaison séance ↔ activité
     queries.ts                  Accès base typé
     format.ts                   Formatage (allure, durée, distance)
+    polyline.ts                 Tracés GPS : décodage, projection, km, même parcours
+    strength.ts                 Exercices, 1RM, volume, records, suggestion
+    strength-store.ts           Persistance musculation, rattachement Strava / plan
+    ics.ts                      Export iCalendar (RFC 5545)
+    quick-calc.ts               Calcul express de la palette
+    frieze.ts                   Frise d'une séance (structure → segments)
+    recap.ts                    Rétrospective : comparaisons, séries, « quand »
   components/
     AccountMenu.tsx             Menu de compte (avatar, déconnexion)
     AccountActions.tsx          Sessions et suppression de compte
@@ -405,7 +514,8 @@ scripts/
   migrate-multiuser.mts         Migration mono → multi-utilisateur
 prisma/schema.prisma            User, Session, StravaAccount, Activity,
                                 BestEffort, Split, RaceGoal, TrainingPlan,
-                                PlannedSession, WeekCheckin, Gear…
+                                PlannedSession, WeekCheckin, Gear,
+                                StrengthWorkout, StrengthSet…
 ```
 
 ## Commandes
@@ -418,7 +528,7 @@ prisma/schema.prisma            User, Session, StravaAccount, Activity,
 | `pnpm db:push` | Applique le schéma Prisma (provider selon `DATABASE_PROVIDER`) |
 | `pnpm db:migrate-users` | Migre une base mono-utilisateur vers le schéma multi-compte |
 | `pnpm db:studio` | Explorateur de base graphique |
-| `pnpm test` | Suite de tests (183 tests sur le moteur de calcul) |
+| `pnpm test` | Suite de tests (234 tests sur le moteur de calcul) |
 | `pnpm test:watch` | Tests en mode watch |
 
 ## Performance
@@ -447,7 +557,7 @@ Les requêtes base ne sont pas un facteur : ~3 ms pour charger toutes les activi
 
 ## Tests
 
-Le moteur de calcul est couvert par 183 tests (`node --test`, sans dépendance externe) :
+Le moteur de calcul est couvert par 234 tests (`node --test`, sans dépendance externe) :
 
 ```bash
 pnpm test
@@ -471,6 +581,14 @@ pnpm test
   d'allure qui retombe exactement sur le chrono visé
 - `tests/auth.test.ts` — liste d'accès, code d'invitation en comparaison à temps
   constant, priorité de la liste sur le code, nom affiché
+- `tests/polyline.test.ts` — décodage (exemple de référence Google), découpage
+  au kilomètre et remise à l'échelle, même parcours (décalé, sens inverse,
+  éloigné), regroupement par secteur
+- `tests/strength.test.ts` — 1RM (Epley/Brzycki, RIR), séries dures, records
+  (jamais au premier passage), double progression
+- `tests/quick-calc.test.ts`, `tests/ics.test.ts`, `tests/frieze.test.ts`,
+  `tests/recap.test.ts` — calcul express, repli des lignes iCalendar sans
+  couper l'UTF-8, frise de séance, série de jours à travers le changement d'heure
 - `tests/fitness-model.test.ts` — la CTL converge vers la charge quotidienne
   moyenne, la fatigue réagit plus vite que la condition, la condition chute à
   l'arrêt, le pic de fraîcheur tombe en fin d'affûtage, polarisation, régularité
@@ -520,17 +638,11 @@ pnpm test
 
 ## Roadmap
 
-**v2 — Muscu**
-- Saisie exercices : séries / reps / charge
-- 1RM estimé (Epley / Brzycki), volume par groupe musculaire
-- Suivi de progression par mouvement, programmation de blocs de force
-
 **Plus tard**
-- Export du plan en .ics / vers la montre
-- Webhook Strava par utilisateur (aujourd'hui la synchro est manuelle)
+- Export des séances vers la montre (Garmin / Coros)
+- Muscu : programmation de blocs de force, lien charge muscu ↔ fatigue course
+- Webhook Strava par utilisateur (aujourd'hui : synchro auto à l'ouverture si > 3 h)
 - Page d'administration (liste des comptes, quota Strava consommé)
 - Streams Strava pour la vitesse critique (efforts de 2 à 30 min extraits des
   courbes de puissance-vitesse plutôt que des seuls records officiels)
 - Streams Strava (zones FC exactes, analyse des splits, dérive cardiaque)
-- Webhook Strava pour sync temps réel
-- Carte des parcours (polylines déjà stockées en base)
