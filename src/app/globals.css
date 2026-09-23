@@ -258,6 +258,11 @@
     outline: none;
     border-color: rgb(var(--clay));
   }
+  /* Au clavier, on rend le contour visible (la bordure seule est trop discrète). */
+  .field:focus-visible {
+    outline: 2px solid rgb(var(--clay));
+    outline-offset: 2px;
+  }
 
   .field-label {
     @apply mb-1.5 block text-micro font-medium uppercase tracking-[0.08em] text-ink3;

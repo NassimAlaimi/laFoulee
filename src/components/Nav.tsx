@@ -24,7 +24,7 @@ const NAV = [
 export function TopNav({ user }: { user: AccountInfo | null }) {
   const pathname = usePathname();
   const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
+    href === "/" ? pathname === "/" || pathname.startsWith("/recap") : pathname.startsWith(href);
 
   return (
     <>

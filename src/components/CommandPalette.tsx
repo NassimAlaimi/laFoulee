@@ -373,7 +373,7 @@ export function CommandPalette() {
               setStatus(null);
             }}
             placeholder="Aller à, chercher une séance, ou calculer « 10k 48:30 »…"
-            className="h-14 flex-1 bg-transparent text-[1.0625rem] outline-none placeholder:text-ink3"
+            className="h-14 flex-1 bg-transparent text-[1.0625rem] placeholder:text-ink3"
             aria-autocomplete="list"
             spellCheck={false}
           />
