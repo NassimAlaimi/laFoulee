@@ -123,6 +123,11 @@ export default async function AnalysisPage() {
       <PageHead
         title="Analyse"
         meta="Modèles de performance, charge d'entraînement, régularité"
+        action={
+          <Link href="/recap" className="btn-outline btn-sm">
+            Rétrospective {new Date().getFullYear()} →
+          </Link>
+        }
       />
 
       {/* ------------------------------------------------ Synthèse */}

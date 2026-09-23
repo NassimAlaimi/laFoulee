@@ -33,6 +33,7 @@ export const PAGES: Array<{ href: string; label: string; key: string; keywords?:
   { href: "/analysis", label: "Analyse", key: "n", keywords: "pmc forme fraîcheur ctl atl tsb" },
   { href: "/calculator", label: "Calculateur", key: "c", keywords: "vma allure chrono" },
   { href: "/goals", label: "Objectifs", key: "o", keywords: "course préparation" },
+  { href: "/recap", label: "Rétrospective", key: "y", keywords: "année bilan wrapped résumé annuel mois" },
   { href: "/gear", label: "Matériel", key: "t", keywords: "chaussures usure" },
   { href: "/strength", label: "Muscu", key: "m", keywords: "musculation renfo force" },
   { href: "/settings", label: "Réglages", key: "s", keywords: "profil strava compte" },

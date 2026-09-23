@@ -25,6 +25,16 @@ export async function POST(req: NextRequest) {
   const userId = await currentUserId();
   if (!userId) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
 
+  // Une synchro déjà en cours pour ce compte (autre onglet, synchro auto) :
+  // on n'en lance pas une seconde, le quota Strava est partagé par l'instance.
+  const running = await prisma.syncLog.findFirst({
+    where: { userId, status: "running", startedAt: { gt: new Date(Date.now() - 3 * 60_000) } },
+    select: { id: true },
+  });
+  if (running) {
+    return NextResponse.json({ ok: false, busy: true, error: "Synchronisation déjà en cours" }, { status: 409 });
+  }
+
   const log = await prisma.syncLog.create({ data: { userId } });
 
   try {

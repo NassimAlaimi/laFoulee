@@ -367,4 +367,13 @@
   body {
     background: #fff;
   }
+  header.sticky,
+  nav[aria-label="Navigation principale"],
+  .print\:hidden {
+    display: none !important;
+  }
+  .recap section,
+  .recap header {
+    break-inside: avoid;
+  }
 }
