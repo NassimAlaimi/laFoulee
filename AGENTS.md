@@ -77,3 +77,59 @@ Direction éditoriale / data-journalism, qui doit avoir du **relief** :
 Style conventionnel, en français : `feat(activités): …`, `fix(strava): …`,
 `docs: …`. Un commit par ensemble cohérent. Mettre à jour le README quand une
 fonctionnalité visible change.
+
+## Rétrospective — leçons pour l'agent (à relire avant de coder)
+
+Retour d'expérience accumulé sur ce projet, pour ne pas refaire les mêmes erreurs.
+
+### Erreurs déjà commises → à éviter
+
+1. **Se tuer soi-même en arrêtant le serveur.** `pkill -f "next dev"` ou
+   `pgrep -f "next dev"` dans la même commande bash matche le *shell lui-même*
+   (le motif apparaît dans la ligne de commande) → `exit 143`, la commande meurt.
+   → Récupérer les PID dans une commande, les tuer dans une autre, ou utiliser
+   `/tmp/restart.sh clean`.
+
+2. **Prétendre « voir » les captures d'écran.** Le modèle ne reçoit pas les
+   images : lire un PNG ne montre rien. Vérifier le rendu **via le DOM**
+   (`page.evaluate` : textes, layout, erreurs JS console/pageerror), jamais
+   affirmer qu'on a « vu » un écran. Un faux positif a failli faire corriger
+   des barres de polarisation qui étaient déjà correctes.
+
+3. **Fuseaux horaires sur les regroupements.** `toISOString()` (UTC) décale
+   d'un jour/mois l'axe des graphiques. Toujours des clés **en heure locale**
+   (`localDayKey`, mois local) pour regrouper par jour/semaine/mois.
+
+4. **Importer une constante d'un module client dans une page serveur.**
+   Une valeur importée depuis un fichier `"use client"` arrive `undefined` côté
+   serveur (légende grise, couleur manquante). Les constantes partagées vont
+   dans `lib/`.
+
+5. **Nettoyer après soi.** Les captures créent une session `shot…` en base +
+   `/tmp/shots/.token` ; les vérifications insèrent parfois des données
+   temporaires (objectif, séances). Tout supprimer avant de conclure.
+
+6. **Pourcentages d'évolution sur un échantillon trop mince.** Ne pas afficher
+   « +376 % » quand la période de référence ne compte que 2 sorties. Conditionner
+   toute comparaison de tendance sur un minimum de données (ex. ≥ 4 sessions).
+
+### Ce qui marche → à garder
+
+- **Logique pure dans `lib/` + tests** : c'est ce qui a attrapé les régressions
+  de dates et de récits avant le commit. Ne pas y déroger.
+- **Commits petits et cohérents**, en français, style conventionnel, un seul
+  sujet par commit.
+- **Vocabulaire design partagé** (`PageHead`, `Section`, `NightBand`, tokens
+  `clay`/`sage`/`ochre`…) : la cohérence visuelle vient de ces primitives, pas
+  de retouches au cas par cas.
+- **Vérifier le comportement en conditions réelles** : insérer une donnée
+  temporaire, la contrôler, puis la supprimer — plutôt que « ça devrait marcher ».
+
+### Rituel avant de déclarer « fait »
+
+- [ ] `npx tsc --noEmit -p .` propre
+- [ ] `node --import tsx --test tests/*.test.ts` tout vert
+- [ ] `pnpm build` OK, puis serveur de dev relancé proprement
+- [ ] thème clair **et** sombre, mobile 390 px, `prefers-reduced-motion` respecté
+- [ ] données temporaires + sessions de capture supprimées
+- [ ] README à jour si un changement visible
