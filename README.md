@@ -326,7 +326,7 @@ commentaire) et se relie automatiquement à l'activité Strava du même jour.
 
 | Page | Contenu |
 |---|---|
-| **Résumé** | Séance du jour en grand (frise, repères semaine / course / fraîcheur), observations automatiques, calendrier, charge, volume, allure, zones FC |
+| **Résumé** | La saison en une phrase, séance du jour en grand (frise, repères semaine / course / fraîcheur), bande nuit de l'état de forme, observations, calendrier, charge, volume, allure, zones FC |
 | **Activités** | Liste filtrable avec vignettes de tracé, vues **Mosaïque** et **Carte** (chaleur + parcours récurrents), fiche détaillée par séance |
 | **Entraînement** | Plan séance par séance, point hebdo, réadaptation, trajectoire de volume |
 | **Analyse** | PMC (condition/fatigue/fraîcheur), potentiel vs réaliste, courbe allure-durée, vitesse critique, polarisation, comparatif annuel, régularité, barres passées |
@@ -336,6 +336,10 @@ commentaire) et se relie automatiquement à l'activité Strava du même jour.
 | **Matériel** | Kilométrage et usure des chaussures, seuil de remplacement ajustable |
 | **Muscu** | Carnet de séance (séries, charges, RIR), 1RM estimé, records, progression suggérée, équilibre de la chaîne du coureur |
 | **Rétrospective** | Année ou mois raconté : kilométrage et comparaison, la saison tracé par tracé, quand tu cours, les moments, records tombés |
+| **Entraînement** | La semaine en sept colonnes (date, séance, frise, aujourd'hui marqué) ; plan séance par séance, trajectoire, point hebdomadaire |
+| **Objectifs** | L'affiche de la course en bande nuit : nom en grand, compte à rebours, chemin des semaines coloré par phase, préparation et chrono réaliste |
+| **Performance** | VDOT en très grand, « coureur confirmé », « tu vaux un marathon en… », records, prédictions |
+| **Matériel** | La prochaine paire à remplacer en compteur : usure, km/semaine, semaines restantes |
 
 ### Parcours et cartes — sans tuiles
 
