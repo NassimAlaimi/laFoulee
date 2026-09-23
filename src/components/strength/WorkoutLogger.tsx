@@ -34,7 +34,7 @@ const localDate = (d: Date) => {
   return new Date(d.getTime() - off * 60000).toISOString().slice(0, 16);
 };
 
-const fmtKg = (v: number) => (v % 1 ? v.toFixed(v * 4 % 1 ? 2 : 1).replace(".", ",") : String(v));
+const fmtKg = (v: number) => String(Math.round(v * 100) / 100).replace(".", ",");
 
 /**
  * Carnet de séance de musculation.
@@ -362,7 +362,7 @@ export function WorkoutLogger({
                     <h3 className="text-[1.0625rem] font-medium">{info.name}</h3>
                     {isPR && <span className="tag border-clay/40 text-clay">record en vue</span>}
                   </div>
-                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 pl-8 text-micro text-ink3">
+                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-micro text-ink3 sm:pl-8">
                     {info.primary.map((m) => MUSCLE_LABELS[m]).join(" · ")}
                     {info.runner && <span className="text-sage">coureur : {info.runner}</span>}
                   </div>
@@ -381,7 +381,7 @@ export function WorkoutLogger({
               </div>
 
               {memo && (
-                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 pl-8 text-micro text-ink2">
+                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-micro text-ink2 sm:pl-8">
                   <span>
                     Dernière fois ({new Date(memo.lastDate).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}) :{" "}
                     <span className="font-mono">
@@ -415,13 +415,16 @@ export function WorkoutLogger({
               )}
 
               {/* Séries */}
-              <div className="mt-4 max-w-[720px] pl-8">
-                <div className="grid grid-cols-[32px_minmax(0,1fr)_minmax(0,1fr)_64px_60px_40px] items-center gap-2 pb-1.5 text-micro uppercase tracking-[0.08em] text-ink3">
-                  <span>Série</span>
+              <div className="mt-4 max-w-[720px] sm:pl-8">
+                <div className="grid grid-cols-[24px_minmax(0,1fr)_minmax(0,1fr)_52px_32px] sm:grid-cols-[32px_minmax(0,1fr)_minmax(0,1fr)_64px_60px_40px] items-center gap-2 pb-1.5 text-micro uppercase tracking-[0.08em] text-ink3">
+                  <span>
+                    <span className="sm:hidden">#</span>
+                    <span className="hidden sm:inline">Série</span>
+                  </span>
                   <span>Charge</span>
                   <span>{secs ? "Durée" : "Reps"}</span>
                   <span title="Répétitions en réserve : combien tu aurais encore pu en faire">RIR</span>
-                  <span className="text-right">{secs ? "" : "1RM"}</span>
+                  <span className="hidden text-right sm:block">{secs ? "" : "1RM"}</span>
                   <span />
                 </div>
                 {b.sets.map((s, si) => {
@@ -429,7 +432,7 @@ export function WorkoutLogger({
                   return (
                     <div
                       key={s.key}
-                      className={`grid grid-cols-[32px_minmax(0,1fr)_minmax(0,1fr)_64px_60px_40px] items-center gap-2 border-t border-hair py-1.5 transition-colors ${
+                      className={`grid grid-cols-[24px_minmax(0,1fr)_minmax(0,1fr)_52px_32px] sm:grid-cols-[32px_minmax(0,1fr)_minmax(0,1fr)_64px_60px_40px] items-center gap-2 border-t border-hair py-1.5 transition-colors ${
                         s.done ? "bg-sage/[.06]" : ""
                       }`}
                     >
@@ -469,7 +472,7 @@ export function WorkoutLogger({
                           </option>
                         ))}
                       </select>
-                      <span className="text-right font-mono text-micro text-ink3">{e1 ? fmtKg(Math.round(e1)) : ""}</span>
+                      <span className="hidden text-right font-mono text-micro text-ink3 sm:block">{e1 ? fmtKg(Math.round(e1)) : ""}</span>
                       <span className="flex justify-end gap-0.5">
                         <button
                           type="button"
@@ -665,7 +668,7 @@ function NumField({
   const bump = (d: number) => onChange(Math.max(0, Math.round((value + d) * 100) / 100));
   return (
     <div className="flex items-center rounded-[7px] border border-hair bg-panel transition-colors focus-within:border-clay hover:border-hairStrong">
-      <button type="button" tabIndex={-1} onClick={() => bump(-step)} className="px-1.5 py-1 text-ink3 hover:text-ink" aria-label="Moins">
+      <button type="button" tabIndex={-1} onClick={() => bump(-step)} className="px-1 py-1 text-ink3 hover:text-ink sm:px-1.5" aria-label="Moins">
         −
       </button>
       <input
@@ -681,8 +684,8 @@ function NumField({
         onFocus={(e) => e.target.select()}
         className="w-full min-w-0 bg-transparent py-1 text-center font-mono text-[0.8125rem] outline-none placeholder:text-ink3"
       />
-      <span className="pr-1 text-[10px] text-ink3">{unit}</span>
-      <button type="button" tabIndex={-1} onClick={() => bump(step)} className="px-1.5 py-1 text-ink3 hover:text-ink" aria-label="Plus">
+      <span className="hidden pr-1 text-[10px] text-ink3 sm:inline">{unit}</span>
+      <button type="button" tabIndex={-1} onClick={() => bump(step)} className="px-1 py-1 text-ink3 hover:text-ink sm:px-1.5" aria-label="Plus">
         +
       </button>
     </div>
