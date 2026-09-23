@@ -37,6 +37,12 @@ model User {
   plans         TrainingPlan[]
   gear          Gear[]
   syncLogs      SyncLog[]
+  strengthWorkouts StrengthWorkout[]
+
+  /// Jeton secret de l'abonnement agenda (.ics). Null = abonnement désactivé.
+  /// Stocké en clair : il n'ouvre qu'une lecture du plan, et doit pouvoir
+  /// être réaffiché dans les réglages.
+  calendarToken String? @unique
 }
 
 /// Session de connexion. Le cookie ne contient que le token, jamais l'identité.
@@ -143,6 +149,8 @@ model Activity {
 
   /// Séance planifiée que cette activité vient valider
   plannedSession PlannedSession?
+  /// Détail de musculation (exercices, séries) saisi dans l'app
+  strengthWorkout StrengthWorkout?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -426,4 +434,51 @@ model SyncLog {
   message    String?
 
   @@index([userId, startedAt])
+}
+
+/// Séance de musculation détaillée, saisie dans l'app.
+model StrengthWorkout {
+  id     String @id @default(cuid())
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  date        DateTime
+  name        String
+  durationMin Int?
+  /// Effort perçu global, 1-10
+  rpe         Int?
+  notes       String?
+
+  /// Activité Strava correspondante (même séance enregistrée par la montre)
+  activity   Activity? @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  activityId String?   @unique
+
+  sets StrengthSet[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, date])
+}
+
+/// Une série. L'ordre des exercices est porté par `position`.
+model StrengthSet {
+  id        String          @id @default(cuid())
+  workout   StrengthWorkout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  workoutId String
+
+  /// Slug de la bibliothèque (lib/strength.ts) ou nom libre
+  exercise String
+  position Int
+  setIndex Int
+  /// Répétitions — ou secondes pour les exercices tenus (gainage)
+  reps     Int
+  /// 0 = poids du corps
+  weightKg Float   @default(0)
+  /// Répétitions en réserve
+  rir      Int?
+  isWarmup Boolean @default(false)
+
+  @@index([workoutId, position, setIndex])
+  @@index([exercise])
 }
