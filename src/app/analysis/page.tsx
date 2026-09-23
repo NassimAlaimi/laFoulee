@@ -32,6 +32,7 @@ import { criticalSpeed, durationCurve, RIEGEL_DEFAULT } from "@/lib/prediction";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
 import { getBestEfforts } from "@/lib/queries";
+import { trimLeadingEmpty } from "@/lib/stats";
 import { STANDARD_DISTANCES } from "@/lib/records";
 
 export const dynamic = "force-dynamic";
@@ -112,9 +113,9 @@ export default async function AnalysisPage() {
 
   // ---------------------------------------------------------------- Volume
   const yoy = yearCompare(runs, { years: 3, now });
-  const polar = polarizationByMonth(runs, profile.vdot, { months: 8, now });
+  const polar = trimLeadingEmpty(polarizationByMonth(runs, profile.vdot, { months: 8, now }), (r) => r.km === 0);
   const polarSum = polarizationSummary(runs, profile.vdot, { days: 90, now });
-  const paceZones = paceByIntensity(runs, profile.vdot, { months: 12, now });
+  const paceZones = trimLeadingEmpty(paceByIntensity(runs, profile.vdot, { months: 12, now }), (r) => r.easy == null && r.quality == null);
   const grid = consistencyGrid(runs, { weeks: 26, now });
   const timeline = recordTimeline(efforts).slice(0, 8);
 

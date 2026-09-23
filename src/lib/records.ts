@@ -347,7 +347,7 @@ export function vdotHistory(
 
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     points.push({
-      month: d.toISOString().slice(0, 7),
+      month: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
       label: d.toLocaleDateString("fr-FR", { month: "short", year: "2-digit" }),
       vdot: best > 0 ? Math.round(best * 10) / 10 : null,
     });

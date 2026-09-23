@@ -3,6 +3,7 @@ import { Empty, Hint, PageHead, Section } from "@/components/ui/Layout";
 import { VdotChart } from "@/components/charts/Lazy";
 import { fmtDate, fmtDuration, fmtPace } from "@/lib/format";
 import { getBestEfforts, getRuns } from "@/lib/queries";
+import { trimLeadingEmpty } from "@/lib/stats";
 import {
   CONFIDENCE_LABELS,
   STANDARD_DISTANCES,
@@ -73,7 +74,7 @@ export default async function RecordsPage() {
         }
       : null;
   }).filter((p): p is NonNullable<typeof p> => p !== null);
-  const history = vdotHistory(efforts, 12, now);
+  const history = trimLeadingEmpty(vdotHistory(efforts, 12, now), (r) => r.vdot == null);
   const paces = profile.vdot > 0 ? danielsPaces(profile.vdot) : [];
 
   return (

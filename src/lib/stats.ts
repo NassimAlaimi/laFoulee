@@ -55,9 +55,17 @@ export function calendarDaysBetween(a: Date, b: Date): number {
   return Math.round((db.getTime() - da.getTime()) / 86_400_000);
 }
 
+/**
+ * Clé de jour en heure LOCALE (AAAA-MM-JJ). Jamais `toISOString()` pour ça :
+ * minuit à Paris est la veille en UTC, et une clé UTC décale d'un jour tout
+ * ce qui est rangé par jour ou par semaine.
+ */
+export function localDayKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 export function isoWeekKey(date: Date): string {
-  const monday = startOfWeek(date);
-  return monday.toISOString().slice(0, 10);
+  return localDayKey(startOfWeek(date));
 }
 
 // ---------------------------------------------------------------- Volume
@@ -82,10 +90,12 @@ export function weeklyVolume(
 ): WeeklySummary[] {
   const currentMonday = startOfWeek(now);
   const buckets = new Map<string, ActivityLike[]>();
+  const mondays = new Map<string, Date>();
 
   for (let i = weeks - 1; i >= 0; i--) {
     const monday = addDays(currentMonday, -7 * i);
-    buckets.set(monday.toISOString().slice(0, 10), []);
+    buckets.set(localDayKey(monday), []);
+    mondays.set(localDayKey(monday), monday);
   }
 
   for (const a of activities) {
@@ -100,8 +110,8 @@ export function weeklyVolume(
     const hrActs = acts.filter((a) => a.averageHr);
 
     return {
-      weekStart: new Date(key),
-      label: shortWeekLabel(new Date(key)),
+      weekStart: mondays.get(key)!,
+      label: shortWeekLabel(mondays.get(key)!),
       km: round(distance / 1000, 1),
       elevation: Math.round(sum(acts, (a) => a.totalElevation)),
       timeHours: round(time / 3600, 1),
@@ -174,7 +184,7 @@ export function acwrSeries(
 ): LoadPoint[] {
   const daily = new Map<string, number>();
   for (const a of activities) {
-    const key = a.startDate.toISOString().slice(0, 10);
+    const key = localDayKey(a.startDate);
     daily.set(key, (daily.get(key) ?? 0) + trainingLoad(a));
   }
 
@@ -221,7 +231,7 @@ function avgLoadOverWindow(
 ): number {
   let total = 0;
   for (let i = 0; i < window; i++) {
-    const key = addDays(end, -i).toISOString().slice(0, 10);
+    const key = localDayKey(addDays(end, -i));
     total += daily.get(key) ?? 0;
   }
   return total / window;
@@ -377,18 +387,18 @@ export function paceHrScatter(activities: ActivityLike[]) {
 }
 
 /** Série de progression : allure moyenne glissante par mois. */
-export function monthlyProgression(activities: ActivityLike[], months = 12) {
-  const now = new Date();
+export function monthlyProgression(activities: ActivityLike[], months = 12, now = new Date()) {
   const buckets = new Map<string, ActivityLike[]>();
+  // Clé de mois en heure LOCALE : via toISOString (UTC), le 1er du mois à
+  // minuit à Paris tombait la veille, et tout l'axe glissait d'un mois.
+  const monthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 
   for (let i = months - 1; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    buckets.set(d.toISOString().slice(0, 7), []);
+    buckets.set(monthKey(new Date(now.getFullYear(), now.getMonth() - i, 1)), []);
   }
 
   for (const a of activities) {
-    const key = a.startDate.toISOString().slice(0, 7);
-    buckets.get(key)?.push(a);
+    buckets.get(monthKey(a.startDate))?.push(a);
   }
 
   return [...buckets.entries()].map(([key, acts]) => {
@@ -428,4 +438,15 @@ function sum<T>(arr: T[], fn: (item: T) => number): number {
 export function round(n: number, digits = 1): number {
   const f = Math.pow(10, digits);
   return Math.round(n * f) / f;
+}
+
+/**
+ * Retire les points vides en tête d'une série temporelle : un graphique sur
+ * 12 mois dont les 7 premiers sont vides écrase les données dans un coin.
+ * Garde toujours au moins `keep` points.
+ */
+export function trimLeadingEmpty<T>(rows: T[], isEmpty: (r: T) => boolean, keep = 2): T[] {
+  const first = rows.findIndex((r) => !isEmpty(r));
+  if (first < 0) return rows.slice(-keep);
+  return rows.slice(Math.min(first, Math.max(0, rows.length - keep)));
 }

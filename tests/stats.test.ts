@@ -271,3 +271,25 @@ describe("calendarDaysBetween", () => {
     assert.equal(calendarDaysBetween(new Date(2026, 9, 24, 12), new Date(2026, 9, 26, 12)), 2);
   });
 });
+
+describe("trimLeadingEmpty", () => {
+  it("coupe les mois vides en tête, garde un minimum", async () => {
+    const { trimLeadingEmpty } = await import("../src/lib/stats.ts");
+    const rows = [null, null, 3, null, 5].map((v) => ({ v }));
+    assert.deepEqual(trimLeadingEmpty(rows, (r) => r.v == null).map((r) => r.v), [3, null, 5]);
+    assert.equal(trimLeadingEmpty([{ v: null }, { v: null }, { v: null }], (r) => r.v == null).length, 2);
+    assert.deepEqual(trimLeadingEmpty([{ v: null }, { v: 1 }], (r) => r.v == null, 2).map((r) => r.v), [null, 1]);
+  });
+});
+
+describe("monthlyProgression", () => {
+  it("range chaque sortie dans son mois local (pas UTC)", async () => {
+    const { monthlyProgression } = await import("../src/lib/stats.ts");
+    const now = new Date(2026, 8, 23, 12);
+    const a = (d: Date) => ({ id: String(+d), name: "", type: "Run", startDate: d, distance: 5000, movingTime: 1800, elapsedTime: 1800, totalElevation: 0, averageSpeed: 2.8, maxSpeed: 3, averageHr: null, maxHr: null, sufferScore: null, averageCadence: null, isRace: false });
+    const rows = monthlyProgression([a(new Date(2026, 8, 1, 0, 30)), a(new Date(2026, 7, 31, 23, 30))] as never, 3, now);
+    assert.deepEqual(rows.map((r) => r.month), ["2026-07", "2026-08", "2026-09"]);
+    assert.equal(rows[2].sessions, 1, "1er sept. 0 h 30 compte en septembre");
+    assert.equal(rows[1].sessions, 1, "31 août 23 h 30 compte en août");
+  });
+});

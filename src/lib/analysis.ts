@@ -37,7 +37,12 @@ export function yearCompare(
   const now = opts.now ?? new Date();
   const count = opts.years ?? 3;
   const currentYear = now.getFullYear();
-  const years = Array.from({ length: count }, (_, i) => String(currentYear - i));
+  // Seulement les années où l'on a couru (l'année en cours toujours) : trois
+  // courbes plates à zéro n'apprennent rien.
+  const ranYears = new Set(activities.map((a) => String(a.startDate.getFullYear())));
+  const years = Array.from({ length: count }, (_, i) => String(currentYear - i)).filter(
+    (y, i) => i === 0 || ranYears.has(y)
+  );
 
   const perYear = new Map<string, number[]>();
   for (const y of years) perYear.set(y, new Array(53).fill(0));

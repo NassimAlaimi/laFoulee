@@ -42,6 +42,7 @@ import {
   hrZones,
   monthlyProgression,
   paceHrScatter,
+  trimLeadingEmpty,
   periodStats,
   weeklyVolume,
 } from "@/lib/stats";
@@ -146,7 +147,7 @@ export default async function SummaryPage() {
     tsbPast: p.projected ? null : p.tsb,
     tsbFuture: p.projected ? p.tsb : null,
   }));
-  const progression = monthlyProgression(runs, 12);
+  const progression = trimLeadingEmpty(monthlyProgression(runs, 12), (m) => m.sessions === 0);
   const scatter = paceHrScatter(within(28));
 
   const maxHr = settings.maxHr ?? estimateMaxHr(runs, settings.birthYear);
