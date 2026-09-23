@@ -34,6 +34,7 @@ import { requireUserId } from "@/lib/auth";
 import { getBestEfforts } from "@/lib/queries";
 import { trimLeadingEmpty } from "@/lib/stats";
 import { STANDARD_DISTANCES } from "@/lib/records";
+import { activityMarks } from "@/lib/race-marks";
 
 export const dynamic = "force-dynamic";
 
@@ -92,6 +93,7 @@ export default async function AnalysisPage() {
     tsbPast: p.projected ? null : p.tsb,
     tsbFuture: p.projected ? p.tsb : null,
   }));
+  const marks = activityMarks({ races: runs, records, now });
 
   // ---------------------------------------------------------------- Modèles
   const cs = criticalSpeed(records);
@@ -167,11 +169,17 @@ export default async function AnalysisPage() {
           title="Condition, fatigue et fraîcheur"
           note="Moyennes exponentielles 42 j / 7 j — la partie pointillée est projetée depuis le plan"
         />
-        <FormChart data={formRows} height={300} legend={false} />
+        <FormChart data={formRows} height={300} legend={false} marks={marks} />
         <div className="mt-4 grid gap-4 border-t border-hair pt-4 sm:grid-cols-3">
           <Legend color="rgb(var(--slate))" label="Condition (CTL)" note="ce que tu encaisses" />
           <Legend color="rgb(var(--clay))" label="Fatigue (ATL)" note="charge des 7 derniers jours" />
           <Legend color="rgb(var(--sage))" label="Fraîcheur (TSB)" note="condition − fatigue" />
+          {marks.some((m) => m.kind === "race") && (
+            <Legend color="rgb(var(--rust))" label="Course" note="jour de course" />
+          )}
+          {marks.some((m) => m.kind === "pr") && (
+            <Legend color="rgb(var(--plum))" label="Record" note="record personnel" />
+          )}
         </div>
         {form && (
           <p className="mt-4 font-mono text-micro tabular-nums text-ink2">

@@ -17,6 +17,7 @@ import { fmtDate, fmtDateShort, fmtDuration, fmtPace } from "@/lib/format";
 import { raceReadiness, readinessFacts } from "@/lib/goal";
 import { athleteContext } from "@/lib/plan-store";
 import { pacingPlan } from "@/lib/prediction";
+import type { ChartMark } from "@/lib/race-marks";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
 import { addDays, round, startOfWeek } from "@/lib/stats";
@@ -359,7 +360,7 @@ export default async function GoalDetailPage({
             title="Forme projetée"
             note="Condition, fatigue et fraîcheur — la partie en pointillés découle des séances planifiées"
           />
-          <FormChart data={formRows} raceLabel={raceForm?.label ?? null} />
+          <FormChart data={formRows} marks={raceForm ? [{ label: raceForm.label, kind: "race", date: goal.raceDate } as ChartMark] : []} />
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-micro text-ink3">
             <span>Condition (CTL) : ce que tu encaisses</span>
             <span>Fatigue (ATL) : ce que tu as encaissé récemment</span>

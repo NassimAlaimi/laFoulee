@@ -34,6 +34,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { vdotLevel } from "@/lib/vdot";
+import { activityMarks } from "@/lib/race-marks";
 import {
   ACWR_LABELS,
   acwrSeries,
@@ -157,6 +158,7 @@ export default async function SummaryPage() {
   const records = personalRecords(efforts, runs);
   const profile = fitnessProfile(records, 365, now);
   const level = vdotLevel(profile.vdot);
+  const marks = activityMarks({ races: runs, records, now });
 
   const insights = buildInsights({
     runs,
@@ -319,7 +321,7 @@ export default async function SummaryPage() {
                 <span className="eyebrow">Condition · fatigue · fraîcheur</span>
                 <span className="text-micro text-ink3">120 jours, puis projection du plan en pointillés</span>
               </div>
-              <FormChart data={formRows} height={300} />
+              <FormChart data={formRows} height={300} marks={marks} />
               <div className="mt-10 grid gap-8 sm:grid-cols-2">
                 <div>
                   <div className="eyebrow mb-3">Charge aiguë et chronique</div>

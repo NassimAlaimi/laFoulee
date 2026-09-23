@@ -12,6 +12,7 @@ import {
   YAxis,
 } from "recharts";
 import { Tip, axisProps, useChartTheme } from "./theme";
+import type { ChartMark } from "@/lib/race-marks";
 
 export type FormRow = {
   label: string;
@@ -36,15 +37,18 @@ export type FormRow = {
  * Deux échelles sur un même graphique obligeaient à lire deux axes ; ici
  * chaque étage a le sien. La partie projetée depuis le plan est en
  * pointillés : l'œil doit distinguer ce qui est mesuré de ce qui est prévu.
+ *
+ * `marks` pose un trait vertical au jour des courses (rouille) et des records
+ * (prune) : « tes courses expliquent les creux de forme ».
  */
 export function FormChart({
   data,
-  raceLabel,
+  marks,
   height = 260,
   legend = true,
 }: {
   data: FormRow[];
-  raceLabel?: string | null;
+  marks?: ChartMark[];
   height?: number;
   legend?: boolean;
 }) {
@@ -60,14 +64,37 @@ export function FormChart({
   const zero = hi / (hi - lo);
   const uid = `f${data.length}${Math.round(hi)}${Math.round(lo)}`;
 
-  const marks = (
-    <>
-      {firstProjected && (
-        <ReferenceLine x={firstProjected} stroke={t.faint} strokeDasharray="3 3" />
-      )}
-      {raceLabel && <ReferenceLine x={raceLabel} stroke={t.rust} strokeDasharray="2 2" />}
-    </>
-  );
+  const list = marks ?? [];
+  const hasRace = list.some((m) => m.kind === "race");
+  const hasPr = list.some((m) => m.kind === "pr");
+  // Un seul repère : on peut se permettre un libellé, sinon ça se chevauche.
+  const single = list.length === 1;
+
+  const markLines = list.map((m) => (
+    <ReferenceLine
+      key={`${m.label}-${m.kind}`}
+      x={m.label}
+      stroke={m.kind === "race" ? t.rust : t.plum}
+      strokeDasharray="2 2"
+      strokeWidth={1}
+    />
+  ));
+
+  const markLabels = single
+    ? list.map((m) => (
+        <ReferenceLine
+          key={`${m.label}-lbl`}
+          x={m.label}
+          stroke="transparent"
+          label={{
+            value: m.kind === "race" ? "course" : "record",
+            position: "insideTopRight",
+            fill: m.kind === "race" ? t.rust : t.plum,
+            fontSize: 10,
+          }}
+        />
+      ))
+    : null;
 
   const tooltip = (
     <Tooltip
@@ -102,19 +129,16 @@ export function FormChart({
           <CartesianGrid stroke={t.grid} vertical={false} />
           <XAxis dataKey="label" hide />
           <YAxis {...axisProps(t.axis)} width={38} />
-          {marks}
+          {firstProjected && (
+            <ReferenceLine x={firstProjected} stroke={t.faint} strokeDasharray="3 3" />
+          )}
+          {markLines}
+          {markLabels}
           {firstProjected && (
             <ReferenceLine
               x={firstProjected}
               stroke="transparent"
               label={{ value: "prévu →", position: "insideTopLeft", fill: t.axis, fontSize: 10 }}
-            />
-          )}
-          {raceLabel && (
-            <ReferenceLine
-              x={raceLabel}
-              stroke="transparent"
-              label={{ value: "course", position: "insideTopRight", fill: t.rust, fontSize: 10 }}
             />
           )}
           <Area type="monotone" dataKey="ctl" stroke="none" fill={`url(#${uid}ctl)`} isAnimationActive={false} />
@@ -151,7 +175,10 @@ export function FormChart({
           <XAxis dataKey="label" {...axisProps(t.axis)} dy={4} interval="preserveStartEnd" minTickGap={56} />
           <YAxis {...axisProps(t.axis)} width={38} domain={[lo, hi]} ticks={[Math.round(lo), 0, Math.round(hi)]} />
           <ReferenceLine y={0} stroke={t.axis} strokeOpacity={0.6} />
-          {marks}
+          {firstProjected && (
+            <ReferenceLine x={firstProjected} stroke={t.faint} strokeDasharray="3 3" />
+          )}
+          {markLines}
           <Area
             type="monotone"
             dataKey="tsbPast"
@@ -177,21 +204,44 @@ export function FormChart({
           {tooltip}
         </ComposedChart>
       </ResponsiveContainer>
-      {legend && <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-micro text-ink3">
-        <Key color={t.slate} label="Condition (CTL)" />
-        <Key color={t.clay} label="Fatigue (ATL)" thin />
-        <Key color={t.sage} label="Fraîcheur (TSB) · au-dessus de 0 = frais" area />
-      </div>}
+      {legend && (
+        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-micro text-ink3">
+          <Key color={t.slate} label="Condition (CTL)" />
+          <Key color={t.clay} label="Fatigue (ATL)" thin />
+          <Key color={t.sage} label="Fraîcheur (TSB) · au-dessus de 0 = frais" area />
+          {hasRace && <Key color={t.rust} label="Course" dashed />}
+          {hasPr && <Key color={t.plum} label="Record" dashed />}
+        </div>
+      )}
     </div>
   );
 }
 
-function Key({ color, label, thin, area }: { color: string; label: string; thin?: boolean; area?: boolean }) {
+function Key({
+  color,
+  label,
+  thin,
+  area,
+  dashed,
+}: {
+  color: string;
+  label: string;
+  thin?: boolean;
+  area?: boolean;
+  dashed?: boolean;
+}) {
   return (
     <span className="inline-flex items-center gap-1.5">
       <span
-        className="inline-block w-3.5 rounded-sm"
-        style={{ background: color, height: area ? 8 : thin ? 1 : 2, opacity: area ? 0.6 : 1 }}
+        className="inline-block w-3.5"
+        style={
+          dashed
+            ? {
+                backgroundImage: `repeating-linear-gradient(90deg, ${color} 0 3px, transparent 3px 6px)`,
+                height: 2,
+              }
+            : { background: color, height: area ? 8 : thin ? 1 : 2, opacity: area ? 0.6 : 1 }
+        }
       />
       {label}
     </span>
