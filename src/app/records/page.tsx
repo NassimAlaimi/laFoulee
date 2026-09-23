@@ -240,7 +240,7 @@ export default async function RecordsPage() {
                   <tr>
                     <th>Distance</th>
                     <th className="text-right">Potentiel</th>
-                    <th className="text-right">Réaliste</th>
+                    <th className="text-right">Réaliste · fourchette</th>
                     <th className="text-right">Allure</th>
                     <th className="text-right">Ton record</th>
                     <th className="text-right">Écart</th>
@@ -268,6 +268,9 @@ export default async function RecordsPage() {
                                 +{fmtDuration(p.gap)}
                               </span>
                             )}
+                            <div className="font-mono text-micro font-normal tabular-nums text-ink3">
+                              {fmtDuration(p.low)} – {fmtDuration(p.high)}
+                            </div>
                           </td>
                           <td className="num text-right text-ink2">
                             {fmtPace(p.pace, "")}
