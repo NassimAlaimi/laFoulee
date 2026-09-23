@@ -267,6 +267,22 @@ export default async function SettingsPage({
         <CalendarSubscription initialToken={calendar?.calendarToken ?? null} origin={origin} />
       </Section>
 
+      {/* -------------------------------------------------- Export */}
+      <Section>
+        <SectionHead
+          title="Export de tes données"
+          note="Tes données t'appartiennent : tout récupérer, en un clic, sans dépendance."
+        />
+        <div className="flex flex-wrap gap-3">
+          <a href="/api/export" download className="btn-outline">
+            Exporter tout en JSON
+          </a>
+          <a href="/api/export?format=csv" download className="btn-outline">
+            Activités en CSV
+          </a>
+        </div>
+      </Section>
+
       {/* -------------------------------------------------- Compte */}
       <Section>
         <SectionHead

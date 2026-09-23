@@ -439,6 +439,12 @@ sont stables : quand le plan se réadapte, l'agenda met à jour l'événement au
 lieu de le dupliquer. L'adresse est révocable et régénérable ; elle n'ouvre
 qu'une lecture du plan.
 
+### Export de données
+
+Réglages → Export télécharge **toutes tes données en JSON** (activités, objectifs,
+séances du plan — tracés GPS inclus) ou **les activités en CSV** pour un tableur.
+Aucune dépendance, aucune attente : tes données t'appartiennent.
+
 ### Synchronisation automatique
 
 À l'ouverture de l'app, si la dernière synchro date de plus de 3 h, une synchro
