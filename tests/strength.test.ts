@@ -13,6 +13,7 @@ import {
   nextSuggestion,
   relativeLevel,
   relativeStrength,
+  rpeLoad,
   setsByMuscle,
   strengthAcwr,
   strengthGoalProgress,
@@ -233,5 +234,25 @@ describe("strengthGoalProgress", () => {
   it("null sans record ou sans poids de corps (relatif)", () => {
     assert.equal(strengthGoalProgress({ targetKg: 100, targetRel: null, bestE1rm: null, bodyweightKg: 75 }), null);
     assert.equal(strengthGoalProgress({ targetKg: null, targetRel: 1.5, bestE1rm: 90, bodyweightKg: null }), null);
+  });
+});
+
+describe("rpeLoad", () => {
+  const day = (n: number) => new Date(2026, 0, n);
+  it("séances avec RPE et séries dures, triées de l'ancienne à la récente", () => {
+    const w1 = { id: "1", date: day(1), rpe: 7, sets: [set("back-squat", 5, 60), set("back-squat", 5, 60)] };
+    const w2 = { id: "2", date: day(8), rpe: 8, sets: [set("rdl", 8, 50)] };
+    const w3 = { id: "3", date: day(15), rpe: null, sets: [set("back-squat", 5, 60)] };
+    const pts = rpeLoad([w2, w1, w3]);
+    assert.equal(pts.length, 2);
+    assert.equal(pts[0].rpe, 7);
+    assert.equal(pts[0].hardSets, 2);
+    assert.equal(pts[1].rpe, 8);
+    assert.equal(pts[1].hardSets, 1);
+    assert.ok(pts[0].tonnage > 0);
+  });
+  it("ignore les séances sans série dure", () => {
+    const pts = rpeLoad([{ id: "1", date: day(1), rpe: 6, sets: [set("back-squat", 5, 40, null, true)] }]);
+    assert.equal(pts.length, 0);
   });
 });

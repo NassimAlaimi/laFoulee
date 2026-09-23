@@ -20,6 +20,25 @@ type SetState = LoggedSet & { key: string; done: boolean };
 type BlockState = { key: string; exercise: string; sets: SetState[] };
 
 const DRAFT_KEY = "foulee:strength-draft";
+const PIN_KEY = "foulee:strength-pinned";
+
+function readPinned(): string[] {
+  try {
+    const raw = localStorage.getItem(PIN_KEY);
+    const list = raw ? (JSON.parse(raw) as unknown) : [];
+    return Array.isArray(list) ? list.filter((s) => typeof s === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function writePinned(list: string[]) {
+  try {
+    localStorage.setItem(PIN_KEY, JSON.stringify(list));
+  } catch {
+    /* quota plein : tant pis */
+  }
+}
 let uid = 0;
 const k = () => `k${Date.now().toString(36)}${(uid++).toString(36)}`;
 
@@ -774,13 +793,22 @@ function ExercisePicker({
 }) {
   const [q, setQ] = useState("");
   const [runnerOnly, setRunnerOnly] = useState(false);
+  const [pinned, setPinned] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     inputRef.current?.focus();
+    setPinned(readPinned());
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  const togglePin = (slug: string) =>
+    setPinned((prev) => {
+      const next = prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug];
+      writePinned(next);
+      return next;
+    });
 
   const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const list = EXERCISES.filter(
@@ -819,10 +847,19 @@ function ExercisePicker({
           </label>
         </div>
         <div className="overflow-y-auto p-2">
+          {!q && pinned.length > 0 && (
+            <Group title="Épinglés">
+              {pinned
+                .filter((s) => !exclude.includes(s))
+                .map((slug) => (
+                  <PickRow key={slug} slug={slug} onPick={onPick} pinned onTogglePin={() => togglePin(slug)} />
+                ))}
+            </Group>
+          )}
           {!q && recent.length > 0 && (
             <Group title="Tes exercices">
               {recent.map((slug) => (
-                <PickRow key={slug} slug={slug} onPick={onPick} />
+                <PickRow key={slug} slug={slug} onPick={onPick} pinned={pinned.includes(slug)} onTogglePin={() => togglePin(slug)} />
               ))}
             </Group>
           )}
@@ -844,7 +881,7 @@ function ExercisePicker({
             return (
               <Group key={m} title={MUSCLE_LABELS[m]}>
                 {items.map((e) => (
-                  <PickRow key={e.slug} slug={e.slug} onPick={onPick} />
+                  <PickRow key={e.slug} slug={e.slug} onPick={onPick} pinned={pinned.includes(e.slug)} onTogglePin={() => togglePin(e.slug)} />
                 ))}
               </Group>
             );
@@ -864,16 +901,38 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
-function PickRow({ slug, onPick }: { slug: string; onPick: (s: string) => void }) {
+function PickRow({
+  slug,
+  onPick,
+  pinned,
+  onTogglePin,
+}: {
+  slug: string;
+  onPick: (s: string) => void;
+  pinned?: boolean;
+  onTogglePin?: () => void;
+}) {
   const e = exerciseInfo(slug);
   return (
-    <button
-      type="button"
-      onClick={() => onPick(slug)}
-      className="flex w-full items-baseline justify-between gap-3 rounded-[8px] px-3 py-2 text-left text-[0.875rem] transition-colors hover:bg-sunken"
-    >
-      <span>{e.name}</span>
-      {e.runner && <span className="truncate text-micro text-sage">{e.runner}</span>}
-    </button>
+    <div className="group flex items-center gap-1 rounded-[8px] px-3 py-2 text-[0.875rem] transition-colors hover:bg-sunken">
+      <button type="button" onClick={() => onPick(slug)} className="flex min-w-0 flex-1 items-baseline justify-between gap-3 text-left">
+        <span>{e.name}</span>
+        {e.runner && <span className="truncate text-micro text-sage">{e.runner}</span>}
+      </button>
+      {onTogglePin && (
+        <button
+          type="button"
+          onClick={(ev) => {
+            ev.stopPropagation();
+            onTogglePin();
+          }}
+          className={`shrink-0 rounded px-1.5 py-0.5 text-micro transition-colors ${pinned ? "text-clay" : "text-ink3 hover:text-clay"}`}
+          title={pinned ? "Retirer des épinglés" : "Épingler en tête de liste"}
+          aria-pressed={!!pinned}
+        >
+          {pinned ? "Épinglé" : "Épingler"}
+        </button>
+      )}
+    </div>
   );
 }

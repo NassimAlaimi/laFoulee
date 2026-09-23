@@ -20,6 +20,7 @@ import {
   muscleSeries,
   relativeLevel,
   relativeStrength,
+  rpeLoad,
   setsByMuscle,
   strengthAcwr,
   strengthGoalProgress,
@@ -114,6 +115,7 @@ export default async function StrengthPage() {
   const acwr = strengthAcwr(workouts, now);
   const series = muscleSeries(workouts, 12, now);
   const bodyweight = settings.weightKg ?? null;
+  const rpe = rpeLoad(workouts);
 
   const prs90 = workouts
     .filter((w) => within(w.date, 90, -1))
@@ -191,7 +193,7 @@ export default async function StrengthPage() {
 
       {planned && (
         <Link
-          href="/strength/new"
+          href="/strength/new?planned=1"
           className="group mb-8 flex items-center justify-between gap-4 rounded-card border border-sage/40 bg-sage/[.07] px-5 py-4 transition-colors hover:bg-sage/[.12]"
         >
           <span>
@@ -402,6 +404,16 @@ export default async function StrengthPage() {
           </form>
         </Section>
 
+        {/* ---------------------------------------------- RPE × charge */}
+        {rpe.length >= 2 && (
+          <Section
+            title="RPE × charge"
+            note="Effort perçu (1-10) contre la charge de la séance (séries dures). Plus de séries au même RPE = tu progresses ; même charge mais RPE qui grimpe = fatigue."
+          >
+            <RpeScatter points={rpe} />
+          </Section>
+        )}
+
         {/* ---------------------------------------------- Exercices */}
         {histories.length > 0 && (
           <Section title="Tes exercices" note="Meilleur 1RM estimé (Epley/Brzycki, répétitions en réserve incluses) et son évolution séance après séance.">
@@ -537,6 +549,55 @@ export default async function StrengthPage() {
         <Templates />
       </div>
     </>
+  );
+}
+
+function RpeScatter({ points }: { points: Array<{ date: Date; rpe: number; hardSets: number; tonnage: number }> }) {
+  const W = 720;
+  const H = 240;
+  const P = { l: 40, r: 16, t: 14, b: 32 };
+  const maxX = Math.max(6, ...points.map((p) => p.hardSets)) + 1;
+  const x = (hs: number) => P.l + (hs / maxX) * (W - P.l - P.r);
+  const y = (rpe: number) => P.t + (1 - (rpe - 1) / 9) * (H - P.t - P.b);
+  const rpeTicks = [1, 3, 5, 7, 9];
+  const xTicks = Array.from({ length: Math.ceil(maxX) + 1 }, (_, i) => i).filter((t) => t % 2 === 0);
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label="RPE contre charge">
+      {rpeTicks.map((t) => (
+        <g key={t}>
+          <line x1={P.l} x2={W - P.r} y1={y(t)} y2={y(t)} stroke="rgb(var(--hair))" />
+          <text x={P.l - 8} y={y(t)} dy="0.35em" textAnchor="end" fontSize={10} fill="rgb(var(--ink-3))">
+            {t}
+          </text>
+        </g>
+      ))}
+      {xTicks.map((t) => (
+        <text key={t} x={x(t)} y={H - 10} textAnchor="middle" fontSize={10} fill="rgb(var(--ink-3))">
+          {t}
+        </text>
+      ))}
+      {points.map((p, i) => (
+        <circle
+          key={i}
+          cx={x(p.hardSets)}
+          cy={y(p.rpe)}
+          r={p.hardSets >= 10 ? 6 : 4}
+          fill="rgb(var(--clay))"
+          fillOpacity={0.55}
+          stroke="rgb(var(--clay))"
+          strokeWidth={1}
+        >
+          <title>{`${fmtDateShort(p.date)} · ${p.hardSets} séries dures · ${p.tonnage.toLocaleString("fr-FR")} kg · RPE ${p.rpe}`}</title>
+        </circle>
+      ))}
+      <text x={P.l} y={14} fontSize={10} fill="rgb(var(--ink-3))">
+        RPE
+      </text>
+      <text x={W - P.r} y={H - 10} textAnchor="end" fontSize={10} fill="rgb(var(--ink-3))">
+        séries dures
+      </text>
+    </svg>
   );
 }
 

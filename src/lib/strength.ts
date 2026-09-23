@@ -573,3 +573,28 @@ export function strengthGoalProgress(opts: {
   }
   return null;
 }
+
+// ------------------------------------------------------- RPE × charge
+
+export type RpePoint = {
+  date: Date;
+  rpe: number;
+  hardSets: number;
+  tonnage: number;
+};
+
+/**
+ * Séances avec RPE renseigné et au moins une série dure, pour corréler
+ * l'effort perçu à la charge. Triées de la plus ancienne à la plus récente.
+ */
+export function rpeLoad(workouts: Array<WorkoutLike & { rpe?: number | null }>): RpePoint[] {
+  return workouts
+    .filter((w) => w.rpe != null && w.sets.some(isHardSet))
+    .map((w) => ({
+      date: w.date,
+      rpe: w.rpe as number,
+      hardSets: w.sets.filter(isHardSet).length,
+      tonnage: Math.round(tonnage(w.sets)),
+    }))
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
+}
