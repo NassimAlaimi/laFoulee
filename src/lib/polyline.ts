@@ -190,10 +190,14 @@ export function routePath(
   const fitted = fitToBox(ll.map(mercator), w, h, pad).points;
   const simple = simplify(fitted, 0.35);
   const loop = haversine(ll[0], ll[ll.length - 1]) < 250;
+  // Arrondi au centième de pixel : les flottants de la projection diffèrent
+  // légèrement entre Node (SSR) et le navigateur, ce qui déclenchait un
+  // avertissement d'hydratation sur les composants clients (ex. le dot).
+  const snap = ([x, y]: XY): XY => [Number(x.toFixed(2)), Number(y.toFixed(2))];
   return {
     d: toPath(simple),
-    start: simple[0],
-    end: simple[simple.length - 1],
+    start: snap(simple[0]),
+    end: snap(simple[simple.length - 1]),
     loop,
   };
 }

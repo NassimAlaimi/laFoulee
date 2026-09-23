@@ -88,6 +88,15 @@ describe("géométrie", () => {
     const nums = r.d.match(/-?\d+(\.\d+)?/g)!.map(Number);
     assert.ok(nums.every((n) => n >= 3.9 && n <= 36.1), "coordonnées hors boîte");
   });
+
+  it("arrondit le point de départ au centième (déterminisme SSR/client)", () => {
+    const r = routePath(encodePolyline(square(48.85, 2.35, 800)), 40, 40, 4);
+    assert.ok(r.start);
+    assert.ok(r.end);
+    for (const v of [...r.start, ...r.end]) {
+      assert.equal(v, Number(v.toFixed(2)), "point non arrondi au centième");
+    }
+  });
 });
 
 describe("kmSegments", () => {

@@ -8,6 +8,8 @@ import { periodStats, weeklyVolume } from "@/lib/stats";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
 import { clusterByStart, groupRoutes, overlayPaths, startOf } from "@/lib/polyline";
+import { favoriteRoute } from "@/lib/favorite-route";
+import { FavoriteRoute } from "@/components/route/FavoriteRoute";
 import { RouteGlyph } from "@/components/route/RouteGlyph";
 import { RouteOverlay } from "@/components/route/RouteOverlay";
 
@@ -371,8 +373,12 @@ function MapView({
   const groups = groupRoutes(active.items).filter((g) => g.items.length >= 2);
   const zoneKm = active.items.reduce((a, r) => a + r.distance, 0) / 1000;
 
+  // Le parcours le plus couru de tout l'historique, quel que soit le secteur.
+  const fav = favoriteRoute(located);
+
   return (
     <div className="mt-8 space-y-10">
+      {fav && <FavoriteRoute items={fav.items} polyline={fav.lead.polyline} />}
       {clusters.length > 1 && (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-micro uppercase tracking-[0.08em] text-ink3">Secteur</span>
