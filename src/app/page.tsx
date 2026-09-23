@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Empty, Hint, PageHead, Section } from "@/components/ui/Layout";
+import { Empty, Hint, NightBand, PageHead, Section } from "@/components/ui/Layout";
+import { RouteGlyph } from "@/components/route/RouteGlyph";
 import { Metric, MetricBand, Row } from "@/components/ui/Metric";
 import { MiniBars, Sparkline } from "@/components/ui/Spark";
 import { InsightList } from "@/components/InsightList";
@@ -23,6 +24,7 @@ import { getBestEfforts, getRuns, getSettings, getStravaAccount } from "@/lib/qu
 import { fitnessProfile, isMaximalEffort, personalRecords } from "@/lib/records";
 import {
   formSeries,
+  formHeadline,
   formSummary,
   plannedLoad,
   ZONE_LABEL as FORM_LABEL,
@@ -165,22 +167,50 @@ export default async function SummaryPage() {
   });
 
   const majors = records.filter((r) => r.major && r.seconds);
+  const headline = form ? formHeadline(form, current.ready ? current.zone : undefined) : null;
+  const recent = runs.slice(0, 8);
+  const glyphs = new Map(
+    (
+      await prisma.activity.findMany({
+        where: { id: { in: recent.map((r) => r.id) }, userId },
+        select: { id: true, polyline: true },
+      })
+    ).map((a) => [a.id, a.polyline])
+  );
+
+  const loadBlock = (
+    <div className="grid gap-8 lg:grid-cols-[260px_minmax(0,1fr)]">
+      <div>
+        <div className="flex items-baseline gap-2.5">
+          <span className="display text-d1">{current.ready ? current.ratio.toFixed(2) : "—"}</span>
+        </div>
+        <div className={`mt-2 text-sm font-medium ${ZONE_TONE[current.zone]}`}>{ACWR_LABELS[current.zone]}</div>
+        <div className="mt-6">
+          <Row label="Charge aiguë · 7 j" value={current.acute.toFixed(0)} />
+          <Row label="Charge chronique · 28 j" value={current.chronic.toFixed(0)} />
+          <Row label="Volume · 28 j" value={`${month.km} km`} />
+          <Row label="VMA estimée" value={profile.vma > 0 ? `${profile.vma} km/h` : "—"} />
+          <Row label="FC max" value={`${maxHr} bpm`} note={settings.maxHr ? "saisie" : "estimée"} />
+        </div>
+      </div>
+      <div className="space-y-8">
+        <LoadChart data={load} />
+        <AcwrChart data={load} />
+      </div>
+    </div>
+  );
 
   return (
     <>
-      <PageHead
-        title="Résumé"
-        meta={`${runs.length} courses · dernière sortie ${fmtDateShort(runs[0].startDate)}`}
-        action={<SyncButton />}
-      />
+      <h1 className="sr-only">Résumé</h1>
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <p className="text-micro text-ink3">
+          {runs.length} courses · dernière sortie {fmtDateShort(runs[0].startDate)}
+        </p>
+        <SyncButton />
+      </div>
 
-      <TodayHero
-        userId={userId}
-        firstname={user.firstname}
-        runs={runs}
-        now={now}
-        tsb={form ? form.tsb : null}
-      />
+      <TodayHero userId={userId} firstname={user.firstname} runs={runs} now={now} form={form ? { tsb: form.tsb, zone: form.zone } : null} />
 
       {/* ---------------------------------------------------------- Chiffres */}
       <MetricBand>
@@ -216,11 +246,9 @@ export default async function SummaryPage() {
         />
       </MetricBand>
 
-      <div className="mt-10 space-y-10">
-        {/* -------------------------------------------------------- Ensuite */}
+      <div className="mt-14 space-y-14">
         <UpNext now={now} userId={userId} />
 
-        {/* -------------------------------------------------------- Insights */}
         <Section
           title="Ce que disent tes données"
           note="Observations générées à partir de tes 8 dernières semaines. Chaque ligne indique la mesure qui la justifie."
@@ -228,93 +256,81 @@ export default async function SummaryPage() {
           <InsightList insights={insights} />
         </Section>
 
-        {/* -------------------------------------------------------- Calendrier */}
+        {!form && (
+          <Section
+            title="Charge d'entraînement"
+            note="La charge aiguë (7 jours) comparée à la charge chronique (28 jours) indique si ta progression est soutenable."
+          >
+            {loadBlock}
+          </Section>
+        )}
+      </div>
+
+      {/* ------------------------------------------------ Bande « forme » */}
+      {form && headline && (
+        <NightBand className="mt-16" id="forme">
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,8fr)] lg:gap-14">
+            <div className="flex flex-col">
+              <div className="text-micro font-medium uppercase tracking-[0.16em] text-clay">État de forme · aujourd&apos;hui</div>
+              <h2 className="mt-4 text-[clamp(2.1rem,4.4vw,3.4rem)] font-semibold leading-[0.96] tracking-[-0.035em]">
+                {headline.title}
+              </h2>
+              <p className="mt-4 max-w-md text-[0.9375rem] leading-relaxed text-ink2">{headline.body}</p>
+
+              <div className="mt-8 grid grid-cols-3 border-t border-hair">
+                <NightFig
+                  label="Fraîcheur"
+                  value={`${form.tsb > 0 ? "+" : ""}${Math.round(form.tsb)}`}
+                  note={FORM_LABEL[form.zone]}
+                  tone={FORM_TONE[form.zone]}
+                  big
+                />
+                <NightFig label="Condition" value={String(Math.round(form.ctl))} note={`${form.rampPerWeek > 0 ? "+" : ""}${form.rampPerWeek}/sem`} />
+                <NightFig label="Fatigue" value={String(Math.round(form.atl))} note="7 derniers jours" />
+              </div>
+              <div className="grid grid-cols-3 border-t border-hair">
+                <NightFig
+                  label="Charge 7 j / 28 j"
+                  value={current.ready ? current.ratio.toFixed(2) : "—"}
+                  note={ACWR_LABELS[current.zone]}
+                  tone={ZONE_TONE[current.zone]}
+                />
+                <NightFig label="Volume 28 j" value={`${month.km}`} note="km" />
+                <NightFig label="VMA" value={profile.vma > 0 ? String(profile.vma) : "—"} note="km/h estimée" />
+              </div>
+              <div className="mt-8">
+                <Link href="/analysis" className="btn-outline">
+                  Analyse détaillée →
+                </Link>
+              </div>
+            </div>
+
+            <div className="min-w-0">
+              <div className="mb-4 flex items-baseline justify-between gap-3">
+                <span className="eyebrow">Condition · fatigue · fraîcheur</span>
+                <span className="text-micro text-ink3">120 jours, puis projection du plan en pointillés</span>
+              </div>
+              <FormChart data={formRows} height={300} />
+              <div className="mt-10 grid gap-8 sm:grid-cols-2">
+                <div>
+                  <div className="eyebrow mb-3">Charge aiguë et chronique</div>
+                  <LoadChart data={load} />
+                </div>
+                <div>
+                  <div className="eyebrow mb-3">Ratio aiguë / chronique</div>
+                  <AcwrChart data={load} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </NightBand>
+      )}
+
+      <div className="mt-16 space-y-14">
         <Section title="Calendrier d'entraînement" note="26 dernières semaines">
           <TrainingCalendar activities={runs} weeks={26} now={now} />
         </Section>
 
-        {/* -------------------------------------------------------- Charge */}
-        <Section
-          title="Charge d'entraînement"
-          note="La charge aiguë (7 jours) comparée à la charge chronique (28 jours) indique si ta progression est soutenable."
-        >
-          <div className="grid gap-8 lg:grid-cols-[260px_minmax(0,1fr)]">
-            <div>
-              <div className="flex items-baseline gap-2.5">
-                <span className="display text-d1">
-                  {current.ready ? current.ratio.toFixed(2) : "—"}
-                </span>
-              </div>
-              <div className={`mt-2 text-sm font-medium ${ZONE_TONE[current.zone]}`}>
-                {ACWR_LABELS[current.zone]}
-              </div>
-
-              <div className="mt-6">
-                <Row label="Charge aiguë · 7 j" value={current.acute.toFixed(0)} />
-                <Row label="Charge chronique · 28 j" value={current.chronic.toFixed(0)} />
-                <Row label="Volume · 28 j" value={`${month.km} km`} />
-                <Row
-                  label="VMA estimée"
-                  value={profile.vma > 0 ? `${profile.vma} km/h` : "—"}
-                />
-                <Row
-                  label="FC max"
-                  value={`${maxHr} bpm`}
-                  note={settings.maxHr ? "saisie" : "estimée"}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-8">
-              <LoadChart data={load} />
-              <AcwrChart data={load} />
-            </div>
-          </div>
-        </Section>
-
-        {/* -------------------------------------------------------- Forme */}
-        {form && (
-          <Section
-            title="Condition et fraîcheur"
-            note="Moyennes exponentielles 42 j / 7 j. La fraîcheur (condition − fatigue) est ce qui décide de la performance le jour J."
-            action={
-              <Link href="/analysis" className="btn-quiet btn-sm">
-                Analyse détaillée →
-              </Link>
-            }
-          >
-            <div className="grid gap-8 lg:grid-cols-[260px_minmax(0,1fr)]">
-              <div>
-                <div className="flex items-baseline gap-2.5">
-                  <span className="display text-d1">
-                    {form.tsb > 0 ? "+" : ""}
-                    {Math.round(form.tsb)}
-                  </span>
-                  <span className="text-sm text-ink3">TSB</span>
-                </div>
-                <div className={`mt-2 text-sm font-medium ${FORM_TONE[form.zone]}`}>
-                  {FORM_LABEL[form.zone]}
-                </div>
-                <div className="mt-6">
-                  <Row label="Condition · CTL" value={String(Math.round(form.ctl))} />
-                  <Row label="Fatigue · ATL" value={String(Math.round(form.atl))} />
-                  <Row
-                    label="Progression"
-                    value={`${form.rampPerWeek > 0 ? "+" : ""}${form.rampPerWeek}/sem`}
-                    note={form.rampPerWeek > 7 ? "montée rapide" : undefined}
-                  />
-                  <Row
-                    label="Sur 28 jours"
-                    value={`${form.ctlDelta28 > 0 ? "+" : ""}${form.ctlDelta28}`}
-                  />
-                </div>
-              </div>
-              <FormChart data={formRows} height={240} />
-            </div>
-          </Section>
-        )}
-
-        {/* -------------------------------------------------------- Volume */}
         <Section title="Volume hebdomadaire" note="12 dernières semaines">
           <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
             <VolumeChart data={weekly} goalKm={settings.weeklyKmGoal} />
@@ -325,7 +341,6 @@ export default async function SummaryPage() {
           </div>
         </Section>
 
-        {/* -------------------------------------------------------- Allure */}
         <Section title="Allure et cardio">
           <div className="grid gap-10 lg:grid-cols-2">
             <div>
@@ -352,7 +367,6 @@ export default async function SummaryPage() {
           </div>
         </Section>
 
-        {/* -------------------------------------------------------- Zones + comparatif */}
         <Section title="Répartition et comparatif">
           <div className="grid gap-10 lg:grid-cols-3">
             <div>
@@ -376,11 +390,7 @@ export default async function SummaryPage() {
                 was={monthPrev.avgHr ? `${monthPrev.avgHr} bpm` : "—"}
               />
               <Compare label="Dénivelé" now={`${month.elevation} m`} was={`${monthPrev.elevation} m`} />
-              <Compare
-                label="Plus longue"
-                now={`${month.longestRunKm} km`}
-                was={`${monthPrev.longestRunKm} km`}
-              />
+              <Compare label="Plus longue" now={`${month.longestRunKm} km`} was={`${monthPrev.longestRunKm} km`} />
             </div>
 
             <div>
@@ -391,10 +401,7 @@ export default async function SummaryPage() {
                 </Link>
               </div>
               {majors.map((r) => (
-                <div
-                  key={r.key}
-                  className="flex items-baseline justify-between border-b border-hair py-2.5 last:border-b-0"
-                >
+                <div key={r.key} className="flex items-baseline justify-between border-b border-hair py-2.5 last:border-b-0">
                   <span className="flex items-center gap-2 text-[0.8125rem]">
                     {r.name}
                     {!isMaximalEffort(r.vdot, profile.vdot) && (
@@ -413,7 +420,6 @@ export default async function SummaryPage() {
           </div>
         </Section>
 
-        {/* -------------------------------------------------------- Dernières sorties */}
         <Section
           title="Dernières sorties"
           action={
@@ -426,40 +432,33 @@ export default async function SummaryPage() {
             <table className="data-table">
               <thead>
                 <tr>
+                  <th className="w-10" aria-label="Tracé" />
                   <th>Date</th>
                   <th>Séance</th>
                   <th className="text-right">km</th>
                   <th className="text-right">Temps</th>
                   <th className="text-right">Allure</th>
-                  <th className="text-right">FC</th>
-                  <th className="text-right">D+</th>
+                  <th className="hidden text-right sm:table-cell">FC</th>
+                  <th className="hidden text-right sm:table-cell">D+</th>
                 </tr>
               </thead>
               <tbody>
-                {runs.slice(0, 8).map((r) => (
+                {recent.map((r) => (
                   <tr key={r.id}>
-                    <td className="whitespace-nowrap text-ink2">
-                      {fmtDateShort(r.startDate)}
+                    <td className="text-ink2">
+                      <RouteGlyph polyline={glyphs.get(r.id)} size={30} strokeWidth={1.3} dot={false} />
                     </td>
+                    <td className="whitespace-nowrap text-ink2">{fmtDateShort(r.startDate)}</td>
                     <td>
-                      <Link
-                        href={`/activities/${r.id}`}
-                        className="inline-block max-w-[280px] truncate align-middle hover:text-clay"
-                      >
+                      <Link href={`/activities/${r.id}`} className="inline-block max-w-[280px] truncate align-middle hover:text-clay">
                         {r.name}
                       </Link>
                     </td>
                     <td className="num text-right">{(r.distance / 1000).toFixed(2)}</td>
                     <td className="num text-right">{fmtDuration(r.movingTime)}</td>
-                    <td className="num text-right">
-                      {fmtPace(pacePerKm(r.distance, r.movingTime), "")}
-                    </td>
-                    <td className="num text-right text-ink2">
-                      {r.averageHr ? Math.round(r.averageHr) : "—"}
-                    </td>
-                    <td className="num text-right text-ink2">
-                      {Math.round(r.totalElevation)}
-                    </td>
+                    <td className="num text-right">{fmtPace(pacePerKm(r.distance, r.movingTime), "")}</td>
+                    <td className="num hidden text-right text-ink2 sm:table-cell">{r.averageHr ? Math.round(r.averageHr) : "—"}</td>
+                    <td className="num hidden text-right text-ink2 sm:table-cell">{Math.round(r.totalElevation)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -468,6 +467,29 @@ export default async function SummaryPage() {
         </Section>
       </div>
     </>
+  );
+}
+
+/** Chiffre de la bande « forme » : grand, avec son étiquette et sa note. */
+function NightFig({
+  label,
+  value,
+  note,
+  tone = "",
+  big = false,
+}: {
+  label: string;
+  value: string;
+  note?: string;
+  tone?: string;
+  big?: boolean;
+}) {
+  return (
+    <div className="border-l border-hair py-5 pl-4 first:border-l-0 first:pl-0">
+      <div className="eyebrow">{label}</div>
+      <div className={`display mt-2.5 ${big ? "text-d2" : "text-d3"} ${tone}`}>{value}</div>
+      {note && <div className={`mt-1.5 text-micro ${tone || "text-ink3"}`}>{note}</div>}
+    </div>
   );
 }
 

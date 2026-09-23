@@ -1,23 +1,51 @@
 import type { ReactNode } from "react";
+import { NightScope } from "@/components/ui/NightScope";
 
-/** En-tête de page : titre net, sous-titre discret, actions à droite. */
+/**
+ * En-tête de page : un titre qui a de la présence (grand, serré), un
+ * surtitre optionnel en terre cuite, un sous-titre discret, actions à droite.
+ */
 export function PageHead({
   title,
   meta,
   action,
+  kicker,
 }: {
   title: string;
   meta?: ReactNode;
   action?: ReactNode;
+  kicker?: ReactNode;
 }) {
   return (
-    <header className="mb-8 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-      <div>
-        <h1 className="text-[1.75rem] font-semibold tracking-[-0.02em]">{title}</h1>
-        {meta && <p className="mt-1.5 text-sm text-ink2">{meta}</p>}
+    <header className="rise mb-10 flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+      <div className="min-w-0">
+        {kicker && (
+          <div className="mb-3 text-micro font-medium uppercase tracking-[0.16em] text-clay">{kicker}</div>
+        )}
+        <h1 className="text-[clamp(2.1rem,4.4vw,3.1rem)] font-semibold leading-[0.95] tracking-[-0.035em]">{title}</h1>
+        {meta && <p className="mt-3 text-[0.9375rem] text-ink2">{meta}</p>}
       </div>
       {action}
     </header>
+  );
+}
+
+/**
+ * Titre de section : un vrai titre (pas un surtitre gris), posé sur un filet
+ * que marque un trait d'encre plus épais — la signature typographique des
+ * pages, comme les rubriques d'un journal.
+ */
+function SectionTitle({ title, note, action }: { title?: string; note?: ReactNode; action?: ReactNode }) {
+  return (
+    <div className="mb-6 flex items-start justify-between gap-4">
+      <div className="min-w-0">
+        {title && (
+          <h2 className="text-[1.3125rem] font-semibold leading-tight tracking-[-0.018em]">{title}</h2>
+        )}
+        {note && <p className="mt-1.5 max-w-2xl text-[0.8125rem] leading-relaxed text-ink2">{note}</p>}
+      </div>
+      {action && <div className="shrink-0">{action}</div>}
+    </div>
   );
 }
 
@@ -39,20 +67,8 @@ export function Section({
   className?: string;
 }) {
   return (
-    <section className={`border-t border-hair pt-5 ${className}`}>
-      {(title || action) && (
-        <div className="mb-5 flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            {title && <h2 className="eyebrow">{title}</h2>}
-            {note && (
-              <p className="mt-1.5 max-w-2xl text-[0.8125rem] leading-relaxed text-ink2">
-                {note}
-              </p>
-            )}
-          </div>
-          {action && <div className="shrink-0">{action}</div>}
-        </div>
-      )}
+    <section className={`section-rule pt-6 ${className}`}>
+      {(title || action) && <SectionTitle title={title} note={note} action={action} />}
       {children}
     </section>
   );
@@ -121,17 +137,28 @@ export function SectionHead({
   note?: ReactNode;
   action?: ReactNode;
 }) {
+  return <SectionTitle title={title} note={note} action={action} />;
+}
+
+/**
+ * Bande « nuit » pleine largeur : le contrepoint sombre qui donne du relief
+ * aux pages claires. Les variables de couleur y sont redéfinies, donc tout
+ * ce qu'on y pose (textes, filets, graphiques) bascule tout seul.
+ */
+export function NightBand({
+  children,
+  className = "",
+  id,
+}: {
+  children: ReactNode;
+  className?: string;
+  id?: string;
+}) {
   return (
-    <div className="mb-5 flex items-start justify-between gap-4">
-      <div className="min-w-0">
-        <h2 className="eyebrow">{title}</h2>
-        {note && (
-          <p className="mt-1.5 max-w-2xl text-[0.8125rem] leading-relaxed text-ink2">
-            {note}
-          </p>
-        )}
-      </div>
-      {action && <div className="shrink-0">{action}</div>}
-    </div>
+    <section id={id} className={`night full-bleed ${className}`}>
+      <NightScope>
+        <div className="mx-auto max-w-[1240px] px-gutter py-14 sm:py-16">{children}</div>
+      </NightScope>
+    </section>
   );
 }

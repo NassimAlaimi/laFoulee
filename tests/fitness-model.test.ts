@@ -256,3 +256,18 @@ describe("recordTimeline", () => {
     assert.equal(t[0].improvementSeconds, 50);
   });
 });
+
+describe("formHeadline", () => {
+  it("une phrase par zone, qui cite l'écart", async () => {
+    const { formHeadline } = await import("../src/lib/fitness-model.ts");
+    const h = formHeadline({ tsb: -15.4, ctl: 35, zone: "productive", rampPerWeek: 3 });
+    assert.equal(h.title, "Tu construis");
+    assert.match(h.body, /15 points/);
+    assert.match(formHeadline({ tsb: 8, ctl: 50, zone: "optimal", rampPerWeek: 0 }).body, /\+8 sur une condition de 50/);
+  });
+  it("ajoute l'alerte de charge ou de montée rapide", async () => {
+    const { formHeadline } = await import("../src/lib/fitness-model.ts");
+    assert.match(formHeadline({ tsb: -5, ctl: 30, zone: "neutral", rampPerWeek: 9 }).body, /monte vite \(\+9\/sem\)/);
+    assert.match(formHeadline({ tsb: -5, ctl: 30, zone: "neutral", rampPerWeek: 9 }, "danger").body, /risque de blessure/);
+  });
+});

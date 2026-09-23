@@ -166,7 +166,7 @@ export default async function AnalysisPage() {
           title="Condition, fatigue et fraîcheur"
           note="Moyennes exponentielles 42 j / 7 j — la partie pointillée est projetée depuis le plan"
         />
-        <FormChart data={formRows} height={280} />
+        <FormChart data={formRows} height={300} legend={false} />
         <div className="mt-4 grid gap-4 border-t border-hair pt-4 sm:grid-cols-3">
           <Legend color="rgb(var(--slate))" label="Condition (CTL)" note="ce que tu encaisses" />
           <Legend color="rgb(var(--clay))" label="Fatigue (ATL)" note="charge des 7 derniers jours" />

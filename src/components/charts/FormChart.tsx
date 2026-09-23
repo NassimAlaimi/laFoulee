@@ -27,140 +27,173 @@ export type FormRow = {
 };
 
 /**
- * Performance Management Chart.
+ * Performance Management Chart, en deux étages qui partagent l'axe du temps :
  *
- * Condition (CTL) en aire, fatigue (ATL) en trait fin, fraîcheur (TSB) sur
- * l'axe de droite. La partie projetée depuis le plan est en pointillés :
- * l'œil doit distinguer ce qui est mesuré de ce qui est prévu.
+ * - en haut, condition (CTL, aire) et fatigue (ATL, trait fin) ;
+ * - en bas, la fraîcheur (TSB = CTL − ATL) en aire autour de zéro, sage
+ *   au-dessus, rouille en dessous.
+ *
+ * Deux échelles sur un même graphique obligeaient à lire deux axes ; ici
+ * chaque étage a le sien. La partie projetée depuis le plan est en
+ * pointillés : l'œil doit distinguer ce qui est mesuré de ce qui est prévu.
  */
 export function FormChart({
   data,
   raceLabel,
   height = 260,
+  legend = true,
 }: {
   data: FormRow[];
   raceLabel?: string | null;
   height?: number;
+  legend?: boolean;
 }) {
   const t = useChartTheme();
   const firstProjected = data.find((d) => d.projected)?.label;
+  const topH = Math.round(height * 0.6);
+  const bottomH = height - topH;
+
+  // Point de bascule du dégradé : la position de zéro dans l'étendue du TSB
+  const tsbs = data.map((d) => d.tsb);
+  const hi = Math.max(5, ...tsbs);
+  const lo = Math.min(-5, ...tsbs);
+  const zero = hi / (hi - lo);
+  const uid = `f${data.length}${Math.round(hi)}${Math.round(lo)}`;
+
+  const marks = (
+    <>
+      {firstProjected && (
+        <ReferenceLine x={firstProjected} stroke={t.faint} strokeDasharray="3 3" />
+      )}
+      {raceLabel && <ReferenceLine x={raceLabel} stroke={t.rust} strokeDasharray="2 2" />}
+    </>
+  );
+
+  const tooltip = (
+    <Tooltip
+      cursor={{ stroke: t.axis, strokeDasharray: "2 2" }}
+      content={({ payload, label }) => {
+        const d = payload?.[0]?.payload as FormRow | undefined;
+        if (!d) return null;
+        return (
+          <Tip
+            label={`${label}${d.projected ? " · prévu" : ""}`}
+            rows={[
+              { label: "Condition (CTL)", value: d.ctl.toFixed(0), color: t.slate },
+              { label: "Fatigue (ATL)", value: d.atl.toFixed(0), color: t.clay },
+              { label: "Fraîcheur (TSB)", value: `${d.tsb > 0 ? "+" : ""}${d.tsb.toFixed(0)}`, color: d.tsb >= 0 ? t.sage : t.rust },
+            ]}
+          />
+        );
+      }}
+    />
+  );
 
   return (
-    <ResponsiveContainer width="100%" height={height}>
-      <ComposedChart data={data} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
-        <defs>
-          <linearGradient id="ctlFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={t.slate} stopOpacity={0.2} />
-            <stop offset="100%" stopColor={t.slate} stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <CartesianGrid stroke={t.grid} vertical={false} />
-        <XAxis
-          dataKey="label"
-          {...axisProps(t.axis)}
-          dy={4}
-          interval="preserveStartEnd"
-          minTickGap={56}
-        />
-        <YAxis {...axisProps(t.axis)} width={38} />
-        <YAxis yAxisId="tsb" orientation="right" {...axisProps(t.axis)} width={34} />
-
-        <ReferenceLine yAxisId="tsb" y={0} stroke={t.grid} strokeWidth={1} />
-        {firstProjected && (
-          <ReferenceLine
-            x={firstProjected}
-            stroke={t.faint}
-            strokeDasharray="3 3"
-            label={{ value: "prévu", position: "insideTopLeft", fill: t.axis, fontSize: 10 }}
+    <div>
+      <ResponsiveContainer width="100%" height={topH}>
+        <ComposedChart data={data} syncId={uid} margin={{ top: 14, right: 8, bottom: 0, left: 0 }}>
+          <defs>
+            <linearGradient id={`${uid}ctl`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={t.slate} stopOpacity={0.28} />
+              <stop offset="100%" stopColor={t.slate} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid stroke={t.grid} vertical={false} />
+          <XAxis dataKey="label" hide />
+          <YAxis {...axisProps(t.axis)} width={38} />
+          {marks}
+          {firstProjected && (
+            <ReferenceLine
+              x={firstProjected}
+              stroke="transparent"
+              label={{ value: "prévu →", position: "insideTopLeft", fill: t.axis, fontSize: 10 }}
+            />
+          )}
+          {raceLabel && (
+            <ReferenceLine
+              x={raceLabel}
+              stroke="transparent"
+              label={{ value: "course", position: "insideTopRight", fill: t.rust, fontSize: 10 }}
+            />
+          )}
+          <Area type="monotone" dataKey="ctl" stroke="none" fill={`url(#${uid}ctl)`} isAnimationActive={false} />
+          <Line type="monotone" dataKey="ctlPast" stroke={t.slate} strokeWidth={2} dot={false} connectNulls isAnimationActive={false} />
+          <Line
+            type="monotone"
+            dataKey="ctlFuture"
+            stroke={t.slate}
+            strokeWidth={2}
+            strokeDasharray="4 3"
+            dot={false}
+            connectNulls
+            isAnimationActive={false}
           />
-        )}
-        {raceLabel && (
-          <ReferenceLine
-            x={raceLabel}
-            stroke={t.rust}
-            strokeDasharray="2 2"
-            label={{ value: "course", position: "insideTopRight", fill: t.rust, fontSize: 10 }}
+          <Line type="monotone" dataKey="atl" stroke={t.clay} strokeWidth={1} strokeOpacity={0.85} dot={false} isAnimationActive={false} />
+          {tooltip}
+        </ComposedChart>
+      </ResponsiveContainer>
+
+      <ResponsiveContainer width="100%" height={bottomH}>
+        <ComposedChart data={data} syncId={uid} margin={{ top: 6, right: 8, bottom: 0, left: 0 }}>
+          <defs>
+            <linearGradient id={`${uid}tsb`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={t.sage} stopOpacity={0.55} />
+              <stop offset={zero} stopColor={t.sage} stopOpacity={0.08} />
+              <stop offset={zero} stopColor={t.rust} stopOpacity={0.08} />
+              <stop offset="100%" stopColor={t.rust} stopOpacity={0.55} />
+            </linearGradient>
+            <linearGradient id={`${uid}tsbl`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset={zero} stopColor={t.sage} />
+              <stop offset={zero} stopColor={t.rust} />
+            </linearGradient>
+          </defs>
+          <XAxis dataKey="label" {...axisProps(t.axis)} dy={4} interval="preserveStartEnd" minTickGap={56} />
+          <YAxis {...axisProps(t.axis)} width={38} domain={[lo, hi]} ticks={[Math.round(lo), 0, Math.round(hi)]} />
+          <ReferenceLine y={0} stroke={t.axis} strokeOpacity={0.6} />
+          {marks}
+          <Area
+            type="monotone"
+            dataKey="tsbPast"
+            baseValue={0}
+            stroke={`url(#${uid}tsbl)`}
+            strokeWidth={1.4}
+            fill={`url(#${uid}tsb)`}
+            connectNulls
+            isAnimationActive={false}
           />
-        )}
+          <Area
+            type="monotone"
+            dataKey="tsbFuture"
+            baseValue={0}
+            stroke={`url(#${uid}tsbl)`}
+            strokeWidth={1.4}
+            strokeDasharray="4 3"
+            fill={`url(#${uid}tsb)`}
+            fillOpacity={0.5}
+            connectNulls
+            isAnimationActive={false}
+          />
+          {tooltip}
+        </ComposedChart>
+      </ResponsiveContainer>
+      {legend && <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-micro text-ink3">
+        <Key color={t.slate} label="Condition (CTL)" />
+        <Key color={t.clay} label="Fatigue (ATL)" thin />
+        <Key color={t.sage} label="Fraîcheur (TSB) · au-dessus de 0 = frais" area />
+      </div>}
+    </div>
+  );
+}
 
-        <Area
-          type="monotone"
-          dataKey="ctl"
-          stroke="none"
-          fill="url(#ctlFill)"
-          isAnimationActive={false}
-        />
-        <Line
-          type="monotone"
-          dataKey="ctlPast"
-          stroke={t.slate}
-          strokeWidth={1.8}
-          dot={false}
-          connectNulls
-          isAnimationActive={false}
-        />
-        <Line
-          type="monotone"
-          dataKey="ctlFuture"
-          stroke={t.slate}
-          strokeWidth={1.8}
-          strokeDasharray="4 3"
-          dot={false}
-          connectNulls
-          isAnimationActive={false}
-        />
-        <Line
-          type="monotone"
-          dataKey="atl"
-          stroke={t.clay}
-          strokeWidth={1}
-          dot={false}
-          isAnimationActive={false}
-        />
-        <Line
-          yAxisId="tsb"
-          type="monotone"
-          dataKey="tsbPast"
-          stroke={t.sage}
-          strokeWidth={1.4}
-          dot={false}
-          connectNulls
-          isAnimationActive={false}
-        />
-        <Line
-          yAxisId="tsb"
-          type="monotone"
-          dataKey="tsbFuture"
-          stroke={t.sage}
-          strokeWidth={1.4}
-          strokeDasharray="4 3"
-          dot={false}
-          connectNulls
-          isAnimationActive={false}
-        />
-
-        <Tooltip
-          cursor={{ stroke: t.grid }}
-          content={({ payload, label }) => {
-            const d = payload?.[0]?.payload as FormRow | undefined;
-            if (!d) return null;
-            return (
-              <Tip
-                label={`${label}${d.projected ? " · prévu" : ""}`}
-                rows={[
-                  { label: "Condition (CTL)", value: d.ctl.toFixed(0), color: t.slate },
-                  { label: "Fatigue (ATL)", value: d.atl.toFixed(0), color: t.clay },
-                  {
-                    label: "Fraîcheur (TSB)",
-                    value: `${d.tsb > 0 ? "+" : ""}${d.tsb.toFixed(0)}`,
-                    color: t.sage,
-                  },
-                ]}
-              />
-            );
-          }}
-        />
-      </ComposedChart>
-    </ResponsiveContainer>
+function Key({ color, label, thin, area }: { color: string; label: string; thin?: boolean; area?: boolean }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span
+        className="inline-block w-3.5 rounded-sm"
+        style={{ background: color, height: area ? 8 : thin ? 1 : 2, opacity: area ? 0.6 : 1 }}
+      />
+      {label}
+    </span>
   );
 }

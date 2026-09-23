@@ -240,3 +240,40 @@ export function peakForm(
     p.tsb + p.ctl * 0.35 > best.tsb + best.ctl * 0.35 ? p : best
   );
 }
+
+/**
+ * L'état de forme dit en une phrase, pour l'ouverture de la bande « forme »
+ * du tableau de bord : un titre court et une explication qui cite le chiffre.
+ */
+export function formHeadline(
+  f: Pick<FormSummary, "tsb" | "ctl" | "zone" | "rampPerWeek">,
+  acwr?: "insufficient" | "detraining" | "optimal" | "caution" | "danger"
+): { title: string; body: string } {
+  const gap = Math.abs(Math.round(f.tsb));
+  const base: Record<FormZone, { title: string; body: string }> = {
+    overreaching: {
+      title: "Tu tires sur la corde",
+      body: `La fatigue dépasse ta condition de ${gap} points. Une ou deux journées faciles suffisent à repasser en zone de construction.`,
+    },
+    productive: {
+      title: "Tu construis",
+      body: `La fatigue dépasse ta condition de ${gap} points : c'est là qu'on progresse, tant que la récupération suit.`,
+    },
+    neutral: {
+      title: "Tu es en équilibre",
+      body: "Charge et récupération se compensent : ni fatigue qui s'accumule, ni condition qui s'érode.",
+    },
+    optimal: {
+      title: "Tu es affûté",
+      body: `Fraîcheur de +${gap} sur une condition de ${Math.round(f.ctl)} : la fenêtre idéale pour une course ou un test.`,
+    },
+    fresh: {
+      title: "Tu es frais, peut-être trop",
+      body: `Fraîcheur de +${gap} : bien reposé, mais une condition qui ne travaille plus finit par baisser.`,
+    },
+  };
+  const out = { ...base[f.zone] };
+  if (acwr === "danger") out.body += " La charge de la semaine a bondi par rapport au mois : risque de blessure accru.";
+  else if (f.rampPerWeek > 7) out.body += ` Ta condition monte vite (+${f.rampPerWeek}/sem) : surveille les signaux.`;
+  return out;
+}

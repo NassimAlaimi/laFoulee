@@ -7,6 +7,7 @@ import { addDays, daysBetween, round, startOfWeek, type ActivityLike } from "@/l
 import { PHASE_LABELS, weekCompliance, type Phase } from "@/lib/training";
 import { KIND_LABELS, type SessionKind, type Step } from "@/lib/workouts";
 import { Frieze } from "@/components/training/Frieze";
+import { ZONE_LABEL as FORM_LABEL, ZONE_TONE as FORM_TONE, type FormZone } from "@/lib/fitness-model";
 
 const STEP_TONE: Record<string, string> = {
   warmup: "rgb(var(--sage) / 0.55)",
@@ -37,14 +38,16 @@ export async function TodayHero({
   firstname,
   runs,
   now = new Date(),
-  tsb,
+  form,
 }: {
   userId: string;
   firstname: string | null;
   runs: ActivityLike[];
   now?: Date;
-  tsb: number | null;
+  /** Fraîcheur du jour et sa zone — mêmes mots que la bande « forme » */
+  form: { tsb: number; zone: FormZone } | null;
 }) {
+  const tsb = form?.tsb ?? null;
   const plan = await getActivePlan(userId);
   if (plan) await linkActivities(plan.id, now, userId);
 
@@ -269,14 +272,12 @@ export async function TodayHero({
           <div className="flex flex-col gap-2 p-5 lg:p-6">
             <span className="eyebrow">Fraîcheur</span>
             {tsb !== null ? (
-              <Link href="/analysis" className="group">
-                <span className={`display block text-d3 group-hover:text-clay ${tsb >= 5 ? "text-sage" : tsb <= -20 ? "text-rust" : ""}`}>
+              <Link href="/#forme" className="group">
+                <span className={`display block text-d3 group-hover:text-clay ${FORM_TONE[form!.zone]}`}>
                   {tsb > 0 ? "+" : ""}
                   {Math.round(tsb)}
                 </span>
-                <span className="mt-1 block text-micro text-ink3">
-                  {tsb >= 5 ? "frais, prêt à performer" : tsb <= -20 ? "fatigue marquée" : tsb < -5 ? "en construction" : "équilibré"}
-                </span>
+                <span className="mt-1 block text-micro text-ink3">{FORM_LABEL[form!.zone].toLowerCase()}</span>
               </Link>
             ) : (
               <span className="text-[0.8125rem] text-ink3">—</span>

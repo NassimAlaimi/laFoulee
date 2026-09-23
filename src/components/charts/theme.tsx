@@ -2,12 +2,28 @@
 
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
+import { useNight } from "@/components/ui/NightScope";
+
+/** Palette de la bande « nuit » — miroir des variables de `.night` (globals.css). */
+const NIGHT = {
+  grid: "rgb(56 51 46)",
+  axis: "rgb(134 127 117)",
+  ink: "rgb(244 239 231)",
+  clay: "rgb(236 122 84)",
+  ochre: "rgb(214 176 80)",
+  sage: "rgb(150 182 112)",
+  slate: "rgb(140 172 196)",
+  plum: "rgb(186 146 178)",
+  rust: "rgb(226 102 82)",
+  faint: "rgb(80 74 67)",
+};
 
 /**
  * Les graphiques lisent les variables CSS du thème pour rester cohérents
  * en clair comme en sombre, plutôt que d'embarquer des couleurs en dur.
  */
 export function useChartTheme() {
+  const night = useNight();
   const [t, setT] = useState({
     grid: "#E2DDD4",
     axis: "#969188",
@@ -50,7 +66,7 @@ export function useChartTheme() {
     return () => obs.disconnect();
   }, []);
 
-  return t;
+  return night ? NIGHT : t;
 }
 
 export function axisProps(color: string) {

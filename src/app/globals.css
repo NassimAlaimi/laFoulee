@@ -61,6 +61,9 @@
   }
 
   body {
+    /* clip (et non hidden) : coupe le débord des bandes pleine largeur sans
+       créer de conteneur de défilement, l'en-tête collant reste collant. */
+    overflow-x: clip;
     background: rgb(var(--bg));
     color: rgb(var(--ink));
     font-feature-settings: "tnum" 1, "ss03" 1, "cv05" 1;
@@ -117,6 +120,60 @@
 
   .rule {
     @apply border-t border-hair;
+  }
+
+  /* Filet de section avec son trait d'encre : la signature des rubriques */
+  .section-rule {
+    position: relative;
+    border-top: 1px solid rgb(var(--hair));
+  }
+  .section-rule::before {
+    content: "";
+    position: absolute;
+    top: -1px;
+    left: 0;
+    width: 2.25rem;
+    height: 2px;
+    background: rgb(var(--ink));
+  }
+
+  /* Pleine largeur depuis un conteneur centré */
+  .full-bleed {
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+  }
+
+  /* Bande « nuit » : on redéfinit la palette localement, tout ce qui est
+     posé dedans (texte, filets, graphiques) passe en sombre. Plus chaude et
+     plus claire que le fond du thème sombre pour s'en détacher aussi. */
+  .night {
+    scroll-margin-top: 3.5rem;
+    color-scheme: dark;
+    --bg: 24 21 19;
+    --panel: 32 29 26;
+    --sunken: 38 34 31;
+    --hair: 56 51 46;
+    --hair-strong: 80 74 67;
+    --ink: 244 239 231;
+    --ink-2: 184 176 165;
+    --ink-3: 134 127 117;
+    --clay: 236 122 84;
+    --ochre: 214 176 80;
+    --sage: 150 182 112;
+    --slate: 140 172 196;
+    --plum: 186 146 178;
+    --rust: 226 102 82;
+    color: rgb(var(--ink));
+    background:
+      radial-gradient(70% 90% at 85% 0%, rgb(var(--clay) / 0.13), transparent 60%),
+      radial-gradient(50% 70% at 0% 100%, rgb(var(--ochre) / 0.06), transparent 65%),
+      rgb(var(--bg));
+  }
+  .night * {
+    border-color: rgb(var(--hair));
+  }
+  [data-theme="dark"] .night {
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05), inset 0 -1px 0 rgb(255 255 255 / 0.05);
   }
 
   /* Papier millimétré : quadrillage discret sous les tracés GPS */
@@ -348,6 +405,13 @@
 
 .rise {
   animation: rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .palette {
+    animation: none;
+  }
 }
 
 ::-webkit-scrollbar {
