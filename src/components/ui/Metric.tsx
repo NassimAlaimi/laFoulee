@@ -7,7 +7,7 @@ import type { Trend } from "@/lib/stats";
  */
 export function MetricBand({ children }: { children: ReactNode }) {
   return (
-    <div className="grid grid-cols-2 divide-x divide-hair border-t border-hair lg:grid-cols-4">
+    <div className="metric-band grid grid-cols-2 border-t border-hair lg:grid-cols-4">
       {children}
     </div>
   );
@@ -33,14 +33,14 @@ export function Metric({
   size?: "d2" | "d3";
 }) {
   return (
-    <div className="px-5 py-5 first:pl-0 lg:px-6">
+    <div className="min-w-0 px-5 py-5 lg:px-6">
       <div className="eyebrow">{label}</div>
       <div className="mt-3 flex items-end justify-between gap-3">
         <div className="flex items-baseline gap-1.5">
           <span className={`display text-${size}`}>{value}</span>
           {unit && <span className="text-sm text-ink3">{unit}</span>}
         </div>
-        {visual && <div className="shrink-0 pb-1">{visual}</div>}
+        {visual && <div className="hidden shrink-0 pb-1 sm:block">{visual}</div>}
       </div>
       <div className="mt-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
         {trend && <TrendMark trend={trend} lowerIsBetter={lowerIsBetter} />}

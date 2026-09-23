@@ -20,24 +20,33 @@ export const themeScript = `
 })();
 `;
 
+/** Bascule le thème — utilisable depuis n'importe quel composant client. */
+export function toggleTheme() {
+  const current = document.documentElement.getAttribute("data-theme");
+  const next: Mode = current === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", next);
+  try {
+    localStorage.setItem("theme", next);
+  } catch {
+    /* stockage indisponible : le thème reste valable pour la session */
+  }
+}
+
 export function ThemeToggle() {
   const [mode, setMode] = useState<Mode | null>(null);
 
+  // L'attribut peut changer ailleurs (palette, raccourci Maj+D) : on l'observe
+  // plutôt que de supposer être le seul à le modifier.
   useEffect(() => {
-    const current = document.documentElement.getAttribute("data-theme");
-    setMode(current === "dark" ? "dark" : "light");
+    const read = () =>
+      setMode(document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light");
+    read();
+    const obs = new MutationObserver(read);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
   }, []);
 
-  function toggle() {
-    const next: Mode = mode === "dark" ? "light" : "dark";
-    document.documentElement.setAttribute("data-theme", next);
-    try {
-      localStorage.setItem("theme", next);
-    } catch {
-      /* stockage indisponible : le thème reste valable pour la session */
-    }
-    setMode(next);
-  }
+  const toggle = toggleTheme;
 
   return (
     <button

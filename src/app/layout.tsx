@@ -3,6 +3,7 @@ import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 import { TopNav } from "@/components/Nav";
+import { CommandPalette } from "@/components/CommandPalette";
 import { themeScript } from "@/components/Theme";
 import { currentUser, displayName } from "@/lib/auth";
 
@@ -45,7 +46,8 @@ export default async function RootLayout({
       </head>
       <body>
         {account && <TopNav user={account} />}
-        <main className="mx-auto max-w-[1240px] px-gutter pb-24 pt-8">
+        {account && <CommandPalette />}
+        <main className="mx-auto max-w-[1240px] px-gutter pb-28 pt-8 md:pb-24">
           {children}
         </main>
       </body>

@@ -51,13 +51,13 @@ export function AccountMenu({ user }: { user: AccountInfo }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 rounded-full border border-hair py-1 pl-1 pr-2.5 text-[0.8125rem] text-ink2 transition-colors hover:text-ink"
+        className="flex items-center gap-2 rounded-full border border-hair p-1 text-[0.8125rem] 2xl:pr-2.5 text-ink2 transition-colors hover:text-ink"
         aria-haspopup="menu"
         aria-expanded={open}
         title={user.name}
       >
         <Avatar user={user} />
-        <span className="hidden max-w-[7rem] truncate sm:block">{user.name}</span>
+        <span className="hidden max-w-[7rem] truncate 2xl:block">{user.name}</span>
       </button>
 
       {open && (

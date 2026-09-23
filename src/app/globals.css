@@ -246,6 +246,35 @@
     background: rgb(var(--sunken) / 0.6);
   }
 
+  /* Bandeau de métriques : filets verticaux entre colonnes, qu'il y en ait
+     2 (mobile) ou 4 (desktop), sans filet orphelin en début de ligne. */
+  .metric-band > * {
+    border-left: 1px solid rgb(var(--hair));
+  }
+  .metric-band > *:nth-child(2n + 1) {
+    border-left: 0;
+    padding-left: 0;
+  }
+  .metric-band > *:nth-child(n + 3) {
+    border-top: 1px solid rgb(var(--hair));
+  }
+  @media (min-width: 1024px) {
+    .metric-band > *:nth-child(2n + 1) {
+      border-left: 1px solid rgb(var(--hair));
+      padding-left: 1.5rem;
+    }
+    .metric-band > *:nth-child(4n + 1) {
+      border-left: 0;
+      padding-left: 0;
+    }
+    .metric-band > *:nth-child(n + 3) {
+      border-top: 0;
+    }
+    .metric-band > *:nth-child(n + 5) {
+      border-top: 1px solid rgb(var(--hair));
+    }
+  }
+
   /* Touche de clavier */
   .kbd {
     @apply inline-flex min-w-[1.25rem] items-center justify-center rounded-[4px] border border-hairStrong
@@ -272,6 +301,22 @@
       transparent
     );
     animation: shimmer 1.6s infinite;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.palette {
+  animation: palette-in 0.16s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes palette-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.985);
   }
 }
 
