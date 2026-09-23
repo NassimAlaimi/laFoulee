@@ -14,6 +14,8 @@
  * - Un groupe secondaire compte pour une demi-série.
  */
 
+import { addDays, startOfWeek } from "./stats";
+
 export type Muscle =
   | "quads"
   | "hamstrings"
@@ -415,3 +417,111 @@ export const TEMPLATES: Template[] = [
     ],
   },
 ];
+
+// ------------------------------------------------------- Force relative
+
+/**
+ * Force relative : 1RM estimé divisé par le poids de corps. C'est la métrique
+ * qui parle à un coureur — « je squatte 1,3× mon poids » — bien plus qu'un
+ * chiffre absolu. `null` sans l'une des deux données.
+ */
+export function relativeStrength(oneRM: number | null, bodyweightKg: number | null): number | null {
+  if (oneRM == null || oneRM <= 0) return null;
+  if (bodyweightKg == null || bodyweightKg <= 0) return null;
+  return Math.round((oneRM / bodyweightKg) * 10) / 10;
+}
+
+/** Famille d'exercice, d'après le muscle principal (premier `primary`). */
+export type LiftClass = "lower" | "upper";
+
+const LOWER: Muscle[] = ["quads", "glutes", "hamstrings", "calves", "hips"];
+const UPPER: Muscle[] = ["chest", "shoulders", "arms", "back"];
+
+export function liftClass(exercise: Exercise): LiftClass | null {
+  const m = exercise.primary[0];
+  if (!m) return null;
+  if (LOWER.includes(m)) return "lower";
+  if (UPPER.includes(m)) return "upper";
+  return null;
+}
+
+/**
+ * Repère qualitatif du ratio force/poids. Les levées de bas du corps se jugent
+ * sur une échelle plus haute (1,5× au squat = solide), celles du haut sur une
+ * échelle plus basse (1× au développé couché = solide).
+ */
+export function relativeLevel(ratio: number, exercise: Exercise): string | null {
+  const cls = liftClass(exercise);
+  if (cls === "lower") {
+    if (ratio >= 2) return "élite";
+    if (ratio >= 1.5) return "avancé";
+    if (ratio >= 1) return "intermédiaire";
+    return "débutant";
+  }
+  if (cls === "upper") {
+    if (ratio >= 1.25) return "élite";
+    if (ratio >= 0.9) return "avancé";
+    if (ratio >= 0.6) return "intermédiaire";
+    return "débutant";
+  }
+  return null;
+}
+
+// ------------------------------------------------------- Garde-fou de charge
+
+export type StrengthAcwr = {
+  /** Séries dures des 7 derniers jours. */
+  acute: number;
+  /** Moyenne hebdomadaire de séries dures sur 28 jours. */
+  chronic: number;
+  /** acute / chronic, null si aucune donnée sur 28 jours. */
+  ratio: number | null;
+  zone: "insufficient" | "optimal" | "caution" | "danger";
+};
+
+/**
+ * Charge de renforcement, sur le modèle de l'ACWR course : les séries dures
+ * de la semaine contre la moyenne des 4 dernières semaines. Une montée trop
+ * rapide (> 1,5) signale un risque de blessure, exactement comme en course.
+ */
+export function strengthAcwr(workouts: WorkoutLike[], now = new Date()): StrengthAcwr {
+  const DAY = 86_400_000;
+  const hard = (w: WorkoutLike) => w.sets.filter(isHardSet).length;
+  let acute = 0;
+  let chronicTotal = 0;
+  for (const w of workouts) {
+    const age = now.getTime() - w.date.getTime();
+    if (age < 0) continue;
+    const n = hard(w);
+    if (age <= 7 * DAY) acute += n;
+    if (age <= 28 * DAY) chronicTotal += n;
+  }
+  const chronic = chronicTotal / 4;
+  // Sans au moins deux semaines de recul, un ratio serait trompeur : une
+  // première séance isolée donnerait un faux « risque » (acute / 0,5).
+  const hasHistory = workouts.some((w) => now.getTime() - w.date.getTime() >= 14 * DAY);
+  const ratio = chronic > 0 && hasHistory ? Math.round((acute / chronic) * 100) / 100 : null;
+  const zone: StrengthAcwr["zone"] =
+    ratio == null ? "insufficient" : ratio >= 1.5 ? "danger" : ratio >= 1.3 ? "caution" : ratio < 0.8 ? "insufficient" : "optimal";
+  return { acute, chronic: Math.round(chronic * 10) / 10, ratio, zone };
+}
+
+// ------------------------------------------- Chaîne du coureur, semaine à semaine
+
+export type MuscleWeek = {
+  start: Date;
+  byMuscle: Record<Muscle, number>;
+};
+
+/** Séries dures par muscle, semaine après semaine (du lundi au dimanche). */
+export function muscleSeries(workouts: WorkoutLike[], weeks = 12, now = new Date()): MuscleWeek[] {
+  const monday = startOfWeek(now);
+  const out: MuscleWeek[] = [];
+  for (let i = weeks - 1; i >= 0; i--) {
+    const start = addDays(monday, -7 * i);
+    const end = addDays(start, 7);
+    const sets = workouts.filter((w) => w.date >= start && w.date < end).flatMap((w) => w.sets);
+    out.push({ start, byMuscle: setsByMuscle(sets) });
+  }
+  return out;
+}

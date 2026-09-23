@@ -8,14 +8,16 @@ export function Sparkline({
   width = 88,
   height = 26,
   stroke = "rgb(var(--ink-3))",
+  className = "",
 }: {
   data: number[];
   width?: number;
   height?: number;
   stroke?: string;
+  className?: string;
 }) {
   const pts = data.filter((n) => Number.isFinite(n));
-  if (pts.length < 2) return <div style={{ width, height }} aria-hidden />;
+  if (pts.length < 2) return <div style={{ width, height }} className={className} aria-hidden />;
 
   const min = Math.min(...pts);
   const max = Math.max(...pts);
@@ -29,7 +31,7 @@ export function Sparkline({
     .join(" ");
 
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden>
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className={className} aria-hidden>
       <path d={d} fill="none" stroke={stroke} strokeWidth="1.25" strokeLinejoin="round" />
       <circle
         cx={x(pts.length - 1)}

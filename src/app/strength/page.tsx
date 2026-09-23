@@ -5,7 +5,7 @@ import { Sparkline } from "@/components/ui/Spark";
 import { requireUserId } from "@/lib/auth";
 import { fmtDateShort, fmtDuration } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
-import { getStrengthSessions } from "@/lib/queries";
+import { getSettings, getStrengthSessions } from "@/lib/queries";
 import { addDays, compareTrend, daysBetween, startOfWeek } from "@/lib/stats";
 import { loadWorkouts } from "@/lib/strength-store";
 import {
@@ -15,7 +15,11 @@ import {
   exerciseHistories,
   exerciseInfo,
   isHardSet,
+  muscleSeries,
+  relativeLevel,
+  relativeStrength,
   setsByMuscle,
+  strengthAcwr,
   tonnage,
   workoutPRs,
   type Muscle,
@@ -24,6 +28,19 @@ import {
 export const dynamic = "force-dynamic";
 
 const kg = (v: number) => (v % 1 ? v.toFixed(1).replace(".", ",") : String(v));
+
+const STRENGTH_ACWR_LABEL: Record<string, string> = {
+  insufficient: "Sous-charge",
+  optimal: "Zone optimale",
+  caution: "Prudence",
+  danger: "Risque élevé",
+};
+const STRENGTH_ACWR_TONE: Record<string, string> = {
+  insufficient: "text-ink3",
+  optimal: "text-sage",
+  caution: "text-ochre",
+  danger: "text-rust",
+};
 
 /**
  * Musculation — le renforcement vu depuis la course à pied.
@@ -36,7 +53,11 @@ const kg = (v: number) => (v % 1 ? v.toFixed(1).replace(".", ",") : String(v));
 export default async function StrengthPage() {
   const userId = await requireUserId();
   const now = new Date();
-  const [workouts, strava] = await Promise.all([loadWorkouts(userId), getStrengthSessions(undefined, userId)]);
+  const [workouts, strava, settings] = await Promise.all([
+    loadWorkouts(userId),
+    getStrengthSessions(undefined, userId),
+    getSettings(userId),
+  ]);
 
   const linked = new Set(workouts.map((w) => w.activityId).filter(Boolean));
   const undetailed = strava.filter((s) => !linked.has(s.id));
@@ -84,6 +105,11 @@ export default async function StrengthPage() {
   const sessionsPrev = w56.length + undetailed.filter((s) => within(s.startDate, 56, 28)).length;
   const tonnage28 = w28.reduce((a, w) => a + tonnage(w.sets), 0);
   const hardPerWeek = w28.reduce((a, w) => a + w.sets.filter(isHardSet).length, 0) / 4;
+
+  // Garde-fou de charge + évolution par muscle + force relative
+  const acwr = strengthAcwr(workouts, now);
+  const series = muscleSeries(workouts, 12, now);
+  const bodyweight = settings.weightKg ?? null;
 
   const prs90 = workouts
     .filter((w) => within(w.date, 90, -1))
@@ -164,6 +190,44 @@ export default async function StrengthPage() {
         />
       </MetricBand>
 
+      {/* ---------------------------------------------- Garde-fou de charge */}
+      <Section
+        title="Garde-fou de charge"
+        note="Comme en course, la blessure vient de la montée trop rapide, pas du volume : séries dures de la semaine contre la moyenne des 4 dernières semaines."
+      >
+        <div className="flex flex-wrap items-baseline gap-x-12 gap-y-5">
+          <div>
+            <div className="eyebrow">Ratio aiguë / chronique</div>
+            <div className="mt-2 flex items-baseline gap-2.5">
+              <span className={`display text-d2 ${acwr.ratio != null ? STRENGTH_ACWR_TONE[acwr.zone] : ""}`}>
+                {acwr.ratio != null ? acwr.ratio.toFixed(2) : "—"}
+              </span>
+              <span className="text-sm text-ink2">
+                {acwr.ratio != null ? STRENGTH_ACWR_LABEL[acwr.zone] : "pas encore assez de recul"}
+              </span>
+            </div>
+          </div>
+          <div>
+            <div className="eyebrow">Aiguë · 7 j</div>
+            <div className="mt-2 text-xl font-semibold tabular-nums">
+              {acwr.acute} <span className="text-sm font-normal text-ink3">séries dures</span>
+            </div>
+          </div>
+          <div>
+            <div className="eyebrow">Chronique · 28 j</div>
+            <div className="mt-2 text-xl font-semibold tabular-nums">
+              {acwr.chronic} <span className="text-sm font-normal text-ink3">/ semaine</span>
+            </div>
+          </div>
+        </div>
+        {(acwr.zone === "danger" || acwr.zone === "caution") && (
+          <p className="mt-5 rounded-[7px] border border-ochre/40 bg-ochre/10 px-4 py-3 text-[0.8125rem] leading-relaxed text-ink2">
+            Tu as ajouté plus de séries dures que d&apos;habitude cette semaine. Ralentis ou garde
+            une sortie facile : c&apos;est la montée rapide qui blesse, pas le volume.
+          </p>
+        )}
+      </Section>
+
       <div className="mt-10 space-y-10">
         {/* ---------------------------------------------- Équilibre du coureur */}
         <Section
@@ -200,6 +264,24 @@ export default async function StrengthPage() {
           </div>
         </Section>
 
+        {/* ---------------------------------------------- Chaîne du coureur · évolution */}
+        <Section
+          title="La chaîne du coureur · 12 semaines"
+          note="Séries dures par semaine, muscle par muscle — repère les groupes qui progressent et ceux qui s'endorment."
+        >
+          <div className="space-y-2.5">
+            {(Object.keys(RUNNER_WEEKLY_SETS) as Muscle[]).map((m) => (
+              <div key={m} className="grid grid-cols-[140px_minmax(0,1fr)_56px] items-center gap-4">
+                <span className="text-[0.8125rem]">{MUSCLE_LABELS[m]}</span>
+                <Sparkline data={series.map((s) => s.byMuscle[m])} width={240} height={28} className="w-full" />
+                <span className="text-right font-mono text-[0.8125rem] font-medium tabular-nums">
+                  {kg(series[series.length - 1].byMuscle[m])}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Section>
+
         {/* ---------------------------------------------- Exercices */}
         {histories.length > 0 && (
           <Section title="Tes exercices" note="Meilleur 1RM estimé (Epley/Brzycki, répétitions en réserve incluses) et son évolution séance après séance.">
@@ -220,6 +302,8 @@ export default async function StrengthPage() {
                     const info = exerciseInfo(h.exercise);
                     const top = h.sessions.reduce((a, b) => (b.topWeight > a.topWeight ? b : a));
                     const trend = h.sessions.map((s) => s.e1rm ?? s.topReps);
+                    const rel = relativeStrength(h.bestE1rm, bodyweight);
+                    const level = rel != null ? relativeLevel(rel, info) : null;
                     return (
                       <tr key={h.exercise}>
                         <td>
@@ -232,7 +316,15 @@ export default async function StrengthPage() {
                         <td className="num text-right">
                           {top.topWeight > 0 ? `${top.topReps} × ${kg(top.topWeight)} kg` : `${h.bestReps}${info.unit === "seconds" ? " s" : " reps"}`}
                         </td>
-                        <td className="num text-right font-medium">{h.bestE1rm ? `${kg(Math.round(h.bestE1rm))} kg` : "—"}</td>
+                        <td className="num text-right font-medium">
+                          {h.bestE1rm ? `${kg(Math.round(h.bestE1rm))} kg` : "—"}
+                          {rel != null && (
+                            <div className="font-mono text-micro font-normal tabular-nums text-ink3">
+                              {rel.toLocaleString("fr-FR")} × poids
+                              {level && <span className="ml-1 text-sage">{level}</span>}
+                            </div>
+                          )}
+                        </td>
                         <td className="text-right">
                           <span className="inline-block">
                             <Sparkline data={trend} width={72} height={20} />

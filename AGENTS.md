@@ -8,14 +8,13 @@ commentaires et messages de commit **en français**.
 
 | Zone | Statut | Depuis |
 |---|---|---|
-| **Musculation** — `src/app/strength/**`, `src/app/api/strength/**`, `src/components/strength/**`, `src/lib/strength.ts`, `src/lib/strength-store.ts`, `tests/strength.test.ts`, modèles Prisma `StrengthWorkout` / `StrengthSet` | **Gelée : ne pas modifier** | 23 sept. 2026 |
+| **Musculation** — `src/app/strength/**`, `src/app/api/strength/**`, `src/components/strength/**`, `src/lib/strength.ts`, `src/lib/strength-store.ts`, `tests/strength.test.ts`, modèles Prisma `StrengthWorkout` / `StrengthSet` | **Gelée jusqu'au 24 sept. 2026, puis levée sur demande explicite** | gel 23 sept. 2026 |
 
-Tant qu'une zone est gelée : pas de nouvelle fonctionnalité, pas de refonte, pas
-de retouche visuelle, pas de renommage. Seule exception : un changement ailleurs
-qui casserait la compilation ou les tests de la zone (adapter le strict minimum
-et le signaler). Les autres pages peuvent continuer à *lire* ses données (ex. la
-rétrospective affiche le nombre de séances de renfo). Le gel ne se lève que sur
-demande explicite du propriétaire.
+La Muscu a été gelée le 23 sept. 2026 puis **dégelée le 24 sept. 2026** à la demande
+explicite de Nassim, pour huit améliorations précises : force relative (1RM/poids),
+garde-fou de charge (ACWR muscu), évolution de la chaîne du coureur, objectif de force,
+duplication de séance, exercices épinglés, séance planifiée → modèle, RPE × charge.
+On reste libre sur ces fichiers, mais on n'étend pas au-delà sans validation.
 
 ## Commandes
 

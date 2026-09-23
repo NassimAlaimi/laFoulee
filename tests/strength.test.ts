@@ -8,11 +8,17 @@ import {
   exerciseHistories,
   exerciseInfo,
   isHardSet,
+  liftClass,
+  muscleSeries,
   nextSuggestion,
+  relativeLevel,
+  relativeStrength,
   setsByMuscle,
+  strengthAcwr,
   tonnage,
   workoutPRs,
   type SetLike,
+  type WorkoutLike,
 } from "../src/lib/strength.ts";
 
 const set = (exercise: string, reps: number, weightKg: number, rir: number | null = null, isWarmup = false): SetLike => ({
@@ -127,5 +133,78 @@ describe("bibliothèque", () => {
     const e = exerciseInfo("Kettlebell swing");
     assert.equal(e.name, "Kettlebell swing");
     assert.deepEqual(e.primary, []);
+  });
+});
+
+describe("force relative", () => {
+  it("ratio 1RM / poids, arrondi au dixième", () => {
+    assert.equal(relativeStrength(97.5, 75), 1.3);
+    assert.equal(relativeStrength(null, 75), null);
+    assert.equal(relativeStrength(100, null), null);
+    assert.equal(relativeStrength(100, 0), null);
+  });
+
+  it("classe un squat en « bas du corps » et un développé couché en « haut »", () => {
+    assert.equal(liftClass(exerciseInfo("back-squat")), "lower");
+    assert.equal(liftClass(exerciseInfo("deadlift")), "lower");
+    assert.equal(liftClass(exerciseInfo("bench-press")), "upper");
+    assert.equal(liftClass(exerciseInfo("pull-up")), "upper");
+    assert.equal(liftClass(exerciseInfo("Kettlebell swing")), null);
+  });
+
+  it("repère qualitatif : échelles séparées bas/haut du corps", () => {
+    const squat = exerciseInfo("back-squat");
+    const bench = exerciseInfo("bench-press");
+    assert.equal(relativeLevel(1.5, squat), "avancé");
+    assert.equal(relativeLevel(0.9, bench), "avancé");
+    assert.equal(relativeLevel(0.7, squat), "débutant");
+    assert.equal(relativeLevel(0.7, bench), "intermédiaire");
+  });
+});
+
+describe("garde-fou de charge (ACWR muscu)", () => {
+  const now = new Date(2026, 5, 1); // 1er juin 2026
+  const w = (daysAgo: number, hardSets: number): WorkoutLike => ({
+    id: String(daysAgo),
+    date: new Date(now.getTime() - daysAgo * 86_400_000),
+    sets: Array.from({ length: hardSets }, (_, i) => set("back-squat", 5, 60 + i)),
+  });
+
+  it("calcule aiguë (7 j), chronique (28 j) et le ratio", () => {
+    // 3 séries dures dans les 7 derniers jours, 5 séries dures sur les 3 semaines précédentes
+    const load = strengthAcwr([w(1, 3), w(15, 3), w(25, 2)], now);
+    assert.equal(load.acute, 3);
+    assert.equal(load.chronic, 2); // (3 + 3 + 2) / 4
+    assert.equal(load.ratio, 1.5);
+    assert.equal(load.zone, "danger");
+  });
+
+  it("ratio null sans donnée sur 28 jours", () => {
+    const load = strengthAcwr([w(1, 2)], now);
+    assert.equal(load.ratio, null);
+    assert.equal(load.zone, "insufficient");
+  });
+
+  it("montée raisonnable → optimal", () => {
+    const load = strengthAcwr([w(1, 8), w(8, 8), w(15, 8), w(22, 8)], now);
+    assert.equal(load.ratio, 1);
+    assert.equal(load.zone, "optimal");
+  });
+});
+
+describe("muscleSeries", () => {
+  it("séries dures par muscle, semaine après semaine", () => {
+    const now = new Date(2026, 5, 10); // mercredi 10 juin 2026
+    const monday = new Date(2026, 5, 8);
+    const w1 = {
+      id: "1",
+      date: new Date(2026, 5, 8), // lundi
+      sets: [set("back-squat", 5, 60), set("back-squat", 5, 60)],
+    };
+    const series = muscleSeries([w1], 2, now);
+    assert.equal(series.length, 2);
+    assert.equal(series[1].start.getTime(), monday.getTime());
+    assert.equal(series[1].byMuscle.quads, 2);
+    assert.equal(series[0].byMuscle.quads, 0);
   });
 });
