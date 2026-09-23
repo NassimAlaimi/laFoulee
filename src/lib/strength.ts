@@ -525,3 +525,51 @@ export function muscleSeries(workouts: WorkoutLike[], weeks = 12, now = new Date
   }
   return out;
 }
+
+// ------------------------------------------------------- Objectif de force
+
+export type StrengthGoalProgress = {
+  current: number;
+  target: number;
+  /** 0..100, plafonné. */
+  percent: number;
+  /** "kg" (cible absolue) ou "×" (cible relative au poids de corps). */
+  unit: "kg" | "×";
+  done: boolean;
+};
+
+/**
+ * Progression vers une cible de force : soit un 1RM absolu (« 100 kg »), soit
+ * une cible relative (« 1,5 × ton poids »). Null sans la donnée nécessaire
+ * (record 1RM pour l'absolu ; record + poids de corps pour le relatif).
+ */
+export function strengthGoalProgress(opts: {
+  targetKg: number | null;
+  targetRel: number | null;
+  bestE1rm: number | null;
+  bodyweightKg: number | null;
+}): StrengthGoalProgress | null {
+  const { targetKg, targetRel, bestE1rm, bodyweightKg } = opts;
+  if (targetKg != null && targetKg > 0) {
+    if (bestE1rm == null || bestE1rm <= 0) return null;
+    return {
+      current: bestE1rm,
+      target: targetKg,
+      percent: Math.min(100, Math.round((bestE1rm / targetKg) * 100)),
+      unit: "kg",
+      done: bestE1rm >= targetKg,
+    };
+  }
+  if (targetRel != null && targetRel > 0) {
+    if (bestE1rm == null || bestE1rm <= 0 || bodyweightKg == null || bodyweightKg <= 0) return null;
+    const rel = bestE1rm / bodyweightKg;
+    return {
+      current: Math.round(rel * 10) / 10,
+      target: targetRel,
+      percent: Math.min(100, Math.round((rel / targetRel) * 100)),
+      unit: "×",
+      done: rel >= targetRel,
+    };
+  }
+  return null;
+}

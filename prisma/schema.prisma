@@ -38,6 +38,7 @@ model User {
   gear          Gear[]
   syncLogs      SyncLog[]
   strengthWorkouts StrengthWorkout[]
+  strengthGoals   StrengthGoal[]
 
   /// Jeton secret de l'abonnement agenda (.ics). Null = abonnement désactivé.
   /// Stocké en clair : il n'ouvre qu'une lecture du plan, et doit pouvoir
@@ -486,4 +487,22 @@ model StrengthSet {
 
   @@index([workoutId, position, setIndex])
   @@index([exercise])
+}
+
+/// Objectif de force : cible de 1RM, absolue (kg) ou relative (× poids de corps).
+model StrengthGoal {
+  id        String @id @default(cuid())
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  /// Slug de la bibliothèque (lib/strength.ts)
+  exercise  String
+  /// Cible absolue en kg (1RM estimé)
+  targetKg  Float?
+  /// Cible relative, en multiple du poids de corps
+  targetRel Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }

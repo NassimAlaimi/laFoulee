@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { revalidatePath } from "next/cache";
 import { Empty, PageHead, Section } from "@/components/ui/Layout";
-import { Metric, MetricBand } from "@/components/ui/Metric";
+import { Bar, Metric, MetricBand } from "@/components/ui/Metric";
 import { Sparkline } from "@/components/ui/Spark";
 import { requireUserId } from "@/lib/auth";
 import { fmtDateShort, fmtDuration } from "@/lib/format";
@@ -9,6 +10,7 @@ import { getSettings, getStrengthSessions } from "@/lib/queries";
 import { addDays, compareTrend, daysBetween, startOfWeek } from "@/lib/stats";
 import { loadWorkouts } from "@/lib/strength-store";
 import {
+  EXERCISES,
   MUSCLE_LABELS,
   RUNNER_WEEKLY_SETS,
   TEMPLATES,
@@ -20,6 +22,7 @@ import {
   relativeStrength,
   setsByMuscle,
   strengthAcwr,
+  strengthGoalProgress,
   tonnage,
   workoutPRs,
   type Muscle,
@@ -53,10 +56,11 @@ const STRENGTH_ACWR_TONE: Record<string, string> = {
 export default async function StrengthPage() {
   const userId = await requireUserId();
   const now = new Date();
-  const [workouts, strava, settings] = await Promise.all([
+  const [workouts, strava, settings, goals] = await Promise.all([
     loadWorkouts(userId),
     getStrengthSessions(undefined, userId),
     getSettings(userId),
+    prisma.strengthGoal.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
   ]);
 
   const linked = new Set(workouts.map((w) => w.activityId).filter(Boolean));
@@ -146,6 +150,32 @@ export default async function StrengthPage() {
     ...workouts.map((w) => ({ kind: "detailed" as const, date: w.date, w })),
     ...undetailed.map((s) => ({ kind: "strava" as const, date: s.startDate, s })),
   ].sort((a, b) => b.date.getTime() - a.date.getTime());
+
+  async function createStrengthGoal(formData: FormData) {
+    "use server";
+    const exercise = String(formData.get("exercise") ?? "").trim();
+    const mode = String(formData.get("mode") ?? "weight");
+    const target = Number(formData.get("target"));
+    if (!exercise || !Number.isFinite(target) || target <= 0) return;
+    const owner = await requireUserId();
+    await prisma.strengthGoal.create({
+      data: {
+        userId: owner,
+        exercise,
+        targetKg: mode === "weight" ? target : null,
+        targetRel: mode === "relative" ? target : null,
+      },
+    });
+    revalidatePath("/strength");
+  }
+
+  async function deleteStrengthGoal(formData: FormData) {
+    "use server";
+    const id = String(formData.get("id") ?? "");
+    const owner = await requireUserId();
+    await prisma.strengthGoal.deleteMany({ where: { id, userId: owner } });
+    revalidatePath("/strength");
+  }
 
   return (
     <>
@@ -280,6 +310,96 @@ export default async function StrengthPage() {
               </div>
             ))}
           </div>
+        </Section>
+
+        {/* ---------------------------------------------- Objectifs de force */}
+        <Section
+          title="Objectifs de force"
+          note="Une cible de 1RM à atteindre — en kg absolus ou en multiple de ton poids de corps."
+        >
+          {goals.length > 0 && (
+            <div className="mb-5">
+              {goals.map((g) => {
+                const h = histories.find((x) => x.exercise === g.exercise);
+                const p = strengthGoalProgress({
+                  targetKg: g.targetKg,
+                  targetRel: g.targetRel,
+                  bestE1rm: h?.bestE1rm ?? null,
+                  bodyweightKg: bodyweight,
+                });
+                const info = exerciseInfo(g.exercise);
+                return (
+                  <div key={g.id} className="border-b border-hair py-3 first:pt-0">
+                    <div className="flex items-baseline justify-between gap-4">
+                      <span className="font-medium">{info.name}</span>
+                      <form action={deleteStrengthGoal}>
+                        <input type="hidden" name="id" value={g.id} />
+                        <button type="submit" className="text-micro text-ink3 transition-colors hover:text-rust">
+                          supprimer
+                        </button>
+                      </form>
+                    </div>
+                    {p ? (
+                      <div className="mt-2 flex items-center gap-3">
+                        <div className="flex-1">
+                          <Bar value={p.percent} height={6} />
+                        </div>
+                        <span className="whitespace-nowrap font-mono text-[0.8125rem] tabular-nums text-ink2">
+                          {p.unit === "kg"
+                            ? `${kg(p.current)} / ${kg(p.target)} kg`
+                            : `${p.current.toLocaleString("fr-FR")}× / ${p.target.toLocaleString("fr-FR")}×`}
+                        </span>
+                        <span className={`w-12 text-right font-mono text-sm font-semibold tabular-nums ${p.done ? "text-sage" : "text-ink"}`}>
+                          {p.percent} %
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="mt-1.5 text-micro text-ink3">
+                        {g.targetKg
+                          ? "Saisis une séance avec cet exercice pour voir ta progression."
+                          : "Renseigne ton poids dans les réglages pour mesurer le ratio."}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <form action={createStrengthGoal} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div>
+              <label className="field-label" htmlFor="gexercise">
+                Exercice
+              </label>
+              <select id="gexercise" name="exercise" className="field">
+                {EXERCISES.filter((e) => !e.bodyweight && e.unit !== "seconds").map((e) => (
+                  <option key={e.slug} value={e.slug}>
+                    {e.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="field-label" htmlFor="gmode">
+                Cible
+              </label>
+              <select id="gmode" name="mode" className="field">
+                <option value="weight">Poids (kg)</option>
+                <option value="relative">Relative (× poids)</option>
+              </select>
+            </div>
+            <div>
+              <label className="field-label" htmlFor="gtarget">
+                Objectif
+              </label>
+              <input id="gtarget" name="target" type="number" step="0.1" min="0.1" required placeholder="100" className="field" />
+            </div>
+            <div className="flex items-end">
+              <button type="submit" className="btn-solid w-full">
+                Ajouter
+              </button>
+            </div>
+          </form>
         </Section>
 
         {/* ---------------------------------------------- Exercices */}

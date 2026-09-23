@@ -15,6 +15,7 @@ import {
   relativeStrength,
   setsByMuscle,
   strengthAcwr,
+  strengthGoalProgress,
   tonnage,
   workoutPRs,
   type SetLike,
@@ -206,5 +207,31 @@ describe("muscleSeries", () => {
     assert.equal(series[1].start.getTime(), monday.getTime());
     assert.equal(series[1].byMuscle.quads, 2);
     assert.equal(series[0].byMuscle.quads, 0);
+  });
+});
+
+describe("strengthGoalProgress", () => {
+  it("cible absolue : progression en kg, plafonnée à 100 %", () => {
+    const p = strengthGoalProgress({ targetKg: 100, targetRel: null, bestE1rm: 89, bodyweightKg: 75 })!;
+    assert.equal(p.current, 89);
+    assert.equal(p.percent, 89);
+    assert.equal(p.unit, "kg");
+    assert.equal(p.done, false);
+
+    const done = strengthGoalProgress({ targetKg: 80, targetRel: null, bestE1rm: 89, bodyweightKg: 75 })!;
+    assert.equal(done.percent, 100);
+    assert.equal(done.done, true);
+  });
+
+  it("cible relative : progression en × poids de corps", () => {
+    const p = strengthGoalProgress({ targetKg: null, targetRel: 1.5, bestE1rm: 90, bodyweightKg: 75 })!;
+    assert.equal(p.current, 1.2);
+    assert.equal(p.percent, 80);
+    assert.equal(p.unit, "×");
+  });
+
+  it("null sans record ou sans poids de corps (relatif)", () => {
+    assert.equal(strengthGoalProgress({ targetKg: 100, targetRel: null, bestE1rm: null, bodyweightKg: 75 }), null);
+    assert.equal(strengthGoalProgress({ targetKg: null, targetRel: 1.5, bestE1rm: 90, bodyweightKg: null }), null);
   });
 });
