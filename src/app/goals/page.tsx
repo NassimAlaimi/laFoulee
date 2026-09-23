@@ -72,7 +72,8 @@ export default async function GoalsPage() {
       />
 
       {/* -------------------------------------------------- Nouvel objectif */}
-      <Section>
+      <Section className="scroll-mt-24">
+        <div id="nouvel-objectif" className="scroll-mt-24" />
         <SectionHead title="Nouvel objectif" />
         <form action={createGoal} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <div className="sm:col-span-2">

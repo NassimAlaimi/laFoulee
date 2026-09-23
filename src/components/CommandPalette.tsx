@@ -211,9 +211,9 @@ export function CommandPalette() {
       {
         id: "act:plan",
         group: "Actions",
-        label: "Créer un plan d'entraînement",
-        keywords: "nouveau plan générer",
-        run: () => go("/training#nouveau-plan"),
+        label: "Plan d'entraînement : créer ou consulter",
+        keywords: "nouveau plan générer semaine",
+        run: () => go("/training"),
       },
       {
         id: "act:goal",

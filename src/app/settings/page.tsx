@@ -8,6 +8,8 @@ import { getLastSync, getSettings, getStravaAccount } from "@/lib/queries";
 import { isStravaConfigured } from "@/lib/strava";
 import { displayName, requireUser, requireUserId } from "@/lib/auth";
 import { AccountActions } from "@/components/AccountActions";
+import { CalendarSubscription } from "@/components/CalendarSubscription";
+import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +35,12 @@ export default async function SettingsPage({
     prisma.session.count({ where: { userId, expiresAt: { gt: new Date() } } }),
   ]);
   const configured = isStravaConfigured();
+  const calendar = await prisma.user.findUnique({ where: { id: userId }, select: { calendarToken: true } });
+  // L'URL publique est préférée ; à défaut, l'hôte de la requête (dev local)
+  const h = await headers();
+  const origin =
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
+    `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host") ?? "localhost:3000"}`;
 
   async function saveSettings(formData: FormData) {
     "use server";
@@ -68,18 +76,18 @@ export default async function SettingsPage({
       <PageHead title="Réglages" />
 
       {params.error && (
-        <div className="rounded-card border border-negative/35 bg-negative/8 px-4 py-3.5 text-sm text-red-200">
+        <div className="rounded-card border border-negative/35 bg-negative/8 px-4 py-3.5 text-sm text-rust">
           {decodeURIComponent(params.error)}
         </div>
       )}
       {params.welcome && (
-        <div className="rounded-card border border-positive/35 bg-positive/8 px-4 py-3.5 text-sm text-green-200">
+        <div className="rounded-card border border-positive/35 bg-positive/8 px-4 py-3.5 text-sm text-sage">
           Bienvenue {displayName(user)}. Ton compte est créé : lance une première
           synchronisation pour importer ton historique Strava.
         </div>
       )}
       {params.connected && (
-        <div className="rounded-card border border-positive/35 bg-positive/8 px-4 py-3.5 text-sm text-green-200">
+        <div className="rounded-card border border-positive/35 bg-positive/8 px-4 py-3.5 text-sm text-sage">
           Compte Strava connecté. Lance une synchronisation pour importer tes activités.
         </div>
       )}
@@ -239,6 +247,16 @@ export default async function SettingsPage({
             </button>
           </div>
         </form>
+      </Section>
+
+      {/* -------------------------------------------------- Agenda */}
+      <Section className="scroll-mt-24" >
+        <div id="agenda" className="scroll-mt-24" />
+        <SectionHead
+          title="Agenda"
+          note="Abonnement iCalendar au plan d'entraînement actif"
+        />
+        <CalendarSubscription initialToken={calendar?.calendarToken ?? null} origin={origin} />
       </Section>
 
       {/* -------------------------------------------------- Compte */}

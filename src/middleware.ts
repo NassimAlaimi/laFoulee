@@ -9,7 +9,9 @@ import { SESSION_COOKIE } from "@/lib/auth-shared";
  * réelle de la session est vérifiée côté serveur par `requireUser()`. Un
  * cookie forgé ne donne accès à rien, il fait juste perdre un aller-retour.
  */
-const PUBLIC_PREFIXES = ["/login", "/api/strava/connect", "/api/strava/callback"];
+// Le flux agenda est public par nature (un agenda n'envoie pas de cookie) :
+// il est protégé par le jeton secret de son URL, vérifié dans la route.
+const PUBLIC_PREFIXES = ["/login", "/api/strava/connect", "/api/strava/callback", "/api/calendar"];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;

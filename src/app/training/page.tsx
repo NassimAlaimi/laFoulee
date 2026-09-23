@@ -122,9 +122,14 @@ export default async function TrainingPage() {
           </>
         }
         action={
-          <Link href={`/training/${plan.id}`} className="btn-outline btn-sm">
-            Plan complet →
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/settings#agenda" className="btn-quiet" title="Abonner ton agenda au plan">
+              Dans mon agenda
+            </Link>
+            <Link href={`/training/${plan.id}`} className="btn-outline btn-sm">
+              Plan complet →
+            </Link>
+          </div>
         }
       />
 
@@ -296,7 +301,7 @@ async function NoPlan({ userId }: { userId: string }) {
         </p>
       )}
 
-      <Section title="Nouveau plan">
+      <Section title="Nouveau plan" className="scroll-mt-24">
         <PlanBuilder
           fitness={ctx.fitness}
           vdot={ctx.vdot}
