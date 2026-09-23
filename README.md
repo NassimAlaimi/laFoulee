@@ -229,6 +229,18 @@ course, pas d'un plan hebdomadaire générique recalculé dans son coin :
 - Quand aucun plan n'est lié : un bouton génère le plan **depuis le moteur
   d'entraînement**, avec la course, sa distance et sa date déjà renseignées
 
+### Objectifs du quotidien
+
+En plus des courses, des **objectifs sans échéance de course** avec une jauge de
+progression :
+
+- **Volume** — « 200 km ce mois » : les kilomètres du mois en cours
+- **Série** — « 30 jours d'affilée » : la série de jours courus en cours
+- **Fréquence** — « 4 sorties/semaine » : les sorties de la semaine
+
+Chacun affiche l'avancement réel, la cible et le pourcentage, calculés en heure
+locale (`lib/goal-progress.ts`).
+
 ### Entraînement — plan séance par séance
 
 La page `/training` génère un plan complet, jour par jour, dans deux modes :

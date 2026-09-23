@@ -194,14 +194,18 @@ model Split {
   @@index([activityId, index])
 }
 
-/// Objectif de course (préparation)
+/// Objectif — course à préparer, ou objectif du quotidien (volume, série, fréquence).
 model RaceGoal {
   id         String   @id @default(cuid())
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId     String
   name       String
+  /// Type d'objectif : course (par défaut) ou volume/streak/frequency.
+  kind       String   @default("race") // race | volume | streak | frequency
   raceDate   DateTime
-  distance   Float // m
+  distance   Float    @default(0) // m — course uniquement
+  /// Cible de l'objectif du quotidien : km (volume), jours (streak), sorties/sem (frequency).
+  targetValue Float? 
   targetTime Int? // s — chrono visé
   targetPace Float? // s/km — dérivé si targetTime absent
   elevation  Float? // m D+ du parcours
@@ -219,6 +223,7 @@ model RaceGoal {
   updatedAt DateTime @updatedAt
 
   @@index([userId, raceDate])
+  @@index([userId, kind])
 }
 
 /// Semaine du plan d'entraînement rattachée à un objectif

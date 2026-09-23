@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { FormChart } from "@/components/charts/Lazy";
 import { VolumeCurve } from "@/components/training/PlanBuilder";
 import { PHASE_COLOR } from "@/lib/training";
@@ -36,6 +36,11 @@ export default async function GoalDetailPage({
   // une page à demi remplie.
   const goal = await prisma.raceGoal.findFirst({ where: { id, userId } });
   if (!goal) notFound();
+
+  // Les objectifs du quotidien vivent sur /goals : pas de page détaillée.
+  if (goal.kind !== "race") {
+    redirect("/goals");
+  }
 
   const now = new Date();
   const ctx = await athleteContext(now, userId);

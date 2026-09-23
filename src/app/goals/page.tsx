@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
 import { STANDARD_DISTANCES } from "@/lib/records";
 import { raceReadiness, readinessFacts } from "@/lib/goal";
+import { goalProgress, type GoalKind } from "@/lib/goal-progress";
 import { athleteContext } from "@/lib/plan-store";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +18,12 @@ const PRIORITY_STYLE: Record<string, string> = {
   A: "bg-clay/15 text-clay",
   B: "bg-info/12 text-info",
   C: "bg-sunken text-ink2",
+};
+
+const KIND_LABEL: Record<string, string> = {
+  volume: "Volume",
+  streak: "Série",
+  frequency: "Fréquence",
 };
 
 export default async function GoalsPage() {
@@ -32,8 +39,11 @@ export default async function GoalsPage() {
   ]);
 
   const planByGoal = new Map(plans.map((p) => [p.raceGoalId as string, p.id]));
-  const upcoming = goals.filter((g) => g.raceDate >= now);
-  const past = goals.filter((g) => g.raceDate < now);
+
+  const raceGoals = goals.filter((g) => g.kind === "race");
+  const dailyGoals = goals.filter((g) => g.kind !== "race");
+  const upcoming = raceGoals.filter((g) => g.raceDate >= now);
+  const past = raceGoals.filter((g) => g.raceDate < now);
 
   // L'affiche : la prochaine course de priorité A, sinon la plus proche
   const primary = upcoming.find((g) => g.priority === "A") ?? upcoming[0] ?? null;
@@ -80,10 +90,36 @@ export default async function GoalsPage() {
       data: {
         userId: owner,
         name,
+        kind: "race",
         raceDate: new Date(raceDate),
         distance: distanceKm * 1000,
         targetTime: targetTime > 0 ? targetTime : null,
         priority,
+      },
+    });
+    revalidatePath("/goals");
+  }
+
+  async function createDailyGoal(formData: FormData) {
+    "use server";
+    const name = String(formData.get("name") ?? "").trim();
+    const kind = String(formData.get("kind") ?? "volume");
+    const targetValue = Number(formData.get("targetValue"));
+    const endDate = String(formData.get("endDate") ?? "");
+
+    if (!name || !Number.isFinite(targetValue) || targetValue <= 0) return;
+    if (!["volume", "streak", "frequency"].includes(kind)) return;
+
+    const owner = await requireUserId();
+    await prisma.raceGoal.create({
+      data: {
+        userId: owner,
+        name,
+        kind,
+        raceDate: endDate ? new Date(endDate) : new Date(),
+        distance: 0,
+        targetValue,
+        priority: "B",
       },
     });
     revalidatePath("/goals");
@@ -117,6 +153,51 @@ export default async function GoalsPage() {
             startsOn={firstSession?.date ?? null}
           />
         </NightBand>
+      )}
+
+      {/* ------------------------------------------------ Objectifs du quotidien */}
+      {dailyGoals.length > 0 && (
+        <div className="space-y-6">
+          <h2 className="text-[1.3125rem] font-semibold tracking-[-0.018em]">Objectifs du quotidien</h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            {dailyGoals.map((g) => {
+              const p = goalProgress({
+                kind: g.kind as GoalKind,
+                targetValue: g.targetValue,
+                now,
+                runs: ctx.runs,
+              });
+              return (
+                <Section key={g.id}>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-[0.9375rem] font-semibold tracking-tight">{g.name}</h3>
+                        <span className="badge bg-sunken text-ink2">{KIND_LABEL[g.kind] ?? g.kind}</span>
+                      </div>
+                      {p && (
+                        <p className="mt-1 text-sm text-ink2">
+                          {p.label} · objectif {p.target} {p.unit}
+                        </p>
+                      )}
+                    </div>
+                    <DeleteGoalButton id={g.id} />
+                  </div>
+                  {p && (
+                    <div className="mt-4 flex items-center gap-3">
+                      <div className="flex-1">
+                        <Bar value={p.percent} height={6} />
+                      </div>
+                      <span className={`w-14 text-right font-mono text-sm font-semibold tabular-nums ${p.done ? "text-sage" : "text-ink"}`}>
+                        {p.percent} %
+                      </span>
+                    </div>
+                  )}
+                </Section>
+              );
+            })}
+          </div>
+        </div>
       )}
 
       {/* -------------------------------------------------- À venir */}
@@ -341,6 +422,50 @@ export default async function GoalsPage() {
         </form>
       </Section>
 
+      {/* -------------------------------------------------- Objectif du quotidien */}
+      <Section className="scroll-mt-24">
+        <div id="nouvel-objectif-quotidien" className="scroll-mt-24" />
+        <SectionHead
+          title="Objectif du quotidien"
+          note="Un chiffre à tenir, sans course : des kilomètres dans le mois, des jours d'affilée, ou des sorties par semaine."
+        />
+        <form action={createDailyGoal} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="sm:col-span-2">
+            <label className="field-label" htmlFor="dname">
+              Nom
+            </label>
+            <input id="dname" name="name" required placeholder="200 km ce mois" className="field" />
+          </div>
+          <div>
+            <label className="field-label" htmlFor="kind">
+              Type
+            </label>
+            <select id="kind" name="kind" className="field">
+              <option value="volume">Volume · km/mois</option>
+              <option value="streak">Série · jours d'affilée</option>
+              <option value="frequency">Fréquence · sorties/sem</option>
+            </select>
+          </div>
+          <div>
+            <label className="field-label" htmlFor="targetValue">
+              Objectif (km / jours / sorties)
+            </label>
+            <input id="targetValue" name="targetValue" type="number" step="1" min="1" required placeholder="200" className="field" />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="field-label" htmlFor="endDate">
+              Échéance (optionnel)
+            </label>
+            <input id="endDate" name="endDate" type="date" className="field" />
+          </div>
+          <div className="flex items-end sm:col-span-2 xl:col-span-1">
+            <button type="submit" className="btn-solid w-full">
+              Ajouter l&apos;objectif
+            </button>
+          </div>
+        </form>
+      </Section>
+
       {/* -------------------------------------------------- Passées */}
       {past.length > 0 && (
         <div className="space-y-3">
@@ -371,7 +496,7 @@ export default async function GoalsPage() {
 
       {goals.length === 0 && (
         <Hint height={140}>
-          Aucun objectif pour le moment — ajoute ta prochaine course ci-dessus.
+          Aucun objectif pour le moment — ajoute une course ou un objectif du quotidien ci-dessus.
         </Hint>
       )}
     </div>
