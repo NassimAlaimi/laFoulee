@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { Hint, NightBand, PageHead, Section, SectionHead } from "@/components/ui/Layout";
+import { PoleStrip } from "@/components/ui/PoleStrip";
 import { RacePoster, type PosterWeek } from "@/components/goals/RacePoster";
 import { Bar } from "@/components/ui/Metric";
 import { DeleteGoalButton } from "@/components/DeleteGoalButton";
@@ -139,6 +140,14 @@ export default async function GoalsPage() {
             + Nouvel objectif
           </a>
         }
+      />
+      <PoleStrip
+        items={[
+          { href: "/training", label: "Plan" },
+          { href: "/workouts", label: "Séances" },
+          { href: "/goals", label: "Objectifs" },
+        ]}
+        active="/goals"
       />
 
       {primary && (

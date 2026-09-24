@@ -9,6 +9,7 @@ import { TrainingCalendar } from "@/components/TrainingCalendar";
 import { SyncButton } from "@/components/SyncButton";
 import { UpNext } from "@/components/training/UpNext";
 import { TodayHero } from "@/components/TodayHero";
+import { TodayLog } from "@/components/log/TodayLog";
 import {
   AcwrChart,
   ElevationChart,
@@ -62,11 +63,14 @@ const ZONE_TONE: Record<string, string> = {
 export default async function SummaryPage() {
   const user = await requireUser();
   const userId = user.id;
-  const [runs, efforts, settings, account] = await Promise.all([
+  const [runs, efforts, settings, account, todayLog] = await Promise.all([
     getRuns(undefined, userId),
     getBestEfforts(userId),
     getSettings(userId),
     getStravaAccount(userId),
+    prisma.dailyLog.findFirst({
+      where: { userId, date: new Date(new Date().setHours(0, 0, 0, 0)) },
+    }),
   ]);
 
   if (!account && runs.length === 0) {
@@ -222,6 +226,8 @@ export default async function SummaryPage() {
       )}
 
       <TodayHero userId={userId} firstname={user.firstname} runs={runs} now={now} form={form ? { tsb: form.tsb, zone: form.zone } : null} />
+
+      <TodayLog log={todayLog} />
 
       {/* ---------------------------------------------------------- Chiffres */}
       <MetricBand>

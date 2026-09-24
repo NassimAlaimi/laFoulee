@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Empty, PageHead, Section } from "@/components/ui/Layout";
+import { PoleStrip } from "@/components/ui/PoleStrip";
 import { Bar } from "@/components/ui/Metric";
 import { CheckinForm } from "@/components/training/CheckinForm";
 import { ComplianceBand, ComplianceOverview } from "@/components/training/ComplianceBand";
@@ -151,6 +152,14 @@ export default async function TrainingPage() {
             </Link>
           </div>
         }
+      />
+      <PoleStrip
+        items={[
+          { href: "/training", label: "Plan" },
+          { href: "/workouts", label: "Séances" },
+          { href: "/goals", label: "Objectifs" },
+        ]}
+        active="/training"
       />
 
       {/* ------------------------------------------------ La semaine au tableau */}

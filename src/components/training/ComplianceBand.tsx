@@ -71,14 +71,16 @@ export function ComplianceBand({ rows }: { rows: WeekCompliance[] }) {
 
   return (
     <div>
-      <div
-        className="flex items-end gap-[3px]"
-        role="img"
-        aria-label="Conformité semaine par semaine : hauteur = part des séances réalisées, couleur = niveau de suivi"
-      >
-        {rows.map((r) => (
-          <WeekBar key={r.weekNumber} row={r} current={r.weekNumber === currentWeek} />
-        ))}
+      <div className="overflow-x-auto pb-1">
+        <div
+          className="flex min-w-[560px] items-end gap-[3px]"
+          role="img"
+          aria-label="Conformité semaine par semaine : hauteur = part des séances réalisées, couleur = niveau de suivi"
+        >
+          {rows.map((r) => (
+            <WeekBar key={r.weekNumber} row={r} current={r.weekNumber === currentWeek} />
+          ))}
+        </div>
       </div>
 
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-micro text-ink3">

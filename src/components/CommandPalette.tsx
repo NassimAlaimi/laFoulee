@@ -25,17 +25,23 @@ type Item = {
 
 /** Pages de l'app et leur raccourci « g + lettre ». */
 export const PAGES: Array<{ href: string; label: string; key: string; keywords?: string }> = [
-  { href: "/", label: "Résumé", key: "r", keywords: "accueil dashboard tableau de bord" },
+  { href: "/", label: "Aujourd'hui", key: "r", keywords: "accueil dashboard tableau de bord résumé" },
   { href: "/activities", label: "Activités", key: "a", keywords: "liste courses sorties" },
   { href: "/activities?view=map", label: "Carte des parcours", key: "k", keywords: "heatmap chaleur tracés gps" },
   { href: "/training", label: "Entraînement", key: "e", keywords: "plan séances semaine" },
+  { href: "/workouts", label: "Séances (bibliothèque)", key: "w", keywords: "vdot allures fractionné seuil" },
+  { href: "/goals", label: "Objectifs", key: "o", keywords: "course préparation plan de course gpx" },
   { href: "/records", label: "Performance", key: "p", keywords: "records vdot prédictions chronos" },
-  { href: "/analysis", label: "Analyse", key: "n", keywords: "pmc forme fraîcheur ctl atl tsb" },
+  { href: "/analysis", label: "Forme & charge", key: "n", keywords: "pmc forme fraîcheur ctl atl tsb polarisation" },
+  { href: "/analysis/modeles", label: "Modèles & seuils", key: "d", keywords: "vitesse critique seuils lt1 lt2 prédictions" },
+  { href: "/analysis/seances", label: "Séances passées", key: "v", keywords: "intervalles dérive efficience" },
   { href: "/calculator", label: "Calculateur", key: "c", keywords: "vma allure chrono" },
-  { href: "/goals", label: "Objectifs", key: "o", keywords: "course préparation" },
-  { href: "/recap", label: "Rétrospective", key: "y", keywords: "année bilan wrapped résumé annuel mois" },
-  { href: "/gear", label: "Matériel", key: "t", keywords: "chaussures usure" },
+  { href: "/log", label: "Carnet quotidien", key: "j", keywords: "sommeil récupération score préparation" },
+  { href: "/corps", label: "Corps", key: "b", keywords: "musculation renfo force matériel chaussures" },
   { href: "/strength", label: "Muscu", key: "m", keywords: "musculation renfo force" },
+  { href: "/gear", label: "Matériel", key: "t", keywords: "chaussures usure" },
+  { href: "/plus", label: "Plus", key: "u", keywords: "rétrospective réglages export agenda" },
+  { href: "/recap", label: "Rétrospective", key: "y", keywords: "année bilan wrapped résumé annuel mois" },
   { href: "/settings", label: "Réglages", key: "s", keywords: "profil strava compte" },
 ];
 

@@ -1,4 +1,5 @@
 import { PageHead } from "@/components/ui/Layout";
+import { AnalysisPoleStrip } from "@/app/analysis/_shared";
 import { getBestEfforts, getRuns } from "@/lib/queries";
 import { fitnessProfile, personalRecords } from "@/lib/records";
 import { CalculatorClient } from "./CalculatorClient";
@@ -26,6 +27,7 @@ export default async function CalculatorPage() {
             : "Saisis une performance pour estimer ton niveau et tes allures"
         }
       />
+      <AnalysisPoleStrip active="/calculator" />
       <CalculatorClient
         initialDistance={initialDistance}
         initialSeconds={initialSeconds}

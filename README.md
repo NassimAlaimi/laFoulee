@@ -16,6 +16,15 @@ Interface éditoriale, thème clair et sombre, aucune dépendance de composants 
 Déployée, chaque personne se connecte avec son compte Strava et ne voit que ses
 propres données.
 
+### Organisation en six pôles
+
+La barre de navigation regroupe les pages en six univers, chacun avec son
+bandeau interne : **Aujourd'hui** (résumé + carnet du jour), **Activités**,
+**Entraînement** (plan, conformité, bibliothèque de séances, objectifs et plan
+de course), **Analyse** (forme & charge, modèles & seuils, séances passées,
+performance, calculateur), **Corps** (musculation, matériel) et **Plus**
+(rétrospective, agenda, export, réglages).
+
 ## Démarrage
 
 ```bash

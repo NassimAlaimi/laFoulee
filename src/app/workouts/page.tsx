@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Empty, PageHead, Section } from "@/components/ui/Layout";
+import { PoleStrip } from "@/components/ui/PoleStrip";
 import { PrintButton } from "@/components/PrintButton";
 import { fmtPace } from "@/lib/format";
 import { getBestEfforts, getRuns } from "@/lib/queries";
@@ -44,6 +45,14 @@ export default async function WorkoutsPage({
         kicker="Bibliothèque"
         meta="Les séances fondamentales de la préparation, calibrées sur ton niveau du moment"
         action={<PrintButton />}
+      />
+      <PoleStrip
+        items={[
+          { href: "/training", label: "Plan" },
+          { href: "/workouts", label: "Séances" },
+          { href: "/goals", label: "Objectifs" },
+        ]}
+        active="/workouts"
       />
 
       {/* ------------------------------------------------ Allures de référence */}
