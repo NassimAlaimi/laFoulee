@@ -141,14 +141,16 @@ export default async function GoalsPage() {
           </a>
         }
       />
-      <PoleStrip
-        items={[
-          { href: "/training", label: "Plan" },
-          { href: "/workouts", label: "Séances" },
-          { href: "/goals", label: "Objectifs" },
-        ]}
-        active="/goals"
-      />
+      <div data-tour="objectifs">
+        <PoleStrip
+          items={[
+            { href: "/training", label: "Plan" },
+            { href: "/workouts", label: "Séances" },
+            { href: "/goals", label: "Objectifs" },
+          ]}
+          active="/goals"
+        />
+      </div>
 
       {primary && (
         <NightBand className="!mt-0">

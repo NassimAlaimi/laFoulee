@@ -412,10 +412,61 @@
   animation: rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* ---------------------------------------------------------------- Visite guidée */
+
+.tour-backdrop {
+  transition:
+    top 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    left 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.3s ease;
+}
+
+.tour-ring {
+  transition:
+    top 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    left 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tour-bubble {
+  transition:
+    top 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    left 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.25s ease;
+}
+
+.tour-bubble-in {
+  animation: tour-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes tour-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.tour-backdrop-fade {
+  animation: fade 0.3s ease both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rise,
-  .palette {
+  .palette,
+  .tour-bubble-in {
     animation: none;
+  }
+  .tour-backdrop,
+  .tour-ring,
+  .tour-bubble {
+    transition: none;
   }
 }
 

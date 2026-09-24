@@ -155,7 +155,7 @@ export default async function ActivitiesPage({
       </MetricBand>
 
       {/* ---------------------------------------------------- Filtres */}
-      <section className="mt-8 space-y-4 border-b border-hair pb-5">
+      <section className="mt-8 space-y-4 border-b border-hair pb-5" data-tour="activities">
         <form className="flex flex-wrap items-center gap-2">
           <input
             name="q"

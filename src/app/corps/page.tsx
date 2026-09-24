@@ -40,7 +40,7 @@ export default async function CorpsPage() {
         meta="Musculation du coureur et matériel — le socle sous la foulée"
       />
 
-      <section className="rise">
+      <section className="rise" data-tour="corps">
         <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
           <div>
             <div className="text-micro font-medium uppercase tracking-[0.16em] text-ink3">

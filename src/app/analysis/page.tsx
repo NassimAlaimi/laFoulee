@@ -35,7 +35,7 @@ export default async function FormePage() {
       <AnalysisPoleStrip active="/analysis" />
 
       {/* ------------------------------------------------ Ouverture */}
-      <section className="rise">
+      <section className="rise" data-tour="forme">
         <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
           <div>
             <div className="text-micro font-medium uppercase tracking-[0.16em] text-ink3">

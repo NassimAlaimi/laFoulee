@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PageHead } from "@/components/ui/Layout";
+import { TourDoor } from "@/components/tour/TourDoor";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
 import { fmtDateShort } from "@/lib/format";
@@ -69,6 +70,7 @@ export default async function PlusPage() {
           tagline="Compte Strava, synchronisation, profil, thème — tout se règle ici."
           note="Compte & préférences"
         />
+        <TourDoor />
       </div>
 
       <p className="border-t border-hair pt-4 text-micro text-ink3">

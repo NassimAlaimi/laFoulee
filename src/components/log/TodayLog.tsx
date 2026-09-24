@@ -12,7 +12,7 @@ export function TodayLog({ log }: { log: DailyLog | null }) {
   const readiness = readinessScore(log ?? {});
 
   return (
-    <section className="mt-10 border-y border-hair py-6">
+    <section className="mt-10 border-y border-hair py-6" data-tour="preparation">
       <div className="grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.6fr)] lg:items-center">
         <div>
           <div className="text-micro font-medium uppercase tracking-[0.16em] text-ink3">

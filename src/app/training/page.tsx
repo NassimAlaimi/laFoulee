@@ -163,7 +163,7 @@ export default async function TrainingPage() {
       />
 
       {/* ------------------------------------------------ La semaine au tableau */}
-      <section className="rise">
+      <section className="rise" data-tour="plan">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
           <div>
             <div className="text-micro font-medium uppercase tracking-[0.16em] text-ink3">

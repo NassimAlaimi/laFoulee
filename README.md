@@ -25,6 +25,10 @@ de course), **Analyse** (forme & charge, modèles & seuils, séances passées,
 performance, calculateur), **Corps** (musculation, matériel) et **Plus**
 (rétrospective, agenda, export, réglages).
 
+Une **visite guidée** accueille la première connexion : un projecteur se
+promène sur les six pôles avec des bulles d'infos, se relance à tout moment
+via le bouton « ? » flottant ou le pôle Plus.
+
 ## Démarrage
 
 ```bash

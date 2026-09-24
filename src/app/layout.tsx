@@ -5,6 +5,8 @@ import "./globals.css";
 import { TopNav } from "@/components/Nav";
 import { CommandPalette } from "@/components/CommandPalette";
 import { AutoSync } from "@/components/AutoSync";
+import { GuidedTour } from "@/components/tour/GuidedTour";
+import { TourLauncher } from "@/components/tour/TourLauncher";
 import { prisma } from "@/lib/prisma";
 import { themeScript } from "@/components/Theme";
 import { currentUser, displayName } from "@/lib/auth";
@@ -54,6 +56,12 @@ export default async function RootLayout({
         {account && <CommandPalette />}
         {account && (
           <AutoSync connected={Boolean(strava)} lastSyncAt={strava?.lastSyncAt?.toISOString() ?? null} />
+        )}
+        {account && (
+          <>
+            <GuidedTour />
+            <TourLauncher />
+          </>
         )}
         <main className="mx-auto max-w-[1240px] px-gutter pb-28 pt-8 md:pb-24">
           {children}

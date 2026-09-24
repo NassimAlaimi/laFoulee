@@ -105,7 +105,7 @@ export async function TodayHero({
   const pct = compliance.plannedKm > 0 ? Math.min(1, compliance.doneKm / compliance.plannedKm) : 0;
 
   return (
-    <section className="today-hero rise relative mb-10 overflow-hidden rounded-[14px] border border-hair">
+    <section className="today-hero rise relative mb-10 overflow-hidden rounded-[14px] border border-hair" data-tour="today">
       <div className="grid lg:grid-cols-[minmax(0,1fr)_300px]">
         {/* ------------------------------------------------ Séance du jour */}
         <div className="relative p-6 sm:p-8">
