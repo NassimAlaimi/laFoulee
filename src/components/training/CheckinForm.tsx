@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 type Adaptation = {
@@ -32,6 +33,7 @@ export function CheckinForm({
   planId: string;
   existing?: Adaptation | null;
 }) {
+  const t = useTranslations("training");
   const router = useRouter();
   const [pain, setPain] = useState(0);
   const [area, setArea] = useState("");
@@ -67,7 +69,7 @@ export function CheckinForm({
     <div className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <span className="field-label">Douleur cette semaine</span>
+          <span className="field-label">{t("painWeek")}</span>
           <div className="flex gap-1.5">
             {PAIN.map((p, i) => (
               <button
@@ -88,7 +90,7 @@ export function CheckinForm({
             <input
               value={area}
               onChange={(e) => setArea(e.target.value)}
-              placeholder="Où ? (tendon d'Achille, genou droit…)"
+              placeholder={t("checkWhere")}
               className="field mt-2"
             />
           )}
@@ -96,7 +98,7 @@ export function CheckinForm({
 
         <div>
           <label className="field-label" htmlFor="days">
-            Jours disponibles la semaine prochaine
+            {t("daysNextWeek")}
           </label>
           <select
             id="days"
@@ -104,10 +106,10 @@ export function CheckinForm({
             onChange={(e) => setDays(e.target.value === "" ? "" : Number(e.target.value))}
             className="field"
           >
-            <option value="">Comme prévu</option>
+            <option value="">{t("asPlanned")}</option>
             {[2, 3, 4, 5, 6, 7].map((d) => (
               <option key={d} value={d}>
-                {d} jours
+                {t("daysN", { n: d })}
               </option>
             ))}
           </select>
@@ -115,17 +117,17 @@ export function CheckinForm({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <Slider label="Fatigue" value={fatigue} onChange={setFatigue} lo="Frais" hi="Vidé" />
-        <Slider label="Motivation" value={motivation} onChange={setMotivation} lo="À plat" hi="À fond" />
-        <Slider label="Sommeil" value={sleep} onChange={setSleep} lo="Mauvais" hi="Excellent" />
+        <Slider label={t("checkFatigue")} value={fatigue} onChange={setFatigue} lo={t("checkFresh")} hi={t("checkEmpty")} />
+        <Slider label={t("checkMotivation")} value={motivation} onChange={setMotivation} lo={t("flat")} hi={t("full")} />
+        <Slider label={t("checkSleep")} value={sleep} onChange={setSleep} lo={t("checkBad")} hi={t("checkGreat")} />
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
         <button onClick={submit} disabled={busy} className="btn-solid">
-          {busy ? "Adaptation…" : "Adapter la suite du plan"}
+          {busy ? t("adapting") : t("adapt")}
         </button>
         <span className="text-micro text-ink3">
-          Recalcule les semaines à venir, jamais le passé.
+          {t("recalcNote")}
         </span>
       </div>
 

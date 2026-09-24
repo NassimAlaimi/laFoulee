@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Empty, PageHead, Section } from "@/components/ui/Layout";
 import { PoleStrip } from "@/components/ui/PoleStrip";
 import { PrintButton } from "@/components/PrintButton";
@@ -26,6 +27,7 @@ export default async function WorkoutsPage({
 }: {
   searchParams: Promise<{ cible?: string }>;
 }) {
+  const t = await getTranslations("workouts");
   const { cible } = await searchParams;
   const target = (cible as LibraryTarget | undefined) ?? "tous";
 
@@ -41,16 +43,16 @@ export default async function WorkoutsPage({
   return (
     <div className="space-y-12">
       <PageHead
-        title="Séances"
-        kicker="Bibliothèque"
-        meta="Les séances fondamentales de la préparation, calibrées sur ton niveau du moment"
+        title={t("title")}
+        kicker={t("kicker")}
+        meta={t("meta")}
         action={<PrintButton />}
       />
       <PoleStrip
         items={[
-          { href: "/training", label: "Plan" },
-          { href: "/workouts", label: "Séances" },
-          { href: "/goals", label: "Objectifs" },
+          { href: "/training", label: t("polePlan") },
+          { href: "/workouts", label: t("poleSessions") },
+          { href: "/goals", label: t("poleGoals") },
         ]}
         active="/workouts"
       />
@@ -60,7 +62,7 @@ export default async function WorkoutsPage({
         <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
           <div>
             <div className="text-micro font-medium uppercase tracking-[0.16em] text-ink3">
-              Ton niveau du moment
+              {t("levelNow")}
             </div>
             <div className="mt-2 flex items-baseline gap-3">
               <span className="display text-d4">
@@ -69,20 +71,19 @@ export default async function WorkoutsPage({
               <span className="text-sm text-ink3">
                 {level
                   ? `${level.label} · VDOT`
-                  : "VDOT pas encore mesuré — allures estimées depuis ton allure moyenne"}
+                  : t("vdotMissing")}
               </span>
             </div>
           </div>
           {profile.source && (
             <p className="max-w-[30ch] text-sm text-ink2">
-              Mesuré sur <span className="font-medium text-ink">{profile.source.name}</span> — un
-              5 km à fond recale toutes les allures ci-dessous.
+              {t("measuredOn", { name: profile.source.name })}
             </p>
           )}
         </div>
 
         <div className="mt-8 grid gap-px overflow-hidden rounded-lg border border-hair bg-hair sm:grid-cols-2 lg:grid-cols-5">
-          {paceTable(paces).map((z) => (
+          {paceTable(paces, t).map((z) => (
             <div key={z.key} className="bg-bg px-4 py-3.5">
               <div className="flex items-center gap-1.5 text-micro font-medium uppercase tracking-[0.12em]" style={{ color: z.color }}>
                 <span className="h-[7px] w-[7px] rounded-full" style={{ background: z.color }} />
@@ -101,30 +102,30 @@ export default async function WorkoutsPage({
 
       {/* ------------------------------------------------ Filtres */}
       <div className="flex flex-wrap items-center gap-2">
-        {(["tous", "universel", "5k-10k", "semi", "marathon", "trail"] as const).map((t) => (
+        {(["tous", "universel", "5k-10k", "semi", "marathon", "trail"] as const).map((tg) => (
           <Link
-            key={t}
-            href={t === "tous" ? "/workouts" : `/workouts?cible=${t}`}
-            className={`btn-quiet ${target === t ? "bg-clay/10 text-clay" : ""}`}
+            key={tg}
+            href={tg === "tous" ? "/workouts" : `/workouts?cible=${tg}`}
+            className={`btn-quiet ${target === tg ? "bg-clay/10 text-clay" : ""}`}
           >
-            {t === "tous" ? "Tout" : TARGET_LABEL[t]}
+            {tg === "tous" ? t("all") : t(`targets.${targetKey(tg)}`)}
           </Link>
         ))}
       </div>
 
       {/* ------------------------------------------------ Séances */}
       {sessions.length === 0 ? (
-        <Empty title="Aucune séance" body="Choisis un autre profil." />
+        <Empty title={t("none")} body={t("noneBody")} />
       ) : (
         <div className="space-y-10">
           {sessions.map((s) => (
-            <Section key={s.id} title={s.name} note={s.why}>
+            <Section key={s.id} title={t(s.nameKey)} note={t(s.whyKey)}>
               <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-1 text-micro text-ink3">
-                <span className="font-medium uppercase tracking-[0.12em] text-ink2">{s.family}</span>
-                <span>{TARGET_LABEL[s.target]}</span>
+                <span className="font-medium uppercase tracking-[0.12em] text-ink2">{t(s.familyKey)}</span>
+                <span>{t(`targets.${s.target}`)}</span>
                 <span>{s.km} km</span>
                 <span>≈ {s.minutes} min</span>
-                <span className="ml-auto">{intensityDots(s.intensity)}</span>
+                <span className="ml-auto">{intensityDots(s.intensity, t)}</span>
               </div>
               <ol className="divide-y divide-hair border-t border-hair">
                 {s.steps.map((st, i) => (
@@ -154,14 +155,19 @@ export default async function WorkoutsPage({
 }
 
 /** Table des allures de référence, ordonnée de la plus lente à la plus rapide. */
-function paceTable(paces: ReturnType<typeof paceSet>) {
+function paceTable(paces: ReturnType<typeof paceSet>, t: (key: string) => string) {
   return [
-    { key: "easy", name: "Endurance", color: "rgb(var(--sage))", pace: paces.easy, paceFast: paces.easyFast },
-    { key: "marathon", name: "Allure marathon", color: "rgb(var(--slate))", pace: paces.marathon, paceFast: undefined },
-    { key: "threshold", name: "Seuil", color: "rgb(var(--ochre))", pace: paces.threshold, paceFast: undefined },
-    { key: "interval", name: "VO2max", color: "rgb(var(--clay))", pace: paces.interval, paceFast: undefined },
-    { key: "repetition", name: "Vitesse", color: "rgb(var(--rust))", pace: paces.repetition, paceFast: undefined },
+    { key: "easy", name: t("paces.easy"), color: "rgb(var(--sage))", pace: paces.easy, paceFast: paces.easyFast },
+    { key: "marathon", name: t("paces.marathon"), color: "rgb(var(--slate))", pace: paces.marathon, paceFast: undefined },
+    { key: "threshold", name: t("paces.threshold"), color: "rgb(var(--ochre))", pace: paces.threshold, paceFast: undefined },
+    { key: "interval", name: t("paces.interval"), color: "rgb(var(--clay))", pace: paces.interval, paceFast: undefined },
+    { key: "repetition", name: t("paces.repetition"), color: "rgb(var(--rust))", pace: paces.repetition, paceFast: undefined },
   ];
+}
+
+/** Clé i18n du filtre : mêmes valeurs que LibraryTarget. */
+function targetKey(t: string): string {
+  return t;
 }
 
 /** Allure « endurance » estimée : médiane des sorties faciles récentes. */
@@ -174,9 +180,9 @@ function estimateEasyPace(runs: Awaited<ReturnType<typeof getRuns>>): number | n
   return paces[Math.floor(paces.length / 2)];
 }
 
-function intensityDots(level: number) {
+function intensityDots(level: number, t: (key: string, params?: Record<string, string | number>) => string) {
   return (
-    <span className="flex items-center gap-1" title={`Intensité ${level}/5`}>
+    <span className="flex items-center gap-1" title={t("intensityTitle", { n: level })}>
       {Array.from({ length: 5 }, (_, i) => (
         <span
           key={i}

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { fmtDate } from "@/lib/format";
 import { addDays, startOfWeek, type ActivityLike } from "@/lib/stats";
 
@@ -8,7 +9,7 @@ import { addDays, startOfWeek, type ActivityLike } from "@/lib/stats";
  *
  * Rendu en SVG/HTML statique côté serveur — aucune librairie de graphes.
  */
-export function TrainingCalendar({
+export async function TrainingCalendar({
   activities,
   weeks = 26,
   now = new Date(),
@@ -17,6 +18,7 @@ export function TrainingCalendar({
   weeks?: number;
   now?: Date;
 }) {
+  const t = await getTranslations("training");
   // Agrégation par jour
   const byDay = new Map<string, { km: number; count: number; names: string[]; id: string }>();
   for (const a of activities) {
@@ -51,9 +53,9 @@ export function TrainingCalendar({
     <div>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex gap-8">
-          <Figure value={Math.round(totalKm)} unit="km" label={`sur ${weeks} semaines`} />
-          <Figure value={activeDays} label="jours actifs" />
-          <Figure value={streak} label={streak > 1 ? "semaines d'affilée" : "semaine active"} />
+          <Figure value={Math.round(totalKm)} unit="km" label={t("overWeeks", { n: weeks })} />
+          <Figure value={activeDays} label={t("activeDays")} />
+          <Figure value={streak} label={streak > 1 ? t("streakWeeks") : t("activeWeek")} />
         </div>
         <Scale maxKm={maxKm} />
       </div>

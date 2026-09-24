@@ -26,7 +26,8 @@ export default async function PlanDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const t = await getTranslations("common");
+  const t = await getTranslations("training");
+  const tc = await getTranslations("common");
   const { id } = await params;
   const userId = await requireUserId();
   const plan = await prisma.trainingPlan.findFirst({
@@ -132,23 +133,23 @@ export default async function PlanDetailPage({
     <div className="space-y-10">
       <div>
         <Link href="/training" className="text-xs text-ink3 transition-colors hover:text-clay">
-          ← Entraînement
+          {t("backToTraining")}
         </Link>
         <h1 className="mt-2 text-[1.75rem] font-semibold tracking-[-0.02em]">{plan.name}</h1>
         <p className="mt-1.5 text-sm text-ink2">
           {plan.mode === "race" && plan.raceGoal
             ? `${plan.raceGoal.name} · ${round(plan.raceGoal.distance / 1000, 1)} km · ${fmtDateShort(plan.raceGoal.raceDate)}`
-            : "Progression libre, sans course"}
+            : t("freeProgression")}
           {" · "}
-          {weeks.length} semaines · {totalKm} km
+          {t("weeksCount", { n: weeks.length, km: totalKm })}
         </p>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
         <div>
           <SectionHead
-            title="Volume planifié"
-            note={`${plan.startWeeklyKm} → ${plan.targetPeakKm} km/sem · la barre sombre indique le réalisé`}
+            title={t("volumePlanned")}
+            note={t("volumeNote", { start: plan.startWeeklyKm, end: plan.targetPeakKm })}
           />
           <VolumeCurve weeks={curve} actual={actualMap} />
         </div>
@@ -158,23 +159,22 @@ export default async function PlanDetailPage({
             <FeasibilityPanel f={feasibility} />
           ) : (
             <div>
-              <span className="eyebrow">Répartition</span>
+              <span className="eyebrow">{t("split")}</span>
               <p className="mt-2 text-[0.8125rem] leading-relaxed text-ink2">
-                {balance.easyPct} % du volume en endurance, {balance.hardPct} % en
-                intensité — {balance.verdict.toLowerCase()}.
+                {t("splitBody", { easy: balance.easyPct, hard: balance.hardPct, verdict: balance.verdict.toLowerCase() })}
               </p>
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-4 border-t border-hair pt-4">
-            <Fig label="Séances faites" value={`${doneSessions}/${pastSessions || "—"}`} />
-            <Fig label="Intensité" value={`${balance.hardPct} %`} note={balance.verdict} />
+            <Fig label={t("sessionsDone")} value={`${doneSessions}/${pastSessions || "—"}`} />
+            <Fig label={t("intensity")} value={`${balance.hardPct} %`} note={balance.verdict} />
           </div>
         </div>
       </div>
 
       {/* ------------------------------------------------ Composition */}
-      <Section title="Composition du plan" note="Nombre de séances par type sur toute la durée">
+      <Section title={t("planComposition")} note={t("planCompositionNote")}>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[...kindTotals.entries()]
             .sort((a, b) => b[1].count - a[1].count)
@@ -182,7 +182,7 @@ export default async function PlanDetailPage({
               <div key={kind} className="border-t border-hair pt-2.5">
                 <div className="flex items-baseline justify-between">
                   <span className="text-[0.8125rem] text-ink2">
-                    {t(KIND_LABELS[kind as SessionKind] ?? `kind.${kind}`)}
+                    {tc(KIND_LABELS[kind as SessionKind] ?? `kind.${kind}`)}
                   </span>
                   <span className="font-mono text-micro tabular-nums text-ink3">
                     {v.count}
@@ -206,23 +206,23 @@ export default async function PlanDetailPage({
 
       {/* ------------------------------------------------ Semaines */}
       <Section
-        title="Semaine par semaine"
-        note="Clique une semaine pour voir le détail des séances et les modifier"
+        title={t("weekTitle")}
+        note={t("weekHint")}
       >
         <WeekAccordion weeks={weeks} />
       </Section>
 
       {/* ------------------------------------------------ Historique ressentis */}
       {plan.checkins.length > 0 && (
-        <Section title="Historique des ressentis" note="Ce qui a modifié le plan">
+        <Section title={t("history")} note={t("whatChanged")}>
           <table className="data-table">
             <thead>
               <tr>
-                <th>Semaine</th>
-                <th className="text-right">Douleur</th>
-                <th className="text-right">Fatigue</th>
-                <th className="text-right">Motivation</th>
-                <th>Ajustement</th>
+                <th>{t("weekCol")}</th>
+                <th className="text-right">{t("painCol")}</th>
+                <th className="text-right">{t("fatigueCol")}</th>
+                <th className="text-right">{t("motivationCol")}</th>
+                <th>{t("adjustmentCol")}</th>
               </tr>
             </thead>
             <tbody>
@@ -251,7 +251,7 @@ export default async function PlanDetailPage({
       )}
 
       {/* ------------------------------------------------ Réglages */}
-      <Section title="Réglages du plan" note="Toute modification régénère les semaines à venir">
+      <Section title={t("planSettings")} note={t("planSettingsNote")}>
         <PlanSettings
           plan={{
             id: plan.id,
@@ -268,8 +268,7 @@ export default async function PlanDetailPage({
       </Section>
 
       <p className="text-micro text-ink3">
-        Phase actuelle :{" "}
-        {t(PHASE_LABELS[(weeks.find((w) => w.isCurrent)?.phase as Phase) ?? "base"])}
+        {t("currentPhase", { phase: tc(PHASE_LABELS[(weeks.find((w) => w.isCurrent)?.phase as Phase) ?? "base"]) })}
       </p>
     </div>
   );

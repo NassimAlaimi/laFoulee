@@ -53,7 +53,8 @@ export function SessionCard({
   today?: boolean;
   compact?: boolean;
 }) {
-  const t = useTranslations("common");
+  const t = useTranslations("training");
+  const tc = useTranslations("common");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -166,7 +167,7 @@ export function SessionCard({
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
               {steps.length > 0 && (
                 <button onClick={() => setOpen(!open)} className="btn-quiet">
-                  {open ? "Masquer" : "Détail"}
+                  {open ? t("hide") : t("detail2")}
                 </button>
               )}
               {!done && (
@@ -203,11 +204,11 @@ export function SessionCard({
 }
 
 const STEP_LABEL: Record<string, string> = {
-  warmup: "Échauffement",
-  work: "Bloc",
-  recovery: "Récup",
-  cooldown: "Retour",
-  block: "Corps",
+  warmup: "stepWarmup",
+  work: "stepWork",
+  recovery: "stepRecovery",
+  cooldown: "stepCooldown",
+  block: "stepBlock",
 };
 
 function FeedbackForm({
@@ -219,6 +220,7 @@ function FeedbackForm({
   onSubmit: (v: { rpe: number; painLevel: number; painArea: string | null }) => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations("training");
   const [rpe, setRpe] = useState(5);
   const [pain, setPain] = useState(0);
   const [area, setArea] = useState("");
@@ -227,7 +229,7 @@ function FeedbackForm({
     <div className="mt-3 rounded-[7px] border border-hair bg-sunken p-3">
       <div className="flex flex-wrap items-center gap-4">
         <label className="flex items-center gap-2 text-micro text-ink3">
-          Effort
+          {t("effort")}
           <input
             type="range"
             min={1}
@@ -240,7 +242,7 @@ function FeedbackForm({
         </label>
 
         <div className="flex items-center gap-1.5">
-          <span className="text-micro text-ink3">Douleur</span>
+          <span className="text-micro text-ink3">{t("pain")}</span>
           {[0, 1, 2, 3].map((p) => (
             <button
               key={p}
@@ -249,7 +251,7 @@ function FeedbackForm({
               className={`h-6 w-6 rounded text-micro transition-colors ${
                 pain === p ? "bg-clay text-white" : "bg-panel text-ink3 hover:text-ink"
               }`}
-              title={PAIN_HINT[p]}
+              title={t(PAIN_HINT[p])}
             >
               {p}
             </button>
@@ -260,7 +262,7 @@ function FeedbackForm({
           <input
             value={area}
             onChange={(e) => setArea(e.target.value)}
-            placeholder="où ? (mollet, genou…)"
+            placeholder={t("painWhere")}
             className="field max-w-[180px] py-1 text-xs"
           />
         )}
@@ -272,10 +274,10 @@ function FeedbackForm({
           disabled={busy}
           className="btn-solid btn-sm"
         >
-          Valider
+          {t("validate")}
         </button>
         <button onClick={onCancel} className="btn-quiet">
-          Annuler
+          {t("cancel")}
         </button>
       </div>
     </div>
@@ -283,10 +285,10 @@ function FeedbackForm({
 }
 
 const PAIN_HINT = [
-  "Rien à signaler",
-  "Gêne légère",
-  "Douleur qui gêne la course",
-  "Douleur qui empêche de courir",
+  "pain0",
+  "pain1",
+  "pain2",
+  "pain3",
 ];
 
 function safeParse(raw: string): Step[] {

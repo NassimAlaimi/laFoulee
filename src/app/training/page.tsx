@@ -41,7 +41,8 @@ export const dynamic = "force-dynamic";
  * trajectoire, assiduité) vient après.
  */
 export default async function TrainingPage() {
-  const t = await getTranslations("common");
+  const t = await getTranslations("training");
+  const tc = await getTranslations("common");
   const now = new Date();
   const userId = await requireUserId();
   const plan = await getActivePlan(userId);
@@ -137,7 +138,7 @@ export default async function TrainingPage() {
   return (
     <div className="space-y-12">
       <PageHead
-        title="Entraînement"
+        title={t("title")}
         kicker={
           <>
             {plan.name}
@@ -146,20 +147,20 @@ export default async function TrainingPage() {
         }
         action={
           <div className="flex items-center gap-2">
-            <Link href="/settings#agenda" className="btn-quiet" title="Abonner ton agenda au plan">
-              Dans mon agenda
+            <Link href="/settings#agenda" className="btn-quiet" title={t("inAgendaTitle")}>
+              {t("inAgenda")}
             </Link>
             <Link href={`/training/${plan.id}`} className="btn-outline btn-sm">
-              Plan complet →
+              {t("fullPlan")}
             </Link>
           </div>
         }
       />
       <PoleStrip
         items={[
-          { href: "/training", label: "Plan" },
-          { href: "/workouts", label: "Séances" },
-          { href: "/goals", label: "Objectifs" },
+          { href: "/training", label: t("polePlan") },
+          { href: "/workouts", label: t("poleSessions") },
+          { href: "/goals", label: t("poleGoals") },
         ]}
         active="/training"
       />
@@ -170,31 +171,33 @@ export default async function TrainingPage() {
           <div>
             <div className="text-micro font-medium uppercase tracking-[0.16em] text-ink3">
               {upcomingPlan
-                ? `Le plan démarre ${startsIn <= 1 ? "demain" : `dans ${startsIn} jours`}`
-                : "Cette semaine"}
+                ? startsIn <= 1
+                  ? t("startsTomorrow")
+                  : t("startsIn", { n: startsIn })
+                : t("thisWeek")}
             </div>
             <h2 className="mt-2 text-[clamp(1.9rem,4vw,2.9rem)] font-semibold leading-none tracking-[-0.03em]">
               {currentWeek ? (
                 <>
-                  Semaine {currentWeek.weekNumber}
+                  {t("week", { n: currentWeek.weekNumber })}
                   <span className="text-ink3"> / {curve.length}</span>
                   <span className="ml-3 align-middle text-[0.45em] font-medium tracking-normal" style={{ color: PHASE_COLOR[currentWeek.phase] }}>
-                    ● {t(PHASE_LABELS[(currentWeek.phase as Phase) ?? "base"])}
+                    ● {tc(PHASE_LABELS[(currentWeek.phase as Phase) ?? "base"])}
                   </span>
                 </>
               ) : (
-                "Hors plan"
+                t("offPlan")
               )}
             </h2>
           </div>
           <dl className="flex gap-8">
-            <BoardFig label="prévus" value={`${focusKm}`} unit="km" />
-            {!upcomingPlan && <BoardFig label="faits" value={`${compliance.doneKm}`} unit="km" tone={compliance.ratio >= 0.9 ? "text-sage" : ""} />}
+            <BoardFig label={t("planned")} value={`${focusKm}`} unit="km" />
+            {!upcomingPlan && <BoardFig label={t("done")} value={`${compliance.doneKm}`} unit="km" tone={compliance.ratio >= 0.9 ? "text-sage" : ""} />}
             <BoardFig
-              label="séances"
+              label={t("sessions")}
               value={upcomingPlan ? `${runSessions.length}` : `${compliance.sessionsDone}/${compliance.sessionsPlanned}`}
             />
-            <BoardFig label="facile" value={`${balance.easyPct}`} unit="%" note={balance.verdict} />
+            <BoardFig label={t("easy")} value={`${balance.easyPct}`} unit="%" note={balance.verdict} />
           </dl>
         </div>
         {!upcomingPlan && (
@@ -205,9 +208,9 @@ export default async function TrainingPage() {
         <WeekBoard monday={focusMonday} sessions={sessions} now={now} />
       </section>
 
-      <Section title="Séance par séance" note="Structure, allures et actions : marquer fait, sauter, noter ses sensations.">
+      <Section title={t("sessionBySession")} note={t("sessionNote")}>
         {sessions.length === 0 ? (
-          <p className="py-6 text-sm text-ink3">Aucune séance planifiée cette semaine.</p>
+          <p className="py-6 text-sm text-ink3">{t("noSessionWeek")}</p>
         ) : (
           <div>
             {sessions.map((s) => (
@@ -219,13 +222,13 @@ export default async function TrainingPage() {
 
       {/* ------------------------------------------------ Adaptation */}
       <Section
-        title="Point hebdomadaire"
-        note="Douleur, fatigue, disponibilité — le plan se recale sur ces réponses."
+        title={t("weeklyCheckin")}
+        note={t("weeklyNote")}
       >
         {adaptation && (
           <div className="mb-5 border-l-2 border-hairStrong pl-4">
             <div className={`text-sm font-medium ${TONE_STYLE[adaptation.tone] ?? "text-ink"}`}>
-              Semaine ajustée : {adaptation.headline}
+              {t("weekAdjusted", { headline: adaptation.headline })}
             </div>
             <ul className="mt-1.5 space-y-0.5">
               {adaptation.reasons.map((r, i) => (
@@ -242,22 +245,22 @@ export default async function TrainingPage() {
 
           <div className="space-y-4 border-t border-hair pt-5 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
             <Signal
-              label="Semaine dernière"
+              label={t("lastWeek")}
               value={`${Math.round(lastCompliance.ratio * 100)} %`}
               note={`${lastCompliance.doneKm} / ${lastCompliance.plannedKm} km`}
               tone={lastCompliance.ratio >= 0.9 ? "sage" : lastCompliance.ratio >= 0.6 ? "ochre" : "rust"}
             />
             <Signal
-              label="Charge aiguë / chronique"
+              label={t("acwr")}
               value={ctx.acwr ? ctx.acwr.toFixed(2) : "—"}
               note={
                 ctx.acwr === null
-                  ? "historique insuffisant"
+                  ? t("insufficient")
                   : ctx.acwr > 1.5
-                    ? "montée rapide"
+                    ? t("fastRamp")
                     : ctx.acwr < 0.8
-                      ? "sous-charge"
-                      : "zone optimale"
+                      ? t("underload")
+                      : t("optimalZone")
               }
               tone={
                 ctx.acwr === null
@@ -270,9 +273,9 @@ export default async function TrainingPage() {
               }
             />
             <Signal
-              label="Volume de référence"
+              label={t("refVolume")}
               value={`${ctx.fitness.weeklyKm} km`}
-              note={`sortie longue ${ctx.fitness.longestRunKm} km · régularité ${ctx.fitness.consistency} %`}
+              note={t("refNote", { km: ctx.fitness.longestRunKm, pct: ctx.fitness.consistency })}
               tone="ink"
             />
           </div>
@@ -282,8 +285,8 @@ export default async function TrainingPage() {
       {/* ------------------------------------------------ Semaine suivante */}
       {nextSessions.length > 0 && (
         <Section
-          title={upcomingPlan ? "La semaine d'après" : "Semaine suivante"}
-          note={`${round(nextSessions.reduce((a, s) => a + s.distanceKm, 0), 1)} km prévus`}
+          title={upcomingPlan ? t("weekAfter") : t("nextWeek")}
+          note={t("kmPlanned", { km: round(nextSessions.reduce((a, s) => a + s.distanceKm, 0), 1) })}
         >
           <div className="grid gap-x-8 sm:grid-cols-2">
             {nextSessions.map((s) => (
@@ -295,25 +298,25 @@ export default async function TrainingPage() {
 
       {/* ------------------------------------------------ Trajectoire */}
       <Section
-        title="Trajectoire"
+        title={t("trajectory")}
         note={
           feasibility
             ? feasibility.facts[0]
-            : `${plan.startWeeklyKm} → ${plan.targetPeakKm} km/sem sur ${curve.length} semaines`
+            : t("weekRange", { start: plan.startWeeklyKm, end: plan.targetPeakKm, n: curve.length })
         }
         action={
           <Link href={`/training/${plan.id}`} className="btn-quiet">
-            Détail
+            {t("detail")}
           </Link>
         }
       >
         <VolumeCurve weeks={curve} actual={actualMap} />
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-micro text-ink3">
-          <Legend color="rgb(var(--slate))" label="base" />
-          <Legend color="rgb(var(--sage))" label="développement" />
-          <Legend color="rgb(var(--clay))" label="spécifique" />
-          <Legend color="rgb(var(--hair-strong))" label="décharge" />
-          <Legend color="rgb(var(--ochre))" label="affûtage" />
+          <Legend color="rgb(var(--slate))" label={tc("phase.base")} />
+          <Legend color="rgb(var(--sage))" label={tc("phase.build")} />
+          <Legend color="rgb(var(--clay))" label={tc("phase.peak")} />
+          <Legend color="rgb(var(--hair-strong))" label={tc("phase.deload")} />
+          <Legend color="rgb(var(--ochre))" label={tc("phase.taper")} />
           <span className="ml-auto">
             {fmtDateShort(plan.startDate)} → {plan.endDate ? fmtDateShort(plan.endDate) : "—"}
           </span>
@@ -322,8 +325,8 @@ export default async function TrainingPage() {
 
       {/* ------------------------------------------------ Conformité */}
       <Section
-        title="Conformité"
-        note="Ce que tu as réellement exécuté face au plan, semaine par semaine. La barre monte avec les séances faites ; le filet de couleur marque la phase."
+        title={t("compliance")}
+        note={t("complianceNote")}
       >
         <ComplianceOverview rows={complianceRows} />
         <div className="mt-8">
@@ -337,6 +340,7 @@ export default async function TrainingPage() {
 // ---------------------------------------------------------------- Sans plan
 
 async function NoPlan({ userId }: { userId: string }) {
+  const t = await getTranslations("training");
   const now = new Date();
   const [ctx, goals, settings] = await Promise.all([
     athleteContext(now, userId),
@@ -350,18 +354,17 @@ async function NoPlan({ userId }: { userId: string }) {
   return (
     <div className="space-y-8">
       <PageHead
-        title="Entraînement"
-        meta="Un plan séance par séance, calé sur ton volume actuel — avec ou sans course à préparer"
+        title={t("title")}
+        meta={t("meta")}
       />
 
       {ctx.fitness.thin && (
         <p className="text-[0.8125rem] leading-relaxed text-ink2">
-          Peu d&apos;historique exploitable pour le moment : le plan partira d&apos;un
-          volume prudent que tu peux corriger à la main ci-dessous.
+          {t("thinHistory")}
         </p>
       )}
 
-      <Section title="Nouveau plan" className="scroll-mt-24">
+      <Section title={t("newPlan")} className="scroll-mt-24">
         <PlanBuilder
           fitness={ctx.fitness}
           vdot={ctx.vdot}
@@ -381,11 +384,11 @@ async function NoPlan({ userId }: { userId: string }) {
 
       {goals.length === 0 && (
         <Empty
-          title="Pas de course prévue ?"
-          body="C'est justement le cas prévu : choisis une orientation (base, vitesse, sortie longue, entretien, reprise) et l'app génère un bloc qui se renouvelle."
+          title={t("noRace")}
+          body={t("noRaceBody")}
           action={
             <Link href="/goals" className="btn-outline btn-sm">
-              Ajouter une course quand même
+              {t("addRace")}
             </Link>
           }
         />

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   assessFeasibility,
   buildBlueprint,
@@ -42,6 +43,7 @@ export function PlanBuilder({
   vdot: number;
   defaults?: { daysPerWeek?: number; longRunDay?: number; ceilingKm?: number };
 }) {
+  const t = useTranslations("training");
   const router = useRouter();
   const [mode, setMode] = useState<"open" | "race">(goals.length > 0 ? "race" : "open");
   const [goalId, setGoalId] = useState(goals[0]?.id ?? "");
@@ -160,19 +162,19 @@ export function PlanBuilder({
       {/* ---------------------------------------------------- Réglages */}
       <div className="space-y-5">
         <div>
-          <span className="field-label">Type de plan</span>
+          <span className="field-label">{t("planType")}</span>
           <div className="grid grid-cols-2 gap-1.5">
             <Choice
               active={mode === "open"}
               onClick={() => setMode("open")}
-              title="Sans objectif"
-              note="Progresser, simplement"
+              title={t("modeOpen")}
+              note={t("modeOpenNote")}
             />
             <Choice
               active={mode === "race"}
               onClick={() => setMode("race")}
-              title="Pour une course"
-              note={goals.length ? `${goals.length} objectif(s)` : "aucun objectif"}
+              title={t("modeRace")}
+              note={goals.length ? t("goalsN", { n: goals.length, s: goals.length > 1 ? "s" : "" }) : t("noGoal")}
               disabled={goals.length === 0}
             />
           </div>
@@ -193,7 +195,7 @@ export function PlanBuilder({
           </div>
         ) : (
           <div>
-            <span className="field-label">Orientation</span>
+            <span className="field-label">{t("orientation")}</span>
             <div className="grid gap-1.5 sm:grid-cols-2">
               {Object.values(FOCUS_PRESETS).map((p) => (
                 <Choice
@@ -210,7 +212,7 @@ export function PlanBuilder({
 
         {mode === "race" && (
           <div>
-            <span className="field-label">Orientation des séances</span>
+            <span className="field-label">{t("sessionOrientation")}</span>
             <select
               value={focus}
               onChange={(e) => setFocus(e.target.value as OpenFocus)}
@@ -230,13 +232,13 @@ export function PlanBuilder({
         {/* ------------------------------------------ Charge récente */}
         <div className="rounded-[9px] border border-hair p-3.5">
           <div className="flex items-baseline justify-between gap-3">
-            <span className="eyebrow">Charge des 4 dernières semaines</span>
+            <span className="eyebrow">{t("load4w")}</span>
             <button
               type="button"
               onClick={() => setEditLoad((v) => !v)}
               className="btn-quiet text-micro"
             >
-              {editLoad ? "Terminer" : "Corriger"}
+              {editLoad ? t("finish") : t("correct")}
             </button>
           </div>
 
@@ -286,7 +288,7 @@ export function PlanBuilder({
           {editLoad && (
             <div className="mt-3 grid gap-3 border-t border-hair pt-3 sm:grid-cols-2">
               <NumField
-                label="Forcer le volume de départ"
+                label={t("forceStart")}
                 value={startKm}
                 onChange={(v) => setStartOverride(v)}
                 min={5}
@@ -294,7 +296,7 @@ export function PlanBuilder({
                 hint={`calculé : ${Math.round(derivedStart)} km`}
               />
               <NumField
-                label="Sortie la plus longue (km)"
+                label={t("longestRun")}
                 value={longRun}
                 onChange={setLongRun}
                 min={3}
@@ -334,7 +336,7 @@ export function PlanBuilder({
                       )
                       .join(" · ")
                   : `${preview.bp.daysStart} sorties sur tout le plan`
-                : "réglage manuel"}
+                : t("manual")}
             </div>
           </div>
           <div>
@@ -359,12 +361,12 @@ export function PlanBuilder({
             <NumField label="Horizon (semaines)" value={horizon} onChange={setHorizon} min={4} max={52} />
           ) : null}
           <NumField
-            label="Plafond volume (0 = auto)"
+            label={t("ceilingVolume")}
             value={ceiling}
             onChange={setCeiling}
             min={0}
             max={250}
-            hint="km/sem à ne jamais dépasser"
+            hint={t("ceilingHint")}
           />
         </div>
 
@@ -379,7 +381,7 @@ export function PlanBuilder({
         </label>
 
         <button onClick={create} disabled={busy || (mode === "race" && !goal)} className="btn-solid">
-          {busy ? "Génération…" : "Créer le plan"}
+          {busy ? t("generating") : t("createPlan")}
         </button>
       </div>
 
@@ -398,8 +400,8 @@ export function PlanBuilder({
         </div>
 
         <div className="grid grid-cols-3 gap-4 border-t border-hair pt-4">
-          <Stat label="Semaines" value={String(preview.weeks)} />
-          <Stat label="Volume total" value={`${preview.bp.totalKm} km`} />
+          <Stat label={t("weeksStat")} value={String(preview.weeks)} />
+          <Stat label={t("totalVolume")} value={`${preview.bp.totalKm} km`} />
           <Stat label="Sortie longue max" value={`${preview.bp.longRunPeakKm} km`} />
         </div>
 

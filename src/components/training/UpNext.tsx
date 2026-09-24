@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { getRuns } from "@/lib/queries";
 import { addDays, round, startOfWeek } from "@/lib/stats";
 import { weekCompliance } from "@/lib/training";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { KIND_LABELS, type SessionKind } from "@/lib/workouts";
 
 /**
@@ -21,16 +21,18 @@ export async function UpNext({
   now?: Date;
   userId: string;
 }) {
-  const t = await getTranslations("common");
+  const t = await getTranslations("training");
+  const tc = await getTranslations("common");
+  const locale = await getLocale();
   const plan = await getActivePlan(userId);
   if (!plan) {
     return (
       <Section
-        title="Entraînement"
-        note="Aucun plan actif — génère un plan séance par séance, avec ou sans course à préparer."
+        title={t("title")}
+        note={t("upnextNone")}
       >
         <Link href="/training" className="btn-outline btn-sm">
-          Créer un plan →
+          {t("createPlanShort")}
         </Link>
       </Section>
     );
@@ -61,20 +63,20 @@ export async function UpNext({
 
   return (
     <Section
-      title="Ensuite"
+      title={t("later")}
       note={
         compliance.plannedKm > 0
-          ? `${plan.name} · ${compliance.doneKm}/${compliance.plannedKm} km cette semaine`
+          ? t("thisWeekKm", { name: plan.name, done: compliance.doneKm, planned: compliance.plannedKm })
           : plan.name
       }
       action={
         <Link href="/training" className="btn-quiet">
-          Tout voir
+          {t("seeAll")}
         </Link>
       }
     >
       {upcoming.length === 0 ? (
-        <p className="py-4 text-sm text-ink3">Rien de planifié pour les jours qui viennent.</p>
+        <p className="py-4 text-sm text-ink3">{t("nothingComing")}</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-3">
           {upcoming.map((s) => {
@@ -89,10 +91,10 @@ export async function UpNext({
               >
                 <div className="text-micro uppercase tracking-wider text-ink3">
                   {isToday
-                    ? "Aujourd'hui"
+                    ? t("todayS")
                     : isTomorrow
-                      ? "Demain"
-                      : d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric" })}
+                      ? t("tomorrow")
+                      : d.toLocaleDateString(locale, { weekday: "long", day: "numeric" })}
                 </div>
                 <div className="mt-1.5 text-[0.9375rem] font-medium transition-colors group-hover:text-clay">
                   {s.title}

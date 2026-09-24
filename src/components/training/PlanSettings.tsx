@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { DAY_NAMES } from "@/lib/training";
 
@@ -22,6 +23,7 @@ type Plan = {
  * bougent pas.
  */
 export function PlanSettings({ plan }: { plan: Plan }) {
+  const t = useTranslations("training");
   const router = useRouter();
   const [state, setState] = useState(plan);
   const [busy, setBusy] = useState<string | null>(null);
@@ -40,7 +42,7 @@ export function PlanSettings({ plan }: { plan: Plan }) {
   }
 
   async function remove() {
-    if (!confirm("Supprimer ce plan et toutes ses séances ?")) return;
+    if (!confirm(t("deletePlanConfirm"))) return;
     setBusy("delete");
     await fetch(`/api/training/plans/${plan.id}`, { method: "DELETE" });
     router.push("/training");
@@ -50,7 +52,7 @@ export function PlanSettings({ plan }: { plan: Plan }) {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Field label="Sorties / semaine">
+        <Field label={t("sessionsWeek")}>
           <select
             value={state.daysPerWeek}
             onChange={(e) => setState({ ...state, daysPerWeek: Number(e.target.value) })}
@@ -65,7 +67,7 @@ export function PlanSettings({ plan }: { plan: Plan }) {
           </select>
         </Field>
 
-        <Field label="Jour de sortie longue">
+        <Field label={t("longRunDay")}>
           <select
             value={state.longRunDay}
             onChange={(e) => setState({ ...state, longRunDay: Number(e.target.value) })}
@@ -79,7 +81,7 @@ export function PlanSettings({ plan }: { plan: Plan }) {
           </select>
         </Field>
 
-        <Field label="Renfo / semaine">
+        <Field label={t("strengthWeek")}>
           <input
             type="number"
             min={0}
@@ -102,7 +104,7 @@ export function PlanSettings({ plan }: { plan: Plan }) {
         </Field>
 
         {plan.mode === "open" && (
-          <Field label="Horizon (semaines)">
+          <Field label={t("horizonWeeks")}>
             <input
               type="number"
               min={4}
@@ -145,7 +147,7 @@ export function PlanSettings({ plan }: { plan: Plan }) {
           disabled={busy !== null}
           className="btn-solid btn-sm"
         >
-          {busy === "save" ? "Régénération…" : "Enregistrer et régénérer"}
+          {busy === "save" ? t("regenerating") : t("saveRegenerate")}
         </button>
 
         <button
@@ -153,7 +155,7 @@ export function PlanSettings({ plan }: { plan: Plan }) {
           disabled={busy !== null}
           className="btn-outline btn-sm"
         >
-          {busy === "regen" ? "…" : "Recaler sur mon volume réel"}
+          {busy === "regen" ? "…" : t("recalibrate")}
         </button>
 
         {plan.status === "active" ? (

@@ -1,11 +1,12 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Frieze } from "@/components/training/Frieze";
 import { fmtPace } from "@/lib/format";
 import { addDays, round } from "@/lib/stats";
 import type { Step } from "@/lib/workouts";
 import type { SessionView } from "./SessionCard";
 
-const DAY = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+const DAY_KEYS = ["planDays.0", "planDays.1", "planDays.2", "planDays.3", "planDays.4", "planDays.5", "planDays.6"];
 
 /**
  * La semaine comme un tableau d'affichage : sept colonnes, une par jour, la
@@ -14,7 +15,8 @@ const DAY = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
  * Se lit d'un coup d'œil — le détail et les actions vivent dans les cartes
  * en dessous.
  */
-export function WeekBoard({ monday, sessions, now = new Date() }: { monday: Date; sessions: SessionView[]; now?: Date }) {
+export async function WeekBoard({ monday, sessions, now = new Date() }: { monday: Date; sessions: SessionView[]; now?: Date }) {
+  const t = await getTranslations("training");
   const todayKey = now.toDateString();
   const days = Array.from({ length: 7 }, (_, i) => {
     const date = addDays(monday, i);
@@ -39,7 +41,7 @@ export function WeekBoard({ monday, sessions, now = new Date() }: { monday: Date
             {d.today && <span aria-hidden className="absolute -top-px left-0 right-0 h-[3px] bg-clay" />}
             <div className="flex items-baseline gap-2 self-start">
               <span className={`text-micro font-medium uppercase tracking-[0.12em] ${d.today ? "text-clay" : "text-ink3"}`}>
-                {d.today ? "Auj." : DAY[i]}
+                {d.today ? t("today") : t(DAY_KEYS[i])}
               </span>
               <span
                 className={`display text-d3 ${d.past && !d.sessions.some((s) => s.status === "done") ? "text-ink3" : ""}`}

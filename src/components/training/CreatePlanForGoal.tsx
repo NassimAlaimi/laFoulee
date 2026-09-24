@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { FOCUS_PRESETS, type OpenFocus } from "@/lib/training";
 
 /**
@@ -26,6 +27,7 @@ export function CreatePlanForGoal({
   startKm: number;
   neededKm: number;
 }) {
+  const t = useTranslations("training");
   const router = useRouter();
   const [focus, setFocus] = useState<OpenFocus>(raceKm >= 21 ? "endurance" : "speed");
   const [longRunDay, setLongRunDay] = useState(6);
@@ -108,7 +110,7 @@ export function CreatePlanForGoal({
 
       <div className="flex flex-wrap items-center gap-3">
         <button onClick={create} disabled={busy} className="btn-solid btn-sm">
-          {busy ? "Génération…" : "Générer le plan séance par séance"}
+          {busy ? t("generating") : t("generateForRace")}
         </button>
         <span className="text-micro text-ink3">
           Sorties par semaine, volumes et allures déduits de ton historique.
