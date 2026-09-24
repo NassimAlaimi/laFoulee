@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { PageHead } from "@/components/ui/Layout";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
@@ -12,6 +13,7 @@ export const dynamic = "force-dynamic";
  * deux univers (musculation, matériel) comme de grandes portes.
  */
 export default async function CorpsPage() {
+  const t = await getTranslations("corps");
   const userId = await requireUserId();
   const [lastWorkout, monthCount, primaryGear] = await Promise.all([
     prisma.strengthWorkout.findFirst({
@@ -35,34 +37,34 @@ export default async function CorpsPage() {
   return (
     <div className="space-y-12">
       <PageHead
-        title="Corps"
-        kicker="Force & équipement"
-        meta="Musculation du coureur et matériel — le socle sous la foulée"
+        title={t("title")}
+        kicker={t("kicker")}
+        meta={t("meta")}
       />
 
       <section className="rise" data-tour="corps">
         <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
           <div>
             <div className="text-micro font-medium uppercase tracking-[0.16em] text-ink3">
-              Dernière séance de force
+              {t("lastStrength")}
             </div>
             <div className="mt-2 flex items-baseline gap-4">
               <span className="display text-d4">
-                {daysSince === null ? "—" : daysSince === 0 ? "Aujourd'hui" : `J−${daysSince}`}
+                {daysSince === null ? "—" : daysSince === 0 ? t("today") : `J−${daysSince}`}
               </span>
               <span className="text-sm text-ink3">
                 {lastWorkout
                   ? `${lastWorkout.name} · ${fmtDateShort(lastWorkout.date)}`
-                  : "aucune séance enregistrée"}
+                  : t("noneRecorded")}
               </span>
             </div>
           </div>
           <dl className="flex gap-8">
-            <Figure label="séances · 30 j" value={String(monthCount)} />
+            <Figure label={t("sessions30")} value={String(monthCount)} />
             <Figure
-              label="chaussures"
+              label={t("shoes")}
               value={gearKm != null ? `${gearKm} km` : "—"}
-              note={gearLife != null ? `${gearLife} % du seuil` : undefined}
+              note={gearLife != null ? t("thresholdPct", { pct: gearLife }) : undefined}
             />
           </dl>
         </div>
@@ -71,15 +73,15 @@ export default async function CorpsPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <HubDoor
           href="/strength"
-          title="Musculation"
-          tagline="La force du coureur : séances, 1RM, garde-fou de charge, objectifs de force."
-          note={`${monthCount} séance${monthCount > 1 ? "s" : ""} ces 30 derniers jours`}
+          title={t("strengthTitle")}
+          tagline={t("strengthTag")}
+          note={t("sessionsLast30", { n: monthCount, s: monthCount > 1 ? "s" : "" })}
         />
         <HubDoor
           href="/gear"
-          title="Matériel"
-          tagline="Chaussures et équipement : kilométrage, seuils de remplacement, ce qui court avec toi."
-          note={primaryGear ? `${primaryGear.name} — ${gearKm} km` : "Aucune paire marquée principale"}
+          title={t("gearTitle")}
+          tagline={t("gearTag")}
+          note={primaryGear ? `${primaryGear.name} — ${gearKm} km` : t("noMainPair")}
         />
       </div>
     </div>

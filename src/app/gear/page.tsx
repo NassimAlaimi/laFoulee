@@ -1,4 +1,5 @@
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { Empty, PageHead, Section } from "@/components/ui/Layout";
 import { Bar } from "@/components/ui/Metric";
 import { MiniBars } from "@/components/ui/Spark";
@@ -12,6 +13,7 @@ import { daysBetween, round } from "@/lib/stats";
 export const dynamic = "force-dynamic";
 
 export default async function GearPage() {
+  const t = await getTranslations("gear");
   const userId = await requireUserId();
   const [gear, activities] = await Promise.all([
     prisma.gear.findMany({
@@ -50,7 +52,7 @@ export default async function GearPage() {
       <>
         <PageHead title="Matériel" />
         <Empty
-          title="Aucun équipement détecté"
+          title={t("empty")}
           body="Associe tes chaussures à tes sorties dans Strava, puis relance une synchronisation. Le kilométrage et l'usure seront suivis ici."
         />
       </>
@@ -121,15 +123,15 @@ export default async function GearPage() {
   return (
     <>
       <PageHead
-        title="Matériel"
-        kicker="Tes chaussures"
+        title={t("title")}
+        kicker={t("kicker")}
         meta={`${active.length} paire${active.length > 1 ? "s" : ""} en service · ${rotationKm} km cumulés · ${rotationSessions} séances`}
       />
 
       {next && (
         <section className="rise grid gap-8 border-y border-hair py-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <div>
-            <div className="eyebrow">La prochaine à remplacer</div>
+            <div className="eyebrow">{t("nextReplace")}</div>
             <h2 className="mt-3 text-[clamp(1.8rem,4vw,2.9rem)] font-semibold leading-none tracking-[-0.03em]">
               {next.g.name}
             </h2>
@@ -160,9 +162,9 @@ export default async function GearPage() {
               />
             </div>
             <div className="mt-8 flex gap-10">
-              <OdoFig label="séances" value={String(next.sessions)} />
-              <OdoFig label="km / semaine" value={String(next.kmPerWeek)} />
-              <OdoFig label="allure moy." value={next.avgPace > 0 ? fmtPace(next.avgPace) : "—"} />
+              <OdoFig label={t("sessions")} value={String(next.sessions)} />
+              <OdoFig label={t("kmWeek")} value={String(next.kmPerWeek)} />
+              <OdoFig label={t("avgPace")} value={next.avgPace > 0 ? fmtPace(next.avgPace) : "—"} />
             </div>
           </div>
         </section>
@@ -170,25 +172,25 @@ export default async function GearPage() {
 
       <div className="space-y-10">
         <Section
-          title="En service"
+          title={t("inService")}
           note="Le seuil de remplacement est indicatif : la durée de vie d'une paire dépend du modèle, de ton poids et du terrain. Ajuste-le librement."
         >
           <div className="space-y-px">
             {active.map((r) => (
-              <GearRow key={r.g.id} row={r} onSubmit={updateThreshold} />
+              <GearRow t={t} key={r.g.id} row={r} onSubmit={updateThreshold} />
             ))}
           </div>
         </Section>
 
         {retired.length > 0 && (
-          <Section title="Retirées">
+          <Section title={t("retired")}>
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Modèle</th>
-                  <th className="text-right">Kilométrage</th>
+                  <th>{t("model")}</th>
+                  <th className="text-right">{t("mileage")}</th>
                   <th className="text-right">Séances</th>
-                  <th className="text-right">Dernière sortie</th>
+                  <th className="text-right">{t("lastRun")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -236,17 +238,19 @@ type Row = {
 function GearRow({
   row,
   onSubmit,
+  t,
 }: {
   row: Row;
   onSubmit: (fd: FormData) => Promise<void>;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }) {
   const { g, wear } = row;
   const state =
     wear >= 100
-      ? { label: "À remplacer", tone: "text-rust", bar: "rgb(var(--rust))" }
+      ? { label: t("replaceNow"), tone: "text-rust", bar: "rgb(var(--rust))" }
       : wear >= 80
-        ? { label: "Fin de vie", tone: "text-ochre", bar: "rgb(var(--ochre))" }
-        : { label: "En bon état", tone: "text-sage", bar: "rgb(var(--sage))" };
+        ? { label: t("endOfLife"), tone: "text-ochre", bar: "rgb(var(--ochre))" }
+        : { label: t("goodShape"), tone: "text-sage", bar: "rgb(var(--sage))" };
 
   return (
     <div className="border-t border-hair py-6 first:border-t-0">
@@ -267,7 +271,7 @@ function GearRow({
         </div>
 
         <div className="flex items-end gap-7">
-          <Fig value={row.totalKm} unit="km" label="parcourus" />
+          <Fig value={row.totalKm} unit="km" label={t("travelled")} />
           <Fig value={row.sessions} label="séances" />
           <Fig
             value={row.remaining}

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { PageHead, Section } from "@/components/ui/Layout";
 import { PrintButton } from "@/components/PrintButton";
@@ -21,6 +22,7 @@ export default async function RacePlanPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const t = await getTranslations("goals");
   const { id } = await params;
   const userId = await requireUserId();
   const goal = await prisma.raceGoal.findFirst({
@@ -45,9 +47,9 @@ export default async function RacePlanPage({
   return (
     <div className="space-y-12">
       <PageHead
-        title="Plan de course"
+        title={t("racePlan.title")}
         kicker={goal.name}
-        meta="Profil, allures par tronçon, ravitaillement — le jour J se prépare ici"
+        meta={t("racePlan.meta")}
         action={<PrintButton />}
       />
 
@@ -68,7 +70,7 @@ export default async function RacePlanPage({
               </p>
             </div>
           </section>
-          <Section title="Importer et régler" note="Le GPX est stocké tel quel — rien ne part, tout reste chez toi.">
+          <Section title={t("racePlan.import")} note={t("racePlan.importNote")}>
             <RacePlanForm goalId={goal.id} existing={undefined} />
           </Section>
         </>
@@ -88,14 +90,14 @@ export default async function RacePlanPage({
                     <span className="display text-d4 text-ink3">—</span>
                   )}
                   <span className="text-sm text-ink3">
-                    {targetSeconds ? "chrono visé, réparti sur le profil" : "chrono visé non défini — allures indicatives"}
+                    {targetSeconds ? t("racePlan.targetOn") : t("racePlan.targetOff")}
                   </span>
                 </div>
               </div>
               <dl className="flex gap-8">
-                <Figure label="montée totale" value={`${Math.round(gain)} m`} />
+                <Figure label={t("racePlan.totalClimb")} value={`${Math.round(gain)} m`} />
                 <Figure
-                  label="ravitaillements"
+                  label={t("racePlan.fueling")}
                   value={stops.length ? String(stops.length) : "—"}
                   note={plan.fuelingKm > 0 ? `tous les ${plan.fuelingKm} km` : undefined}
                 />
@@ -105,7 +107,7 @@ export default async function RacePlanPage({
 
           {/* ------------------------------------------------ Profil */}
           {profile.length > 0 && (
-            <Section title="Profil du parcours" note="Un barreau par kilomètre — terre cuite en montée, sauge en descente">
+            <Section title={t("racePlan.profile")} note={t("racePlan.profileNote")}>
               <ElevationChart profile={profile} />
               <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-micro text-ink3">
                 <span className="flex items-center gap-1.5">
@@ -122,8 +124,8 @@ export default async function RacePlanPage({
           {/* ------------------------------------------------ Allures */}
           {segments.length > 0 && (
             <Section
-              title="Allures par tronçon"
-              note="Le chrono visé est réparti au prorata du coût de chaque tronçon — la somme retombe exactement sur le total"
+              title={t("racePlan.segmentPaces")}
+              note={t("racePlan.segmentNote")}
             >
               <div className="overflow-x-auto">
                 <table className="data-table">
@@ -161,7 +163,7 @@ export default async function RacePlanPage({
           )}
 
           {/* ------------------------------------------------ Ravitaillement */}
-          <Section title="Ravitaillement" note={plan.fuelingNote ?? "Rien de nouveau le jour J : tout ce qui suit doit avoir été testé à l'entraînement."}>
+          <Section title={t("racePlan.fuelingTitle")} note={plan.fuelingNote ?? t("racePlan.fuelingDefault")}>
             {stops.length > 0 ? (
               <ol className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-4">
                 {stops.map((s) => (
@@ -179,7 +181,7 @@ export default async function RacePlanPage({
           </Section>
 
           {/* ------------------------------------------------ Réglages */}
-          <Section title="Ajuster" note="La stratégie et le chrono se recalculent instantanément — le GPX reste.">
+          <Section title={t("racePlan.adjust")} note={t("racePlan.adjustNote")}>
             <RacePlanForm
               goalId={goal.id}
               existing={{
@@ -196,14 +198,14 @@ export default async function RacePlanPage({
 
           {/* ------------------------------------------------ Checklists */}
           <div className="grid gap-6 lg:grid-cols-2">
-            <Section title="La veille">
+            <Section title={t("racePlan.eve")}>
               <ul className="space-y-2 text-sm text-ink2">
                 {[
-                  "Dormir 8 h — la nuit de J−2 compte plus que celle de la veille",
-                  "Dossard, épingles, tenue, chaussures : tout posé la veille",
-                  "Charge la montre et le téléphone",
-                  "Pas de repas nouveau, pas d'alcool, hydratation régulière",
-                  "Relire le plan d'allure une fois, puis ne plus y penser",
+                  t("racePlan.eve0"),
+                  t("racePlan.eve1"),
+                  t("racePlan.eve2"),
+                  t("racePlan.eve3"),
+                  t("racePlan.eve4"),
                 ].map((t) => (
                   <li key={t} className="flex gap-2.5">
                     <span className="mt-[7px] h-[7px] w-[7px] shrink-0 rounded-full bg-clay" />
@@ -212,15 +214,15 @@ export default async function RacePlanPage({
                 ))}
               </ul>
             </Section>
-            <Section title="Le jour J">
+            <Section title={t("racePlan.day")}>
               <ul className="space-y-2 text-sm text-ink2">
                 {[
-                  "Réveil 3 h avant le départ : petit-déjeuner testé, café habituel",
-                  "Arriver 60-90 min avant : dossard, toilettes, repérage du sas",
-                  "Échauffement léger 15-20 min, 30 min avant",
-                  "Départ retenu : le plan protège de l'euphorie du premier tiers",
-                  "Ravitaillement dès le premier tiers, avant d'avoir soif",
-                  "Dernier tiers : tout ce qui reste, au mental",
+                  t("racePlan.day0"),
+                  t("racePlan.day1"),
+                  t("racePlan.day2"),
+                  t("racePlan.day3"),
+                  t("racePlan.day4"),
+                  t("racePlan.day5"),
                 ].map((t) => (
                   <li key={t} className="flex gap-2.5">
                     <span className="mt-[7px] h-[7px] w-[7px] shrink-0 rounded-full bg-ochre" />

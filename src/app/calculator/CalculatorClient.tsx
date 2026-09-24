@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { fmtDuration, fmtPace, pacePerKm } from "@/lib/format";
 import { STANDARD_DISTANCES } from "@/lib/records";
 import {
@@ -24,6 +25,7 @@ export function CalculatorClient({
   initialDistance: number;
   initialSeconds: number;
 }) {
+  const t = useTranslations("calculator");
   const [meters, setMeters] = useState(initialDistance);
   const [h, setH] = useState(Math.floor(initialSeconds / 3600));
   const [m, setM] = useState(Math.floor((initialSeconds % 3600) / 60));
@@ -133,14 +135,14 @@ export function CalculatorClient({
           {/* ---------------------------------------------------- Résultat */}
           <section className="grid gap-px border-y border-hair bg-hair sm:grid-cols-3">
             <Figure
-              label="VDOT"
+              label={t("vdot")}
               value={vdot.toFixed(1)}
               note={level?.label}
               big
             />
-            <Figure label="VMA estimée" value={vma.toFixed(1)} unit="km/h" />
+            <Figure label={t("vma")} value={vma.toFixed(1)} unit="km/h" />
             <Figure
-              label="Allure VMA"
+              label={t("vmaPace")}
               value={fmtPace(3600 / vma, "")}
               unit="/km"
             />
@@ -158,7 +160,7 @@ export function CalculatorClient({
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Distance</th>
+                    <th>{t("distance")}</th>
                     <th className="text-right">Chrono</th>
                     <th className="text-right">Allure</th>
                     <th className="text-right">Vitesse</th>
@@ -197,7 +199,7 @@ export function CalculatorClient({
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Intensité</th>
+                    <th>{t("intensity")}</th>
                     <th className="text-right">Allure</th>
                     <th className="text-right">Sur 400 m</th>
                     <th className="text-right">Sur 1 km</th>

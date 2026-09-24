@@ -1,4 +1,5 @@
 import { PageHead } from "@/components/ui/Layout";
+import { getTranslations } from "next-intl/server";
 import { AnalysisPoleStrip } from "@/app/analysis/_shared";
 import { getBestEfforts, getRuns } from "@/lib/queries";
 import { fitnessProfile, personalRecords } from "@/lib/records";
@@ -7,6 +8,7 @@ import { CalculatorClient } from "./CalculatorClient";
 export const dynamic = "force-dynamic";
 
 export default async function CalculatorPage() {
+  const t = await getTranslations("calculator");
   const [runs, efforts] = await Promise.all([getRuns(), getBestEfforts()]);
   const records = personalRecords(efforts, runs);
   const profile = fitnessProfile(records, 365);
@@ -19,12 +21,12 @@ export default async function CalculatorPage() {
   return (
     <>
       <PageHead
-        title="Calculateur"
-        kicker="Calculateur express"
+        title={t("title")}
+        kicker={t("kicker")}
         meta={
           source
-            ? `Pré-rempli avec ta meilleure performance : ${source.name}`
-            : "Saisis une performance pour estimer ton niveau et tes allures"
+            ? t("prefilled", { name: source.name })
+            : t("empty")
         }
       />
       <AnalysisPoleStrip active="/calculator" />

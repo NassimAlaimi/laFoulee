@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Empty, Hint, PageHead, Section } from "@/components/ui/Layout";
 import { AnalysisPoleStrip } from "@/app/analysis/_shared";
 import { VdotChart } from "@/components/charts/Lazy";
@@ -37,6 +38,7 @@ const CONF_TONE: Record<Confidence, string> = {
 };
 
 export default async function RecordsPage() {
+  const t = await getTranslations("records");
   const [runs, efforts] = await Promise.all([getRuns(), getBestEfforts()]);
 
   if (runs.length === 0) {
@@ -142,7 +144,7 @@ export default async function RecordsPage() {
           {history.some((h) => h.vdot !== null) ? (
             <VdotChart data={history} />
           ) : (
-            <Hint height={200}>Pas encore assez d&apos;historique.</Hint>
+            <Hint height={200}>{t("notEnough")}</Hint>
           )}
           <dl className="mt-8 grid grid-cols-2 border-t border-hair">
             <HeroStat label="VMA estimée" value={profile.vma > 0 ? `${profile.vma} km/h` : "—"} />
@@ -169,12 +171,12 @@ export default async function RecordsPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Distance</th>
-                  <th className="text-right">Chrono</th>
-                  <th className="text-right">Allure</th>
+                  <th>{t("distance")}</th>
+                  <th className="text-right">{t("time")}</th>
+                  <th className="text-right">{t("pace")}</th>
                   <th className="text-right">VDOT</th>
-                  <th>Date</th>
-                  <th>Séance</th>
+                  <th>{t("date")}</th>
+                  <th>{t("session")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -242,8 +244,8 @@ export default async function RecordsPage() {
                 <thead>
                   <tr>
                     <th>Distance</th>
-                    <th className="text-right">Potentiel</th>
-                    <th className="text-right">Réaliste · fourchette</th>
+                    <th className="text-right">{t("potential")}</th>
+                    <th className="text-right">{t("realistic")}</th>
                     <th className="text-right">Allure</th>
                     <th className="text-right">Ton record</th>
                     <th className="text-right">Écart</th>

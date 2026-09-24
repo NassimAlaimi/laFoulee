@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { PageHead } from "@/components/ui/Layout";
 import { TourDoor } from "@/components/tour/TourDoor";
 import { prisma } from "@/lib/prisma";
@@ -12,6 +13,7 @@ export const dynamic = "force-dynamic";
  * consulte pas tous les jours, mais qui compte à la fin.
  */
 export default async function PlusPage() {
+  const t = await getTranslations("plus");
   const userId = await requireUserId();
   const [activities, goals, plans] = await Promise.all([
     prisma.activity.count({ where: { userId } }),
@@ -22,25 +24,25 @@ export default async function PlusPage() {
   return (
     <div className="space-y-12">
       <PageHead
-        title="Plus"
-        kicker="Rétro & réglages"
-        meta="La rétrospective, l'agenda, l'export — et tout ce qui configure l'app"
+        title={t("title")}
+        kicker={t("kicker")}
+        meta={t("meta")}
       />
 
       <section className="rise">
         <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
           <div>
             <div className="text-micro font-medium uppercase tracking-[0.16em] text-ink3">
-              Ton compte en trois chiffres
+              {t("account3")}
             </div>
             <div className="mt-2 flex items-baseline gap-4">
               <span className="display text-d4">{activities}</span>
-              <span className="text-sm text-ink3">activités importées</span>
+              <span className="text-sm text-ink3">{t("importedActivities")}</span>
             </div>
           </div>
           <dl className="flex gap-8">
-            <Figure label="objectifs" value={String(goals)} />
-            <Figure label="plans d'entraînement" value={String(plans)} />
+            <Figure label={t("goals")} value={String(goals)} />
+            <Figure label={t("plans")} value={String(plans)} />
           </dl>
         </div>
       </section>
@@ -48,27 +50,27 @@ export default async function PlusPage() {
       <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
         <HubDoor
           href="/recap"
-          title="Rétrospective"
-          tagline="L'année qui s'achève : kilomètres, courses, records, moments — imprimable."
-          note={`Bilan ${new Date().getFullYear()}`}
+          title={t("recap")}
+          tagline={t("recapTag")}
+          note={t("yearReview", { year: new Date().getFullYear() })}
         />
         <HubDoor
           href="/settings#agenda"
-          title="Agenda"
-          tagline="Ton plan d'entraînement dans ton calendrier (Google, Apple…) via un flux."
-          note="Abonnement iCal"
+          title={t("agenda")}
+          tagline={t("agendaTag")}
+          note={t("icalSub")}
         />
         <HubDoor
           href="/settings#export"
-          title="Export"
-          tagline="Toutes tes données à toi : JSON complet ou CSV des activités."
-          note="Données brutes"
+          title={t("export")}
+          tagline={t("exportTag")}
+          note={t("rawData")}
         />
         <HubDoor
           href="/settings"
-          title="Réglages"
-          tagline="Compte Strava, synchronisation, profil, thème — tout se règle ici."
-          note="Compte & préférences"
+          title={t("settings")}
+          tagline={t("settingsTag")}
+          note={t("accountPrefs")}
         />
         <HubDoor
           href="/lexique"

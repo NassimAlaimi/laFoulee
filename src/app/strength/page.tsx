@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { revalidatePath } from "next/cache";
 import { Empty, PageHead, Section } from "@/components/ui/Layout";
 import { Bar, Metric, MetricBand } from "@/components/ui/Metric";
@@ -55,6 +56,7 @@ const STRENGTH_ACWR_TONE: Record<string, string> = {
  * saisie, rattachée à l'activité.
  */
 export default async function StrengthPage() {
+  const t = await getTranslations("strengthPage");
   const userId = await requireUserId();
   const now = new Date();
   const [workouts, strava, settings, goals] = await Promise.all([
@@ -86,7 +88,7 @@ export default async function StrengthPage() {
       <>
         <PageHead title="Musculation" />
         <Empty
-          title="Ton carnet de renforcement"
+          title={t("emptyTitle")}
           body="Note tes séances exercice par exercice : l'app retient tes charges, estime ton 1RM, propose la progression de la séance suivante et vérifie que la chaîne du coureur (fessiers, ischios, mollets, hanches) reçoit assez de travail."
           action={
             <Link href="/strength/new" className="btn-solid">
@@ -182,7 +184,7 @@ export default async function StrengthPage() {
   return (
     <>
       <PageHead
-        title="Musculation"
+        title={t("title")}
         meta={`${workouts.length} séance${workouts.length > 1 ? "s" : ""} détaillée${workouts.length > 1 ? "s" : ""} · ${strava.length} depuis Strava`}
         action={
           <Link href="/strength/new" className="btn-solid">
@@ -212,11 +214,11 @@ export default async function StrengthPage() {
       )}
 
       <MetricBand>
-        <Metric label="Séances · 28 jours" value={sessions28} trend={compareTrend(sessions28, sessionsPrev)} />
-        <Metric label="Séries dures / semaine" value={Math.round(hardPerWeek * 10) / 10} note="moyenne 4 semaines" />
-        <Metric label="Tonnage · 28 jours" value={Math.round(tonnage28).toLocaleString("fr-FR")} unit="kg" />
+        <Metric label={t("sessions28")} value={sessions28} trend={compareTrend(sessions28, sessionsPrev)} />
+        <Metric label={t("hardSets")} value={Math.round(hardPerWeek * 10) / 10} note={t("avg4w")} />
+        <Metric label={t("tonnage28")} value={Math.round(tonnage28).toLocaleString("fr-FR")} unit="kg" />
         <Metric
-          label="Records · 90 jours"
+          label={t("records90")}
           value={prs90.length}
           note={prs90[0] ? `dernier : ${exerciseInfo(prs90[0].exercise).name}` : undefined}
         />
@@ -224,7 +226,7 @@ export default async function StrengthPage() {
 
       {/* ---------------------------------------------- Garde-fou de charge */}
       <Section
-        title="Garde-fou de charge"
+        title={t("guardrail")}
         note="Comme en course, la blessure vient de la montée trop rapide, pas du volume : séries dures de la semaine contre la moyenne des 4 dernières semaines."
       >
         <div className="flex flex-wrap items-baseline gap-x-12 gap-y-5">
@@ -263,7 +265,7 @@ export default async function StrengthPage() {
       <div className="mt-10 space-y-10">
         {/* ---------------------------------------------- Équilibre du coureur */}
         <Section
-          title="La chaîne du coureur"
+          title={t("chain")}
           note="Séries dures par semaine (moyenne sur 4 semaines) face à une fourchette de complément à la course : assez pour gagner en force et en solidité des tendons, sans empiéter sur la récupération."
         >
           <div className="space-y-1">
@@ -277,7 +279,7 @@ export default async function StrengthPage() {
                     <div
                       className="absolute inset-y-[5px] rounded-[3px] border border-dashed border-sage/60 bg-sage/10"
                       style={{ left: `${(r.lo / scaleMax) * 100}%`, width: `${((r.hi - r.lo) / scaleMax) * 100}%` }}
-                      title={`Cible ${r.lo}–${r.hi} séries/semaine`}
+                      title={t("targetSets", { lo: r.lo, hi: r.hi })}
                     />
                     <div
                       className={`absolute inset-y-[9px] left-0 rounded-full ${status === "in" ? "bg-sage" : status === "over" ? "bg-ochre" : "bg-clay"}`}
@@ -298,7 +300,7 @@ export default async function StrengthPage() {
 
         {/* ---------------------------------------------- Chaîne du coureur · évolution */}
         <Section
-          title="La chaîne du coureur · 12 semaines"
+          title={t("chain12")}
           note="Séries dures par semaine, muscle par muscle — repère les groupes qui progressent et ceux qui s'endorment."
         >
           <div className="space-y-2.5">
@@ -316,7 +318,7 @@ export default async function StrengthPage() {
 
         {/* ---------------------------------------------- Objectifs de force */}
         <Section
-          title="Objectifs de force"
+          title={t("strengthGoals")}
           note="Une cible de 1RM à atteindre — en kg absolus ou en multiple de ton poids de corps."
         >
           {goals.length > 0 && (
@@ -386,8 +388,8 @@ export default async function StrengthPage() {
                 Cible
               </label>
               <select id="gmode" name="mode" className="field">
-                <option value="weight">Poids (kg)</option>
-                <option value="relative">Relative (× poids)</option>
+                <option value="weight">{t("optWeight")}</option>
+                <option value="relative">{t("optRelative")}</option>
               </select>
             </div>
             <div>

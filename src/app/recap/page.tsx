@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Empty } from "@/components/ui/Layout";
 import { RouteGlyph } from "@/components/route/RouteGlyph";
 import { PrintButton } from "@/components/PrintButton";
@@ -30,6 +31,7 @@ const MONTHS_LONG = ["janvier", "février", "mars", "avril", "mai", "juin", "jui
  * sortie par sortie. Imprimable.
  */
 export default async function RecapPage({ searchParams }: { searchParams: Promise<{ y?: string; m?: string }> }) {
+  const t = await getTranslations("recap");
   const userId = await requireUserId();
   const params = await searchParams;
   const now = new Date();
@@ -40,7 +42,7 @@ export default async function RecapPage({ searchParams }: { searchParams: Promis
     select: { id: true, name: true, startDate: true, distance: true, movingTime: true, totalElevation: true, polyline: true, isRace: true },
   });
   if (!all.length) {
-    return <Empty title="Rien à raconter pour l'instant" body="Synchronise tes courses Strava : la rétrospective se construit toute seule." />;
+    return <Empty title={t("nothingYet")} body={t("nothingBody")} />;
   }
 
   const years = [...new Set(all.map((r) => r.startDate.getFullYear()))].sort((a, b) => b - a);
@@ -147,7 +149,7 @@ export default async function RecapPage({ searchParams }: { searchParams: Promis
       </nav>
 
       {runs.length === 0 ? (
-        <Empty title={`Aucune course en ${periodLabel}`} body="Choisis une autre période ci-dessus." />
+        <Empty title={t("noRunsIn", { period: periodLabel })} body={t("otherPeriod")} />
       ) : (
         <>
           {/* ------------------------------------------------ Le chiffre */}
@@ -175,16 +177,16 @@ export default async function RecapPage({ searchParams }: { searchParams: Promis
           </header>
 
           <div className="mt-12 grid grid-cols-2 gap-y-8 border-y border-hair py-8 md:grid-cols-4">
-            <Fig value={fmtHours(hours)} label="en mouvement" />
-            <Fig value={`${Math.round(elevation).toLocaleString("fr-FR")} m`} label={cmpElev ? `de dénivelé · ${cmpElev}` : "de dénivelé"} />
-            <Fig value={String(activeDays)} label={`jour${activeDays > 1 ? "s" : ""} de course`} />
-            <Fig value={fmtPace(pacePerKm(km * 1000, hours * 3600))} label="d'allure moyenne" />
+            <Fig value={fmtHours(hours)} label={t("moving")} />
+            <Fig value={`${Math.round(elevation).toLocaleString("fr-FR")} m`} label={cmpElev ? t("elevGainCmp", { cmp: cmpElev }) : t("elevGain")} />
+            <Fig value={String(activeDays)} label={t("runDays", { s: activeDays > 1 ? "s" : "" })} />
+            <Fig value={fmtPace(pacePerKm(km * 1000, hours * 3600))} label={t("avgPace")} />
           </div>
 
           {/* ------------------------------------------------ Le trait */}
           <section className="mt-16">
             <h2 className="text-[clamp(1.5rem,3vw,2.25rem)] font-semibold tracking-[-0.02em]">
-              {month != null ? "Ton mois" : "Ton année"} en {runs.length} traits
+              {month != null ? t("yourMonth") : t("yourYear")} · {t("inTraits", { n: runs.length })}
             </h2>
             <p className="mt-2 text-[0.9375rem] text-ink2">Chaque sortie, dans l&apos;ordre. Les courses sont en terre cuite.</p>
             <div className="mt-8 grid grid-cols-6 gap-x-2 gap-y-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12">
@@ -295,7 +297,7 @@ export default async function RecapPage({ searchParams }: { searchParams: Promis
               {longest && (
                 <Moment
                   href={`/activities/${longest.id}`}
-                  label="La plus longue"
+                  label={t("longest")}
                   value={`${(longest.distance / 1000).toFixed(1)} km`}
                   note={`${fmtDate(longest.startDate)} · ${fmtDuration(longest.movingTime)}`}
                   polyline={longest.polyline}
@@ -304,7 +306,7 @@ export default async function RecapPage({ searchParams }: { searchParams: Promis
               {fastest && (
                 <Moment
                   href={`/activities/${fastest.id}`}
-                  label="La plus rapide"
+                  label={t("fastest")}
                   value={fmtPace(pacePerKm(fastest.distance, fastest.movingTime))}
                   note={`${fmtDate(fastest.startDate)} · ${(fastest.distance / 1000).toFixed(1)} km`}
                   polyline={fastest.polyline}
@@ -313,29 +315,29 @@ export default async function RecapPage({ searchParams }: { searchParams: Promis
               {highest && highest.totalElevation > 0 && (
                 <Moment
                   href={`/activities/${highest.id}`}
-                  label="La plus haute"
+                  label={t("highest")}
                   value={`${Math.round(highest.totalElevation)} m D+`}
                   note={`${fmtDate(highest.startDate)} · ${(highest.distance / 1000).toFixed(1)} km`}
                   polyline={highest.polyline}
                 />
               )}
               {week && (
-                <Moment label="La plus grosse semaine" value={`${Math.round(week.km)} km`} note={`semaine du ${fmtDate(week.start)}`} />
+                <Moment label={t("biggestWeek")} value={`${Math.round(week.km)} km`} note={t("weekOf", { date: fmtDate(week.start) })} />
               )}
               <Moment
-                label="La plus longue série"
+                label={t("longestStreak")}
                 value={`${streak.days} jour${streak.days > 1 ? "s" : ""}`}
                 note={streak.end && streak.days > 1 ? `d'affilée, jusqu'au ${fmtDate(streak.end)}` : "de course d'affilée"}
               />
               {strength.length > 0 ? (
                 <Moment
                   href="/strength"
-                  label="Côté renfo"
+                  label={t("strengthSide")}
                   value={`${strength.length} séance${strength.length > 1 ? "s" : ""}`}
                   note={`${Math.round(strengthTonnage).toLocaleString("fr-FR")} kg soulevés`}
                 />
               ) : (
-                <Moment label="Temps moyen par sortie" value={fmtDuration((hours * 3600) / runs.length)} note={`${(km / runs.length).toFixed(1)} km en moyenne`} />
+                <Moment label={t("avgTime")} value={fmtDuration((hours * 3600) / runs.length)} note={t("avgKm", { km: (km / runs.length).toFixed(1) })} />
               )}
             </div>
           </section>

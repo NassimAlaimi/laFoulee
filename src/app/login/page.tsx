@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { currentUser, inviteCode } from "@/lib/auth";
 import { isStravaConfigured } from "@/lib/strava";
 
@@ -17,6 +18,7 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ error?: string; next?: string }>;
 }) {
+  const t = await getTranslations("login");
   const { error } = await searchParams;
   if (await currentUser()) redirect("/");
 
@@ -37,7 +39,7 @@ export default async function LoginPage({
         <span className="text-lg font-semibold tracking-tight">Foulée</span>
       </div>
 
-      <h1 className="display mt-6 text-d2">Analyse d&apos;entraînement</h1>
+      <h1 className="display mt-6 text-d2">{t("tagline")}</h1>
       <p className="mt-3 text-[0.9375rem] leading-relaxed text-ink2">
         Volume, charge, prédictions de chrono et plan d&apos;entraînement séance par
         séance. Tout part de tes activités Strava.
@@ -51,7 +53,7 @@ export default async function LoginPage({
 
       {!configured ? (
         <div className="mt-8 rounded-card border border-caution/30 bg-caution/8 p-4 text-sm text-amber-200">
-          <p className="font-medium">Instance non configurée</p>
+          <p className="font-medium">{t("notConfigured")}</p>
           <p className="mt-1.5 text-amber-200/85">
             <code className="rounded bg-black/30 px-1 py-0.5 text-micro">
               STRAVA_CLIENT_ID

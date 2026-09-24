@@ -1,10 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 /** Supprime le plan de course (GPX inclus) — confirmation intégrée. */
 export function DeleteRacePlanButton({ goalId }: { goalId: string }) {
+  const t = useTranslations("goals");
   const router = useRouter();
   const [armed, setArmed] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -29,7 +31,7 @@ export function DeleteRacePlanButton({ goalId }: { goalId: string }) {
   }
   return (
     <span className="flex items-center gap-3 text-sm">
-      <span className="text-ink3">Supprimer le GPX et le plan ?</span>
+      <span className="text-ink3">{t("racePlan.deleteConfirm")}</span>
       <button type="button" className="btn-outline btn-sm" disabled={busy} onClick={remove}>
         Oui, supprimer
       </button>

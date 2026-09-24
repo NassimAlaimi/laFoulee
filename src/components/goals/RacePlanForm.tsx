@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 /** Chrono « 3:45:00 » ou « 3:45 » ou secondes brutes → secondes. */
@@ -36,6 +37,7 @@ export function RacePlanForm({
   };
 }) {
   const router = useRouter();
+  const t = useTranslations("goals");
   const [file, setFile] = useState<File | null>(null);
   const [clock, setClock] = useState(
     existing?.targetSeconds
@@ -74,7 +76,7 @@ export function RacePlanForm({
       router.refresh();
     } else {
       const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Échec de l'enregistrement");
+      setError(data.error ?? t("racePlan.saveError"));
     }
   }
 
@@ -121,7 +123,7 @@ export function RacePlanForm({
           onChange={(e) => setClock(e.target.value)}
           placeholder="3:45:00"
           className="field w-36"
-          aria-label="Chrono visé (h:mm:ss)"
+          aria-label={t("racePlan.targetTime")}
         />
       </div>
 
@@ -132,9 +134,9 @@ export function RacePlanForm({
         <div className="flex flex-wrap gap-1.5">
           {(
             [
-              ["negative", "Négative — finir plus vite"],
-              ["even", "Régulière — effort constant"],
-              ["positive", "Positive — partir fort"],
+              ["negative", t("racePlan.strategyNegative")],
+              ["even", t("racePlan.strategyEven")],
+              ["positive", t("racePlan.strategyPositive")],
             ] as const
           ).map(([value, label]) => (
             <button
@@ -163,7 +165,7 @@ export function RacePlanForm({
               value={fuelingKm}
               onChange={(e) => setFuelingKm(e.target.value)}
               className="field w-20"
-              aria-label="Ravitaillement tous les N kilomètres"
+              aria-label={t("racePlan.fuelingEvery")}
             />
             <span className="text-sm text-ink3">km · 0 = désactivé</span>
           </div>

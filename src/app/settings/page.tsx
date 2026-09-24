@@ -78,7 +78,7 @@ export default async function SettingsPage({
     <div className="max-w-4xl space-y-6">
       <PageHead
         title="Réglages"
-        kicker="Ton compte"
+        kicker={t("kick")}
         meta={
           account
             ? `${account.firstname} ${account.lastname} · ${activityCount} activités · ${planCount} plan${planCount > 1 ? "s" : ""}`

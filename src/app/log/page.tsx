@@ -26,7 +26,8 @@ export const dynamic = "force-dynamic";
  * à l'entraînement des jours précédents.
  */
 export default async function LogPage() {
-  const t = await getTranslations("common");
+  const t = await getTranslations("logPage");
+  const tc = await getTranslations("common");
   const now = new Date();
   const userId = await requireUserId();
   const since = new Date(now.getTime() - 20 * 86400000);
@@ -60,8 +61,8 @@ export default async function LogPage() {
   return (
     <div className="space-y-12">
       <PageHead
-        title="Carnet"
-        kicker="Quotidien"
+        title={t("title")}
+        kicker={t("kicker")}
         meta="Sommeil, récupération, ressenti — ton état jour après jour, en regard de la charge"
       />
 
@@ -91,26 +92,26 @@ export default async function LogPage() {
             </div>
           </div>
           <dl className="flex gap-8">
-            <Figure label="sommeil 7 j" value={sleepAvg !== null ? `${sleepAvg} h` : "—"} />
-            <Figure label="jours renseignés" value={String(logs.length)} note="sur 20" />
+            <Figure label={t("sleep7")} value={sleepAvg !== null ? `${sleepAvg} h` : "—"} />
+            <Figure label={t("daysFilled")} value={String(logs.length)} note={t("of20")} />
           </dl>
         </div>
       </section>
 
       {/* ------------------------------------------------ Formulaire + tendance */}
       <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-        <Section title="Comment te sens-tu ?" note="Enregistre au fil de la journée — chaque passage fusionne avec le précédent.">
+        <Section title={t("howFeel")} note={t("howFeelNote")}>
           <LogForm existing={today} today={todayKey} />
         </Section>
 
-        <Section title="14 derniers jours" note="Ligne = score de préparation · barres = sommeil">
+        <Section title={t("last14")} note={t("last14Note")}>
           {series.length >= 2 ? (
             <ReadinessChart points={series} />
           ) : (
             <p className="py-6 text-sm text-ink3">
               {series.length === 1
                 ? "Un seul jour renseigné — la tendance apparaîtra dès demain."
-                : "Renseigne ton premier jour pour lancer la tendance."}
+                : t("firstDay")}
             </p>
           )}
 
@@ -130,7 +131,7 @@ export default async function LogPage() {
       </div>
 
       {/* ------------------------------------------------ Historique */}
-      <Section title="Historique" note="Les vingt derniers jours renseignés">
+      <Section title={t("history")} note={t("historyNote")}>
         {logs.length === 0 ? (
           <p className="py-6 text-sm text-ink3">Aucune entrée pour l'instant.</p>
         ) : (
@@ -138,13 +139,13 @@ export default async function LogPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Jour</th>
+                  <th>{t("day")}</th>
                   <th className="text-right">Score</th>
                   <th className="text-right">Sommeil</th>
                   <th className="text-right">Fatigue</th>
                   <th className="text-right">Moral</th>
                   <th className="text-right">Douleur</th>
-                  <th>Note</th>
+                  <th>{t("note")}</th>
                 </tr>
               </thead>
               <tbody>
