@@ -221,6 +221,7 @@ model RaceGoal {
   activities Activity[]
   weeks      PlanWeek[]
   plans      TrainingPlan[]
+  racePlan   RacePlan?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -550,4 +551,27 @@ model HrStream {
   /// "t0,hr0,v0;dt1,dhr1,dv1;…" — deltas en secondes, bpm et cm/s
   series     String
   createdAt  DateTime @default(now())
+}
+
+/// Plan de course : GPX du parcours, profil de dénivelé, stratégie d'allure
+/// et ravitaillement. Un plan par objectif de course.
+model RacePlan {
+  id     String  @id @default(cuid())
+  goal   RaceGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  goalId String
+
+  /// Contenu GPX brut (XML) — conservé pour reprofiler
+  gpx String?
+  /// Profil de dénivelé sérialisé (JSON de lib/gpx ProfileBin[])
+  profile String?
+  /// even | negative | positive
+  strategy String  @default("negative")
+  /// Chrono visé en secondes (réparti sur les tronçons)
+  targetSeconds Int?
+  /// Ravitaillement tous les X km (0 = désactivé)
+  fuelingKm   Float  @default(5)
+  fuelingNote String?
+  updatedAt   DateTime @updatedAt
+
+  @@unique([goalId])
 }

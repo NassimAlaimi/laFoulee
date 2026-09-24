@@ -384,6 +384,11 @@ export default async function GoalDetailPage({
                 ? `Négatif léger : premier tiers retenu, dernier tiers accéléré — ${fmtDuration(r.targetSeconds)} au total (chrono visé)`
                 : `Négatif léger : premier tiers retenu, dernier tiers accéléré — ${fmtDuration(paceBase)} au total (chrono réaliste, aucun objectif saisi)`
             }
+            action={
+              <Link href={`/goals/${goal.id}/race-plan`} className="btn-outline btn-sm">
+                Plan de course →
+              </Link>
+            }
           />
           <div className="overflow-x-auto">
             <table className="data-table">
