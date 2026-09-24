@@ -100,7 +100,7 @@ export function SessionCard({
             <span className={`text-sm font-medium ${done ? "text-sage" : ""}`}>
               {session.title}
             </span>
-            <span className="tag">{t(KIND_LABELS[session.kind as SessionKind] ?? `kind.${session.kind}`)}</span>
+            <span className="tag">{tc(KIND_LABELS[session.kind as SessionKind] ?? `kind.${session.kind}`)}</span>
             {session.adapted && (
               <span className="tag border-ochre/40 text-ochre" title={session.adaptReason ?? ""}>
                 réadapté

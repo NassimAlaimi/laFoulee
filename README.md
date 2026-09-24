@@ -359,6 +359,10 @@ commentaire) et se relie automatiquement à l'activité Strava du même jour.
 
 ## Fonctionnalités
 
+L'interface est **multilingue** : français (par défaut), anglais et espagnol.
+La langue se choisit dans Réglages, est enregistrée sur le profil (elle suit
+l'utilisateur sur tous ses appareils) et ne change jamais les URLs.
+
 | Page | Contenu |
 |---|---|
 | **Résumé** | La saison en une phrase, séance du jour en grand (frise, repères semaine / course / fraîcheur), bande nuit de l'état de forme, observations, calendrier, charge, volume, allure, zones FC |
@@ -646,6 +650,15 @@ pnpm test
   et chronologie des records
 
 ## Notes techniques
+
+- **Internationalisation (next-intl)** : les messages vivent dans
+  `messages/{fr,en,es}.json` (parité des clés vérifiée par `tests/i18n.test.ts`).
+  La locale est résolue par le cookie `NEXT_LOCALE` (`src/i18n/request.ts`),
+  synchronisé avec `User.language` via `/api/lang-sync` (le layout ne peut pas
+  écrire de cookie). Les composants serveur utilisent `getTranslations`, les
+  clients `useTranslations`. Le contenu **généré puis persisté** (plans, étapes
+  de séance, ajustements, textes de rétrospective) reste dans la langue de
+  création — comme les données saisies par l'utilisateur.
 
 - Le `userId` n'est **jamais** lu depuis une requête entrante : il est résolu à
   partir de la session, dans `lib/queries.ts` et `lib/plan-store.ts`. Une page

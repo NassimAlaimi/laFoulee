@@ -74,20 +74,20 @@ export type PaceSet = {
 
 /** Libellés de type de séance — clés i18n `common.kind.*`. */
 export const KIND_LABELS: Record<SessionKind, string> = {
-  rest: "common.kind.rest",
-  recovery: "common.kind.recovery",
-  easy: "common.kind.easy",
-  long: "common.kind.long",
-  tempo: "common.kind.tempo",
-  threshold: "common.kind.threshold",
-  intervals: "common.kind.intervals",
-  hills: "common.kind.hills",
-  fartlek: "common.kind.fartlek",
-  strides: "common.kind.strides",
-  race: "common.kind.race",
-  strength: "common.kind.strength",
-  cross: "common.kind.cross",
-  mobility: "common.kind.mobility",
+  rest: "kind.rest",
+  recovery: "kind.recovery",
+  easy: "kind.easy",
+  long: "kind.long",
+  tempo: "kind.tempo",
+  threshold: "kind.threshold",
+  intervals: "kind.intervals",
+  hills: "kind.hills",
+  fartlek: "kind.fartlek",
+  strides: "kind.strides",
+  race: "kind.race",
+  strength: "kind.strength",
+  cross: "kind.cross",
+  mobility: "kind.mobility",
 };
 
 /** Les séances qui comptent comme « qualité » (intensité ≥ 3). */

@@ -36,10 +36,10 @@ export type ReadinessZone = "ready" | "solid" | "fragile" | "recover";
 
 /** Libellés de préparation — clés i18n `common.readiness.*`. */
 export const READINESS_LABEL: Record<ReadinessZone, string> = {
-  ready: "common.readiness.ready",
-  solid: "common.readiness.solid",
-  fragile: "common.readiness.fragile",
-  recover: "common.readiness.recover",
+  ready: "readiness.ready",
+  solid: "readiness.solid",
+  fragile: "readiness.fragile",
+  recover: "readiness.recover",
 };
 
 export const READINESS_COLOR: Record<ReadinessZone, string> = {

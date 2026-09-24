@@ -49,11 +49,11 @@ export type WeekCompliance = {
 
 /** Libellés de conformité — clés i18n `common.compliance.*`. */
 export const COMPLIANCE_LABEL: Record<ComplianceZone, string> = {
-  upcoming: "common.compliance.upcoming",
-  empty: "common.compliance.empty",
-  good: "common.compliance.good",
-  fair: "common.compliance.fair",
-  low: "common.compliance.low",
+  upcoming: "compliance.upcoming",
+  empty: "compliance.empty",
+  good: "compliance.good",
+  fair: "compliance.fair",
+  low: "compliance.low",
 };
 
 /** Couleurs du bandeau — alignées sur les tokens de la palette. */

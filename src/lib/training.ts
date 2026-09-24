@@ -46,12 +46,12 @@ export type Phase = "base" | "build" | "peak" | "deload" | "taper" | "race";
 
 /** Libellés de phase — clés i18n `common.phase.*`, résolues à l'affichage. */
 export const PHASE_LABELS: Record<Phase, string> = {
-  base: "common.phase.base",
-  build: "common.phase.build",
-  peak: "common.phase.peak",
-  deload: "common.phase.deload",
-  taper: "common.phase.taper",
-  race: "common.phase.race",
+  base: "phase.base",
+  build: "phase.build",
+  peak: "phase.peak",
+  deload: "phase.deload",
+  taper: "phase.taper",
+  race: "phase.race",
 };
 
 /** Couleur de chaque phase, partagée par tous les graphiques de plan. */

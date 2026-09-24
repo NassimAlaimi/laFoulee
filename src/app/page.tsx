@@ -194,7 +194,7 @@ export default async function SummaryPage() {
 
   const majors = records.filter((r) => r.major && r.seconds);
   const headline = form ? formHeadline(form, current.ready ? current.zone : undefined) : null;
-  const sentence = seasonSentence(runs, now);
+  const sentence = seasonSentence(runs, now, locale);
   const recent = runs.slice(0, 8);
   const glyphs = new Map(
     (

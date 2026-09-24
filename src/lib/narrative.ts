@@ -19,7 +19,8 @@ export type SentencePart = {
 
 export function seasonSentence(
   activities: ActivityLike[],
-  now = new Date()
+  now = new Date(),
+  locale = "fr-FR"
 ): SentencePart[] | null {
   const start = (days: number) => {
     const d = new Date(now);
@@ -47,8 +48,8 @@ export function seasonSentence(
   if (when.favoriteSlot !== null) {
     parts.push({ key: `season.slot${when.favoriteSlot}` });
   }
-  parts.push({ key: "season.km", params: { km: fmt(r.km) } });
-  const delta = volumeDelta(r.km, p.km, p.sessions);
+  parts.push({ key: "season.km", params: { km: fmt(r.km, locale) } });
+  const delta = volumeDelta(r.km, p.km, p.sessions, locale);
   if (delta) parts.push(delta);
   if (streak.days >= 5) {
     parts.push({ key: "season.streak", params: { days: streak.days } });
@@ -61,7 +62,8 @@ export function seasonSentence(
 function volumeDelta(
   current: number,
   previous: number,
-  previousSessions: number
+  previousSessions: number,
+  locale = "fr-FR"
 ): SentencePart | null {
   if (previous < 1 || previousSessions < 4) return null;
   const diff = current - previous;
@@ -70,10 +72,11 @@ function volumeDelta(
   if (diff > 0) {
     return pct < 60
       ? { key: "season.deltaUp", params: { pct } }
-      : { key: "season.deltaBig", params: { x: fmt(round1(current / previous)) } };
+      : { key: "season.deltaBig", params: { x: fmt(round1(current / previous), locale) } };
   }
   return { key: "season.deltaDown", params: { pct } };
 }
 
-const fmt = (n: number) => n.toLocaleString("fr-FR", { maximumFractionDigits: 1 });
+const fmt = (n: number, locale: string) =>
+  n.toLocaleString(locale, { maximumFractionDigits: 1 });
 const round1 = (n: number) => Math.round(n * 10) / 10;

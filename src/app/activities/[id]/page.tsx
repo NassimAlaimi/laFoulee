@@ -205,7 +205,7 @@ export default async function ActivityDetailPage({
             {activity.isRace && <span className="tag border-clay/40 text-clay">course</span>}
             {planned && (
               <span className="tag border-sage/40 text-sage">
-                plan · {t(KIND_LABELS[planned.kind as SessionKind] ?? `kind.${planned.kind}`)}
+                plan · {tc(KIND_LABELS[planned.kind as SessionKind] ?? `kind.${planned.kind}`)}
               </span>
             )}
             {gear && <span className="text-micro text-ink3">chaussures · {gear.name}</span>}

@@ -76,7 +76,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ tok
         id: s.id,
         date: s.date,
         title: s.title,
-        kindLabel: resolve(lang, KIND_LABELS[s.kind as SessionKind] ?? `common.kind.${s.kind}`),
+        kindLabel: resolve(lang, `common.${KIND_LABELS[s.kind as SessionKind] ?? `kind.${s.kind}`}`),
         tagline: s.tagline,
         distanceKm: s.distanceKm,
         durationMin: s.durationMin,

@@ -80,7 +80,7 @@ export default async function LogPage() {
               <span className="text-sm text-ink3">
                 {today ? (
                   <>
-                    {t(READINESS_LABEL[readiness.zone])}
+                    {tc(READINESS_LABEL[readiness.zone])}
                     {readiness.breakdown.length > 0 && (
                       <span className="text-ink2"> · {readiness.breakdown.join(", ")}</span>
                     )}

@@ -1,8 +1,10 @@
 # AGENTS.md — consignes pour les agents qui travaillent sur La Foulée
 
 Application d'entraînement course à pied : Next.js 15 (App Router, Turbopack),
-Prisma (SQLite en dev, `prisma/dev.db`), synchronisation Strava. Interface,
-commentaires et messages de commit **en français**.
+Prisma (SQLite en dev, `prisma/dev.db`), synchronisation Strava. Interface
+**multilingue** (fr par défaut, en, es — messages dans `messages/*.json`,
+parité testée, clés i18n `next-intl` dans le code) ; commentaires et messages
+de commit **en français**.
 
 ## ⛔ Zones gelées
 

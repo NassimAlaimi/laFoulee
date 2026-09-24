@@ -192,7 +192,7 @@ export default async function GoalDetailPage({
           value={raceForm ? `${raceForm.tsb > 0 ? "+" : ""}${Math.round(raceForm.tsb)}` : "—"}
           note={
             raceForm
-              ? `${t(ZONE_LABEL[raceForm.zone])} · condition ${Math.round(raceForm.ctl)}`
+              ? `${tc(ZONE_LABEL[raceForm.zone])} · condition ${Math.round(raceForm.ctl)}`
               : plan
                 ? t("beyondProjection")
                 : t("noPlanAttached")

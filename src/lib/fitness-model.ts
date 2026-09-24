@@ -58,11 +58,11 @@ export function formZone(tsb: number, ctl: number): FormZone {
 
 /** Libellés de zone de forme — clés i18n `common.formZone.*`. */
 export const ZONE_LABEL: Record<FormZone, string> = {
-  fresh: "common.formZone.fresh",
-  optimal: "common.formZone.optimal",
-  neutral: "common.formZone.neutral",
-  productive: "common.formZone.productive",
-  overreaching: "common.formZone.overreaching",
+  fresh: "formZone.fresh",
+  optimal: "formZone.optimal",
+  neutral: "formZone.neutral",
+  productive: "formZone.productive",
+  overreaching: "formZone.overreaching",
 };
 
 export const ZONE_TONE: Record<FormZone, string> = {
