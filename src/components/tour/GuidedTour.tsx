@@ -112,42 +112,72 @@ export function GuidedTour() {
     let cancelled = false;
     let attempts = 0;
 
-    const measure = () => {
+    const find = () => {
       if (cancelled) return;
       const el =
         document.querySelector<HTMLElement>(step.anchor) ??
         document.querySelector<HTMLElement>("main h1");
       if (!el) {
-        if (attempts++ < 50) window.setTimeout(measure, 120);
+        if (attempts++ < 50) window.setTimeout(find, 120);
         return;
       }
-      const r = el.getBoundingClientRect();
-      setAnchor({ top: r.top, left: r.left, width: r.width, height: r.height });
-      el.scrollIntoView({ block: "center", behavior: reduced ? "auto" : "smooth" });
-      const after = () => {
+      const measure = () => {
         if (cancelled) return;
-        const r2 = el.getBoundingClientRect();
-        setAnchor({ top: r2.top, left: r2.left, width: r2.width, height: r2.height });
+        const r = el.getBoundingClientRect();
+        setAnchor({ top: r.top, left: r.left, width: r.width, height: r.height });
       };
-      // La position peut bouger pendant le défilement : on re-mesure.
-      window.setTimeout(after, reduced ? 0 : 500);
-      window.setTimeout(after, reduced ? 0 : 1000);
+      el.scrollIntoView({ block: "center", behavior: reduced ? "auto" : "smooth" });
+      if (reduced) {
+        measure();
+        return;
+      }
+      // UNE seule mesure, après immobilisation du défilement : le projecteur
+      // glisse d'un seul mouvement vers sa position finale. Mesurer pendant
+      // le scroll (ou re-mesurer à coups de timeouts) le faisait clignoter.
+      let settled = false;
+      const settle = () => {
+        if (settled || cancelled) return;
+        settled = true;
+        window.setTimeout(measure, 80); // laisse finir les animations d'entrée
+      };
+      if ("onscrollend" in window) {
+        window.addEventListener("scrollend", settle, { once: true });
+      }
+      window.setTimeout(settle, 700); // navigateurs sans scrollend
     };
-    measure();
+    find();
 
     return () => {
       cancelled = true;
     };
   }, [active, stepIndex, pathname, reduced, step.anchor, step.path]);
 
-  // Taille réelle de la bulle (la position en dépend, une passe suffit).
+  // Le projecteur suit la fenêtre (rotation, zoom) — sans jamais re-mesurer
+  // pendant le défilement ni pendant les animations.
+  useEffect(() => {
+    if (!active || !step.anchor) return;
+    if (step.path && pathname !== step.path) return;
+    const onResize = () => {
+      const el =
+        document.querySelector<HTMLElement>(step.anchor) ??
+        document.querySelector<HTMLElement>("main h1");
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      setAnchor({ top: r.top, left: r.left, width: r.width, height: r.height });
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [active, stepIndex, pathname, step.anchor, step.path]);
+
+  // Taille réelle de la bulle — ne dépend que du contenu de l'étape : on ne
+  // la re-mesure pas à chaque mouvement du projecteur.
   useLayoutEffect(() => {
     if (!active) return;
     const el = bubbleRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
     if (r.width > 0) setBubbleSize({ width: r.width, height: r.height });
-  }, [active, stepIndex, anchor]);
+  }, [active, stepIndex]);
 
   // ---------------------------------------------------------- Actions
   const finish = () => {
@@ -183,39 +213,46 @@ export function GuidedTour() {
         height: anchor.height + 2 * PAD,
       }
     : null;
+  // Pendant une navigation inter-pages, le projecteur s'efface : il ne
+  // doit jamais pointer un contenu en train d'apparaître.
+  const navigating = Boolean(step.path) && pathname !== step.path;
 
   return (
     <div className="fixed inset-0 z-[70]" role="dialog" aria-modal="true" aria-label="Visite guidée">
       {/* Fond assombri avec la fenêtre du projecteur */}
-      {spot ? (
-        <>
-          <div
-            className="tour-backdrop fixed rounded-[12px]"
-            style={{
-              left: spot.left,
-              top: spot.top,
-              width: spot.width,
-              height: spot.height,
-              boxShadow: "0 0 0 9999px rgb(10 10 11 / 0.62)",
-            }}
-            aria-hidden
-          />
-          <div
-            className="tour-ring pointer-events-none fixed rounded-[14px]"
-            style={{
-              left: spot.left - 3,
-              top: spot.top - 3,
-              width: spot.width + 6,
-              height: spot.height + 6,
-              boxShadow:
-                "inset 0 0 0 1.5px rgb(var(--clay)), 0 0 0 4px rgb(var(--clay) / 0.14), 0 8px 40px rgb(0 0 0 / 0.35)",
-            }}
-            aria-hidden
-          />
-        </>
-      ) : (
-        <div className="tour-backdrop-fade fixed inset-0 bg-[rgb(10_10_11/0.62)]" aria-hidden />
-      )}
+      <div
+        className="pointer-events-none fixed inset-0 transition-opacity duration-300"
+        style={{ opacity: navigating ? 0 : 1 }}
+        aria-hidden
+      >
+        {spot ? (
+          <>
+            <div
+              className="tour-backdrop fixed rounded-[12px]"
+              style={{
+                left: spot.left,
+                top: spot.top,
+                width: spot.width,
+                height: spot.height,
+                boxShadow: "0 0 0 9999px rgb(10 10 11 / 0.62)",
+              }}
+            />
+            <div
+              className="tour-ring fixed rounded-[14px]"
+              style={{
+                left: spot.left - 3,
+                top: spot.top - 3,
+                width: spot.width + 6,
+                height: spot.height + 6,
+                boxShadow:
+                  "inset 0 0 0 1.5px rgb(var(--clay)), 0 0 0 4px rgb(var(--clay) / 0.14), 0 8px 40px rgb(0 0 0 / 0.35)",
+              }}
+            />
+          </>
+        ) : (
+          <div className="tour-backdrop-fade fixed inset-0 bg-[rgb(10_10_11/0.62)]" />
+        )}
+      </div>
 
       {/* Bulle */}
       {pos && (
