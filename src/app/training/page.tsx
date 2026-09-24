@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Empty, PageHead, Section } from "@/components/ui/Layout";
 import { Bar } from "@/components/ui/Metric";
 import { CheckinForm } from "@/components/training/CheckinForm";
+import { ComplianceBand, ComplianceOverview } from "@/components/training/ComplianceBand";
 import { PlanBuilder, VolumeCurve } from "@/components/training/PlanBuilder";
 import { SessionCard, type SessionView } from "@/components/training/SessionCard";
 import { WeekBoard } from "@/components/training/WeekBoard";
@@ -17,6 +18,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
 import { getSettings } from "@/lib/queries";
+import { complianceSeries } from "@/lib/compliance";
 import { addDays, calendarDaysBetween, daysBetween, round, startOfWeek } from "@/lib/stats";
 import {
   intensityBalance,
@@ -56,7 +58,7 @@ export default async function TrainingPage() {
   const afterFocus = addDays(focusMonday, 7);
   const upcomingPlan = focusMonday > thisMonday;
 
-  const [ctx, sessions, nextSessions, weeks, checkin, allSessions] = await Promise.all([
+  const [ctx, sessions, nextSessions, weeks, checkin, allSessions, planSessions] = await Promise.all([
     athleteContext(now, userId),
     loadWeek(plan.id, focusMonday),
     loadWeek(plan.id, afterFocus),
@@ -72,6 +74,18 @@ export default async function TrainingPage() {
     prisma.plannedSession.findMany({
       where: { planId: plan.id, weekStart: focusMonday },
       select: { distanceKm: true, status: true, kind: true },
+    }),
+    prisma.plannedSession.findMany({
+      where: { planId: plan.id },
+      select: {
+        weekNumber: true,
+        weekStart: true,
+        phase: true,
+        distanceKm: true,
+        status: true,
+        kind: true,
+      },
+      orderBy: { weekNumber: "asc" },
     }),
   ]);
 
@@ -102,6 +116,8 @@ export default async function TrainingPage() {
       actualMap.set(w.weekNumber, actualKmForWeek(ctx.runs, monday));
     }
   }
+
+  const complianceRows = complianceSeries(planSessions, actualMap, thisMonday);
 
   const todayKey = now.toDateString();
   const currentWeek = curve.find((c) => {
@@ -290,6 +306,17 @@ export default async function TrainingPage() {
           <span className="ml-auto">
             {fmtDateShort(plan.startDate)} → {plan.endDate ? fmtDateShort(plan.endDate) : "—"}
           </span>
+        </div>
+      </Section>
+
+      {/* ------------------------------------------------ Conformité */}
+      <Section
+        title="Conformité"
+        note="Ce que tu as réellement exécuté face au plan, semaine par semaine. La barre monte avec les séances faites ; le filet de couleur marque la phase."
+      >
+        <ComplianceOverview rows={complianceRows} />
+        <div className="mt-8">
+          <ComplianceBand rows={complianceRows} />
         </div>
       </Section>
     </div>
