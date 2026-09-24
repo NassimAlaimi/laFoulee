@@ -13,6 +13,7 @@ const NAV = [
   { href: "/analysis", label: "Analyse" },
   { href: "/calculator", label: "Calculateur" },
   { href: "/workouts", label: "Séances" },
+  { href: "/log", label: "Carnet" },
   { href: "/goals", label: "Objectifs" },
   { href: "/gear", label: "Matériel" },
   { href: "/strength", label: "Muscu" },
@@ -91,7 +92,7 @@ const MOBILE = [
   { href: "/", label: "Résumé", icon: "M4 13h6V4H4zM14 20h6V11h-6zM4 20h6v-4H4zM14 7h6V4h-6z" },
   { href: "/activities", label: "Activités", icon: "M3 17c3.5 0 4.5-10 8-10s4.5 10 8 10" },
   { href: "/training", label: "Plan", icon: "M5 5h14v15H5zM5 10h14M9 3v4M15 3v4" },
-  { href: "/records", label: "Perf", icon: "M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3" },
+  { href: "/log", label: "Carnet", icon: "M4 6h16M4 12h16M4 18h10" },
 ];
 
 /**

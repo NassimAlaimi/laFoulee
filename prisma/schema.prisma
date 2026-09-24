@@ -39,6 +39,7 @@ model User {
   syncLogs      SyncLog[]
   strengthWorkouts StrengthWorkout[]
   strengthGoals   StrengthGoal[]
+  dailyLogs       DailyLog[]
 
   /// Jeton secret de l'abonnement agenda (.ics). Null = abonnement désactivé.
   /// Stocké en clair : il n'ouvre qu'une lecture du plan, et doit pouvoir
@@ -505,4 +506,36 @@ model StrengthGoal {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+/// Carnet quotidien : sommeil, récupération, ressenti — une ligne par jour.
+/// Alimente le score de préparation affiché sur /log et corrélé à la charge.
+model DailyLog {
+  id     String @id @default(cuid())
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  /// Minuit local du jour concerné
+  date   DateTime
+
+  /// Sommeil
+  sleepHours   Float? // heures
+  sleepQuality Int?   // 1 = très mauvais … 5 = excellent
+  /// Récupération physiologique
+  hrv      Float? // ms
+  restHr   Int?   // bpm au réveil
+  weightKg Float?
+  /// Ressenti
+  rpe     Int? // 1-10, ressenti général du jour
+  fatigue Int? // 1 = frais … 5 = vidé
+  mood    Int? // 1 = très mauvais … 5 = excellent
+  /// Douleurs
+  painLevel Int     @default(0) // 0 = rien, 1 = gêne, 2 = douleur qui gêne, 3 = empêche
+  painArea  String?
+  note      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@index([userId, date])
 }
