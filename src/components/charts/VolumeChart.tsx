@@ -62,7 +62,7 @@ export function VolumeChart({ data, goalKm }: { data: Row[]; goalKm?: number }) 
             strokeWidth={1}
             label={{
               value: `objectif ${goalKm}`,
-              position: "right",
+              position: "insideRight",
               fill: t.axis,
               fontSize: 10,
             }}

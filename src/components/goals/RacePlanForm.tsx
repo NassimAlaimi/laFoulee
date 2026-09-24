@@ -37,7 +37,7 @@ export function RacePlanForm({
   };
 }) {
   const router = useRouter();
-  const t = useTranslations("goals");
+  const t = useTranslations("racePlan");
   const [file, setFile] = useState<File | null>(null);
   const [clock, setClock] = useState(
     existing?.targetSeconds
@@ -76,7 +76,7 @@ export function RacePlanForm({
       router.refresh();
     } else {
       const data = await res.json().catch(() => ({}));
-      setError(data.error ?? t("racePlan.saveError"));
+      setError(data.error ?? t("saveError"));
     }
   }
 
@@ -123,7 +123,7 @@ export function RacePlanForm({
           onChange={(e) => setClock(e.target.value)}
           placeholder="3:45:00"
           className="field w-36"
-          aria-label={t("racePlan.targetTime")}
+          aria-label={t("targetTime")}
         />
       </div>
 
@@ -134,9 +134,9 @@ export function RacePlanForm({
         <div className="flex flex-wrap gap-1.5">
           {(
             [
-              ["negative", t("racePlan.strategyNegative")],
-              ["even", t("racePlan.strategyEven")],
-              ["positive", t("racePlan.strategyPositive")],
+              ["negative", t("strategyNegative")],
+              ["even", t("strategyEven")],
+              ["positive", t("strategyPositive")],
             ] as const
           ).map(([value, label]) => (
             <button
@@ -165,7 +165,7 @@ export function RacePlanForm({
               value={fuelingKm}
               onChange={(e) => setFuelingKm(e.target.value)}
               className="field w-20"
-              aria-label={t("racePlan.fuelingEvery")}
+              aria-label={t("fuelingEvery")}
             />
             <span className="text-sm text-ink3">km · 0 = désactivé</span>
           </div>

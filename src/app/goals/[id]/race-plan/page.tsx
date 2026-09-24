@@ -22,7 +22,7 @@ export default async function RacePlanPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const t = await getTranslations("goals");
+  const t = await getTranslations("racePlan");
   const { id } = await params;
   const userId = await requireUserId();
   const goal = await prisma.raceGoal.findFirst({
@@ -47,9 +47,9 @@ export default async function RacePlanPage({
   return (
     <div className="space-y-12">
       <PageHead
-        title={t("racePlan.title")}
+        title={t("title")}
         kicker={goal.name}
-        meta={t("racePlan.meta")}
+        meta={t("meta")}
         action={<PrintButton />}
       />
 
@@ -70,7 +70,7 @@ export default async function RacePlanPage({
               </p>
             </div>
           </section>
-          <Section title={t("racePlan.import")} note={t("racePlan.importNote")}>
+          <Section title={t("import")} note={t("importNote")}>
             <RacePlanForm goalId={goal.id} existing={undefined} />
           </Section>
         </>
@@ -90,14 +90,14 @@ export default async function RacePlanPage({
                     <span className="display text-d4 text-ink3">—</span>
                   )}
                   <span className="text-sm text-ink3">
-                    {targetSeconds ? t("racePlan.targetOn") : t("racePlan.targetOff")}
+                    {targetSeconds ? t("targetOn") : t("targetOff")}
                   </span>
                 </div>
               </div>
               <dl className="flex gap-8">
-                <Figure label={t("racePlan.totalClimb")} value={`${Math.round(gain)} m`} />
+                <Figure label={t("totalClimb")} value={`${Math.round(gain)} m`} />
                 <Figure
-                  label={t("racePlan.fueling")}
+                  label={t("fueling")}
                   value={stops.length ? String(stops.length) : "—"}
                   note={plan.fuelingKm > 0 ? `tous les ${plan.fuelingKm} km` : undefined}
                 />
@@ -107,7 +107,7 @@ export default async function RacePlanPage({
 
           {/* ------------------------------------------------ Profil */}
           {profile.length > 0 && (
-            <Section title={t("racePlan.profile")} note={t("racePlan.profileNote")}>
+            <Section title={t("profile")} note={t("profileNote")}>
               <ElevationChart profile={profile} />
               <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-micro text-ink3">
                 <span className="flex items-center gap-1.5">
@@ -124,8 +124,8 @@ export default async function RacePlanPage({
           {/* ------------------------------------------------ Allures */}
           {segments.length > 0 && (
             <Section
-              title={t("racePlan.segmentPaces")}
-              note={t("racePlan.segmentNote")}
+              title={t("segmentPaces")}
+              note={t("segmentNote")}
             >
               <div className="overflow-x-auto">
                 <table className="data-table">
@@ -163,7 +163,7 @@ export default async function RacePlanPage({
           )}
 
           {/* ------------------------------------------------ Ravitaillement */}
-          <Section title={t("racePlan.fuelingTitle")} note={plan.fuelingNote ?? t("racePlan.fuelingDefault")}>
+          <Section title={t("fuelingTitle")} note={plan.fuelingNote ?? t("fuelingDefault")}>
             {stops.length > 0 ? (
               <ol className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-4">
                 {stops.map((s) => (
@@ -181,7 +181,7 @@ export default async function RacePlanPage({
           </Section>
 
           {/* ------------------------------------------------ Réglages */}
-          <Section title={t("racePlan.adjust")} note={t("racePlan.adjustNote")}>
+          <Section title={t("adjust")} note={t("adjustNote")}>
             <RacePlanForm
               goalId={goal.id}
               existing={{
@@ -198,14 +198,14 @@ export default async function RacePlanPage({
 
           {/* ------------------------------------------------ Checklists */}
           <div className="grid gap-6 lg:grid-cols-2">
-            <Section title={t("racePlan.eve")}>
+            <Section title={t("eve")}>
               <ul className="space-y-2 text-sm text-ink2">
                 {[
-                  t("racePlan.eve0"),
-                  t("racePlan.eve1"),
-                  t("racePlan.eve2"),
-                  t("racePlan.eve3"),
-                  t("racePlan.eve4"),
+                  t("eve0"),
+                  t("eve1"),
+                  t("eve2"),
+                  t("eve3"),
+                  t("eve4"),
                 ].map((t) => (
                   <li key={t} className="flex gap-2.5">
                     <span className="mt-[7px] h-[7px] w-[7px] shrink-0 rounded-full bg-clay" />
@@ -214,15 +214,15 @@ export default async function RacePlanPage({
                 ))}
               </ul>
             </Section>
-            <Section title={t("racePlan.day")}>
+            <Section title={t("day")}>
               <ul className="space-y-2 text-sm text-ink2">
                 {[
-                  t("racePlan.day0"),
-                  t("racePlan.day1"),
-                  t("racePlan.day2"),
-                  t("racePlan.day3"),
-                  t("racePlan.day4"),
-                  t("racePlan.day5"),
+                  t("day0"),
+                  t("day1"),
+                  t("day2"),
+                  t("day3"),
+                  t("day4"),
+                  t("day5"),
                 ].map((t) => (
                   <li key={t} className="flex gap-2.5">
                     <span className="mt-[7px] h-[7px] w-[7px] shrink-0 rounded-full bg-ochre" />

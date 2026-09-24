@@ -109,7 +109,8 @@
     "calDisable": "Disable",
     "confirmQuestion": "Confirm?",
     "yes": "Yes",
-    "disconnect": "Disconnect"
+    "disconnect": "Disconnect",
+    "kick": "Account & preferences"
   },
   "help": {
     "today": {
