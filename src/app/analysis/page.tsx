@@ -41,6 +41,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
 import { getBestEfforts, getSettings } from "@/lib/queries";
 import { estimateThresholds, genericLt2Hr } from "@/lib/thresholds";
+import { aerobicDecoupling, decodeStream, efficiencyTrend } from "@/lib/cardio";
 import { trimLeadingEmpty } from "@/lib/stats";
 import { RUN_TYPES } from "@/lib/strava";
 import { STANDARD_DISTANCES } from "@/lib/records";
@@ -163,6 +164,36 @@ export default async function AnalysisPage() {
         settings?.maxHr ?? null
       )
     : null;
+
+  // ---------------------------------------------------------------- Dérive
+  // Sorties longues (≥ 40 min) avec courbe cardio : découplage aérobie et
+  // facteur d'efficience, les deux marqueurs d'endurance des outils élite.
+  const longStreams = await prisma.hrStream
+    .findMany({
+      where: {
+        series: { not: "" },
+        activity: { userId, startDate: { gte: new Date(now.getTime() - 90 * 86400000) } },
+      },
+      orderBy: { activity: { startDate: "desc" } },
+      select: {
+        series: true,
+        activity: { select: { id: true, name: true, startDate: true, movingTime: true } },
+      },
+    })
+    .then((list) =>
+      list
+        .map((s) => ({
+          id: s.activity.id,
+          name: s.activity.name,
+          date: s.activity.startDate,
+          movingTime: s.activity.movingTime,
+          decoupling: aerobicDecoupling(decodeStream(s.series)),
+        }))
+        .filter((s) => s.movingTime >= 2400 && s.decoupling !== null)
+    );
+  const efTrend = efficiencyTrend(
+    longStreams.map((s) => ({ date: s.date, efficiency: s.decoupling!.efficiency }))
+  );
 
   const predictions = STANDARD_DISTANCES.filter((d) => FOCUS_DISTANCES.includes(d.key))
     .map((d) => {
@@ -449,6 +480,76 @@ export default async function AnalysisPage() {
           </Hint>
         )}
       </Section>
+
+      {/* ------------------------------------------------ Dérive & efficience */}
+      {longStreams.length > 0 && (
+        <Section>
+          <SectionHead
+            title="Dérive & efficience"
+            note="Sorties longues : le découplage aérobie dit si le cœur paie de plus en plus cher, l'EF si la machine devient économe"
+          />
+          <div className="mb-5 flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+            <div className="flex items-baseline gap-3">
+              <span className="text-xl font-semibold tracking-tight">
+                {efTrend.length > 0 ? efTrend[efTrend.length - 1].efficiency : "—"}
+              </span>
+              <span className="text-micro text-ink3">EF actuel · m/min par battement (moyenne glissante 4 séances)</span>
+            </div>
+            {efTrend.length >= 2 && (
+              <Sparkline
+                data={efTrend.map((p) => p.efficiency)}
+                stroke="rgb(var(--sage))"
+                width={140}
+                height={28}
+              />
+            )}
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Séance</th>
+                  <th className="text-right">Durée</th>
+                  <th className="text-right">FC moy</th>
+                  <th className="text-right">EF</th>
+                  <th className="text-right">Découplage</th>
+                </tr>
+              </thead>
+              <tbody>
+                {longStreams.slice(0, 10).map((s) => (
+                  <tr key={s.id}>
+                    <td className="text-ink3">{fmtDateShort(s.date)}</td>
+                    <td>
+                      <Link href={`/activities/${s.id}`} className="text-clay hover:underline">
+                        {s.name}
+                      </Link>
+                    </td>
+                    <td className="text-right font-mono">{fmtDuration(s.movingTime)}</td>
+                    <td className="text-right font-mono">{s.decoupling!.avgHr} bpm</td>
+                    <td className="text-right font-mono">{s.decoupling!.efficiency}</td>
+                    <td
+                      className={`text-right font-mono ${
+                        s.decoupling!.drift < 5 ? "text-sage" : s.decoupling!.drift < 10 ? "text-ochre" : "text-rust"
+                      }`}
+                    >
+                      {fmtSigned(s.decoupling!.drift, 1, " %")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <p className="mt-4 border-t border-hair pt-4 font-mono text-micro leading-relaxed tabular-nums text-ink3">
+            Découplage = perte d&apos;efficience entre la première et la seconde moitié
+            (vitesse ÷ FC). Sous 5 % sur les sorties longues, l&apos;endurance tient la
+            distance ; au-dessus de 10 %, la base aérobie est le chantier prioritaire.
+            L&apos;EF monte quand le même cœur produit plus de vitesse.
+          </p>
+        </Section>
+      )}
 
       {/* ------------------------------------------------ Polarisation */}
       <div className="grid gap-6 lg:grid-cols-2">

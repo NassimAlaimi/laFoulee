@@ -4,11 +4,13 @@ import { currentUserId } from "@/lib/auth";
 import {
   fetchActivities,
   fetchActivityDetail,
+  fetchActivityStreams,
   fetchGear,
   getValidAccessToken,
   RUN_TYPES,
   type StravaSummaryActivity,
 } from "@/lib/strava";
+import { encodeStream } from "@/lib/cardio";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -199,6 +201,59 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Courbes FC/vitesse : une requête par course récente avec cardio, une
+    // seule fois. Borné à 12 par synchro pour préserver le quota ; une ligne
+    // HrStream (même vide) marque la tentative, on ne réessaie plus.
+    const runsToStream = await prisma.activity.findMany({
+      where: {
+        userId,
+        type: { in: [...RUN_TYPES] },
+        stravaId: { not: null },
+        hasHeartrate: true,
+        hrStream: { is: null },
+        startDate: { gte: new Date(Date.now() - 90 * 86400000) },
+      },
+      orderBy: { startDate: "desc" },
+      take: 12,
+      select: { id: true, stravaId: true, averageSpeed: true },
+    });
+
+    let streamed = 0;
+    for (const run of runsToStream) {
+      if (!run.stravaId) continue;
+      try {
+        const streams = await fetchActivityStreams(token, run.stravaId);
+        const hrData = streams.heartrate?.data;
+        if (!hrData?.length) {
+          // Pas de cardio dans les streams : on marque pour ne plus réessayer.
+          await prisma.hrStream.create({ data: { activityId: run.id, series: "" } });
+          continue;
+        }
+        const n = hrData.length;
+        const speedData = streams.velocity_smooth?.data;
+        const fallbackSpeed = run.averageSpeed ?? 0;
+        const series = encodeStream({
+          time:
+            streams.time?.data ?? Array.from({ length: n }, (_, i) => i),
+          hr: hrData,
+          speed: Array.from({ length: n }, (_, i) =>
+            speedData && speedData[i] != null ? speedData[i] : fallbackSpeed
+          ),
+        });
+        await prisma.hrStream.create({ data: { activityId: run.id, series } });
+        streamed++;
+      } catch (e) {
+        // 404 = pas de streams pour cette activité : marquée vide, on passe.
+        if (e instanceof Error && e.message.includes("→ 404")) {
+          await prisma.hrStream
+            .create({ data: { activityId: run.id, series: "" } })
+            .catch(() => undefined);
+          continue;
+        }
+        if (e instanceof Error && e.message.includes("Limite de requêtes")) break;
+      }
+    }
+
     await prisma.stravaAccount.update({
       where: { id: account.id },
       data: { lastSyncAt: new Date() },
@@ -211,7 +266,7 @@ export async function POST(req: NextRequest) {
         status: "success",
         imported,
         updated,
-        message: `${imported} nouvelles, ${updated} mises à jour, ${runsToDetail.length} enrichies`,
+        message: `${imported} nouvelles, ${updated} mises à jour, ${runsToDetail.length} enrichies, ${streamed} courbes cardio`,
       },
     });
 
@@ -220,6 +275,7 @@ export async function POST(req: NextRequest) {
       imported,
       updated,
       detailed: runsToDetail.length,
+      streamed,
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Erreur inconnue";

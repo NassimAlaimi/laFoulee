@@ -8,6 +8,7 @@ import { RouteGlyph } from "@/components/route/RouteGlyph";
 import { KeyNav } from "@/components/KeyNav";
 import { fmtDateShort, fmtDistance, fmtDuration, fmtPace, fmtSigned, pacePerKm, speedToPace } from "@/lib/format";
 import { detectIntervals } from "@/lib/intervals";
+import { aerobicDecoupling, decodeStream } from "@/lib/cardio";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
 import { getSettings } from "@/lib/queries";
@@ -36,6 +37,7 @@ export default async function ActivityDetailPage({
       include: {
         splits: { orderBy: { index: "asc" } },
         bestEfforts: { orderBy: { distance: "asc" } },
+        hrStream: true,
         plannedSession: { include: { plan: { select: { id: true, name: true } } } },
       },
     }),
@@ -133,6 +135,12 @@ export default async function ActivityDetailPage({
           activity.splits.map((s) => ({ distance: s.distance, seconds: s.movingTime }))
         )
       : null;
+
+  // ------------------------------------------------------------ Cardio profond
+  const hrStream = activity.hrStream?.series
+    ? decodeStream(activity.hrStream.series)
+    : null;
+  const decoupling = hrStream ? aerobicDecoupling(hrStream) : null;
 
   // ------------------------------------------------------------ Même parcours
   const sig = routeSignature(activity.polyline);
@@ -354,12 +362,14 @@ export default async function ActivityDetailPage({
                 splitDelta === null ? undefined : splitDelta < -2 ? "négatif · fini plus vite" : splitDelta > 2 ? "positif · fini plus lent" : undefined
               }
             />
-            <Row
-              label="Découplage cardiaque"
-              value={drift !== null ? `${drift > 0 ? "+" : ""}${drift} %` : "—"}
-              tone={drift === null ? "default" : drift < 5 ? "sage" : drift < 10 ? "ochre" : "rust"}
-              note={drift === null ? undefined : drift < 5 ? "endurance solide" : drift < 10 ? "dérive modérée" : "forte dérive"}
-            />
+            {!decoupling && (
+              <Row
+                label="Découplage cardiaque"
+                value={drift !== null ? `${drift > 0 ? "+" : ""}${drift} %` : "—"}
+                tone={drift === null ? "default" : drift < 5 ? "sage" : drift < 10 ? "ochre" : "rust"}
+                note={drift === null ? undefined : drift < 5 ? "endurance solide" : drift < 10 ? "dérive modérée" : "forte dérive"}
+              />
+            )}
             <Row label="Effort relatif Strava" value={activity.sufferScore ? Math.round(activity.sufferScore) : "—"} />
             <p className="mt-3 text-micro leading-relaxed text-ink3">
               Le découplage compare l&apos;efficience (vitesse ÷ FC) de la seconde moitié à
@@ -367,6 +377,32 @@ export default async function ActivityDetailPage({
             </p>
           </Section>
         </div>
+
+        {/* ---------------------------------------------- Courbe cardiaque */}
+        {hrStream && hrStream.hr.length > 4 && (
+          <Section
+            title="Courbe cardiaque"
+            note="Échantillons de la synchro Strava — le fond coloré donne les zones de FC, le découplage compare les deux moitiés de la séance."
+          >
+            <HrCurveChart stream={hrStream} maxHr={maxHr} />
+            {decoupling && (
+              <div className="mt-5 grid gap-4 border-t border-hair pt-4 sm:grid-cols-4">
+                <Metric
+                  label="découplage aérobie"
+                  value={fmtSigned(decoupling.drift, 1, " %")}
+                  note={decoupling.drift < 5 ? "endurance solide" : decoupling.drift < 10 ? "dérive modérée" : "forte dérive"}
+                />
+                <Metric
+                  label="efficience (EF)"
+                  value={decoupling.efficiency}
+                  note="m/min par battement"
+                />
+                <Metric label="FC moyenne" value={`${decoupling.avgHr} bpm`} note={`sur ${Math.round(decoupling.samples / 60)} min stables`} />
+                <Metric label="vitesse stable" value={fmtPace(Math.round((1000 / decoupling.avgSpeed) * 10) / 10)} />
+              </div>
+            )}
+          </Section>
+        )}
 
         {/* ---------------------------------------------- Intervalles */}
         {interval?.detected && interval.summary && (
@@ -623,5 +659,69 @@ function RankDots({ total, rank }: { total: number; rank: number }) {
         />
       ))}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------- Courbe FC
+
+const HR_ZONE_STEPS = [0.5, 0.6, 0.7, 0.8, 0.9];
+const HR_ZONE_COLORS = [
+  "rgb(var(--sage) / 0.10)",
+  "rgb(var(--slate) / 0.10)",
+  "rgb(var(--ochre) / 0.10)",
+  "rgb(var(--clay) / 0.12)",
+  "rgb(var(--rust) / 0.12)",
+];
+
+/**
+ * Profil FC de la séance : polyline du cœur, zones en fond, axe temps.
+ * Sous-échantillonné à ~400 points pour un SVG léger.
+ */
+function HrCurveChart({
+  stream,
+  maxHr,
+}: {
+  stream: ReturnType<typeof decodeStream>;
+  maxHr: number;
+}) {
+  const W = 720;
+  const H = 200;
+  const PAD = 6;
+  const n = stream.hr.length;
+  const step = Math.max(1, Math.floor(n / 400));
+  const pts: Array<{ x: number; y: number }> = [];
+  const tMax = Math.max(1, stream.time[n - 1] ?? 1);
+  const hrMax = Math.max(maxHr, ...stream.hr.slice(0, n).filter((h) => h > 0), 120);
+  const hrMin = Math.min(...stream.hr.filter((h) => h > 0), 90);
+
+  for (let i = 0; i < n; i += step) {
+    const hr = stream.hr[i];
+    if (hr <= 0) continue;
+    pts.push({
+      x: PAD + (stream.time[i] / tMax) * (W - 2 * PAD),
+      y: H - PAD - ((hr - hrMin) / (hrMax - hrMin)) * (H - 2 * PAD),
+    });
+  }
+  if (pts.length === 0) return null;
+
+  const line = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Profil de fréquence cardiaque de la séance">
+      {HR_ZONE_STEPS.map((f, i) => {
+        const y = H - PAD - ((f * maxHr - hrMin) / (hrMax - hrMin)) * (H - 2 * PAD);
+        if (y < 0 || y > H) return null;
+        return (
+          <g key={f}>
+            <rect x={PAD} y={Math.min(y, H - PAD)} width={W - 2 * PAD} height={Math.max(0, H - PAD - Math.min(y, H - PAD))} fill={HR_ZONE_COLORS[i]} />
+            <line x1={PAD} x2={W - PAD} y1={y} y2={y} stroke="rgb(var(--hair))" strokeWidth="1" />
+          </g>
+        );
+      })}
+      <path d={line} fill="none" stroke="rgb(var(--clay))" strokeWidth="1.6" strokeLinejoin="round" />
+      <text x={W - PAD} y={H - 2} fontSize="9" textAnchor="end" fill="rgb(var(--ink-3))">
+        {Math.round(tMax / 60)} min
+      </text>
+    </svg>
   );
 }

@@ -278,6 +278,23 @@ export async function fetchActivityDetail(
   );
 }
 
+export type StravaStreams = {
+  time?: { data: number[] };
+  heartrate?: { data: number[] };
+  velocity_smooth?: { data: number[] };
+};
+
+/** Courbes brutes d'une activité (échantillonnage ~1 s). */
+export async function fetchActivityStreams(
+  token: string,
+  id: number | bigint
+): Promise<StravaStreams> {
+  return stravaFetch<StravaStreams>(
+    `/activities/${id}/streams?keys=time,heartrate,velocity_smooth&key_by_type=true`,
+    token
+  );
+}
+
 /** Types Strava considérés comme de la course à pied. */
 export const RUN_TYPES = new Set(["Run", "TrailRun", "VirtualRun"]);
 

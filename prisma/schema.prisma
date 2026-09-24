@@ -145,6 +145,7 @@ model Activity {
 
   bestEfforts BestEffort[]
   splits      Split[]
+  hrStream    HrStream?
 
   raceGoal   RaceGoal? @relation(fields: [raceGoalId], references: [id], onDelete: SetNull)
   raceGoalId String?
@@ -538,4 +539,15 @@ model DailyLog {
 
   @@unique([userId, date])
   @@index([userId, date])
+}
+
+/// Courbes cardiaques et de vitesse d'une activité (streams Strava).
+/// Séries delta-encodées (lib/cardio.ts) pour rester compactes : une sortie
+/// de 2 h tient en ~40 Ko au lieu de ~150 Ko en JSON brut.
+model HrStream {
+  activityId String   @id
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  /// "t0,hr0,v0;dt1,dhr1,dv1;…" — deltas en secondes, bpm et cm/s
+  series     String
+  createdAt  DateTime @default(now())
 }
