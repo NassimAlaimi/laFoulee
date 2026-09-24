@@ -39,7 +39,8 @@ import { athleteContext } from "@/lib/plan-store";
 import { criticalSpeed, durationCurve, RIEGEL_DEFAULT } from "@/lib/prediction";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
-import { getBestEfforts } from "@/lib/queries";
+import { getBestEfforts, getSettings } from "@/lib/queries";
+import { estimateThresholds, genericLt2Hr } from "@/lib/thresholds";
 import { trimLeadingEmpty } from "@/lib/stats";
 import { RUN_TYPES } from "@/lib/strava";
 import { STANDARD_DISTANCES } from "@/lib/records";
@@ -53,7 +54,7 @@ const FOCUS_DISTANCES = ["5k", "10k", "half", "marathon"];
 export default async function AnalysisPage() {
   const now = new Date();
   const userId = await requireUserId();
-  const [ctx, efforts, futureSessions] = await Promise.all([
+  const [ctx, efforts, futureSessions, settings] = await Promise.all([
     athleteContext(now, userId),
     getBestEfforts(userId),
     prisma.plannedSession.findMany({
@@ -71,6 +72,7 @@ export default async function AnalysisPage() {
         kind: true,
       },
     }),
+    getSettings(userId),
   ]);
 
   const { runs, records, profile, endurance, fitness } = ctx;
@@ -137,6 +139,30 @@ export default async function AnalysisPage() {
   // ---------------------------------------------------------------- Modèles
   const cs = criticalSpeed(records);
   const curve = durationCurve(records, profile, endurance).filter((p) => p.seconds > 0);
+
+  // ---------------------------------------------------------------- Seuils
+  // Couples (allure, FC) de tous les splits kilométriques récents : la
+  // matière première des seuils personnalisés.
+  const hrSplits = await prisma.split.findMany({
+    where: {
+      activity: { userId, startDate: { gte: new Date(now.getTime() - 180 * 86400000) } },
+      averageHr: { not: null },
+      averageSpeed: { not: null },
+    },
+    orderBy: { activity: { startDate: "desc" } },
+    take: 6000,
+    select: { averageHr: true, averageSpeed: true },
+  });
+  const thresholds = cs
+    ? estimateThresholds(
+        hrSplits.map((s) => ({
+          hr: s.averageHr!,
+          pace: 1000 / s.averageSpeed!,
+        })),
+        cs.pace,
+        settings?.maxHr ?? null
+      )
+    : null;
 
   const predictions = STANDARD_DISTANCES.filter((d) => FOCUS_DISTANCES.includes(d.key))
     .map((d) => {
@@ -340,6 +366,89 @@ export default async function AnalysisPage() {
           </div>
         </Section>
       )}
+
+      {/* ------------------------------------------------ Seuils personnalisés */}
+      <Section>
+        <SectionHead
+          title="Seuils personnalisés"
+          note="LT1 et LT2 lus sur ta relation allure → FC réelle, ancrés sur la vitesse critique"
+        />
+        {thresholds ? (
+          <>
+            <div className="grid gap-6 sm:grid-cols-3">
+              <Stat
+                label="Seuil aérobie (LT1)"
+                value={`${thresholds.lt1Hr} bpm`}
+                note={`jusqu'à ${fmtPace(thresholds.lt1Pace)}`}
+              />
+              <Stat
+                label="Seuil anaérobie (LT2)"
+                value={`${thresholds.lt2Hr} bpm`}
+                note={`ancré sur la vitesse critique ${fmtPace(thresholds.csPace)}`}
+              />
+              <Stat
+                label="Qualité de l'estimation"
+                value={`R² ${thresholds.r2}`}
+                note={`${thresholds.points} km-splits avec FC`}
+              />
+            </div>
+
+            {settings?.maxHr && (
+              <p className="mt-4 font-mono text-micro tabular-nums text-ink3">
+                Les % de FC max donneraient un seuil à {genericLt2Hr(settings.maxHr)} bpm —
+                {" "}
+                {Math.abs(thresholds.lt2Hr - genericLt2Hr(settings.maxHr)) <= 4
+                  ? "ton seuil mesuré colle au générique."
+                  : `ton seuil mesuré est à ${thresholds.lt2Hr > genericLt2Hr(settings.maxHr) ? "au-dessus" : "en dessous"} : tes zones génériques sont ${thresholds.lt2Hr > genericLt2Hr(settings.maxHr) ? "sous-estimées" : "surestimées"}.`}
+              </p>
+            )}
+
+            <div className="mt-5 overflow-x-auto">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Zone</th>
+                    <th className="text-right">FC</th>
+                    <th className="text-right">Allure</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {thresholds.zones.map((z) => (
+                    <tr key={z.key}>
+                      <td>
+                        <span className="flex items-center gap-2">
+                          <span className="h-[8px] w-[8px] rounded-full" style={{ background: z.color }} />
+                          {z.name}
+                        </span>
+                      </td>
+                      <td className="text-right font-mono">
+                        {z.hrHigh === Infinity
+                          ? `> ${z.hrLow}`
+                          : z.hrLow === 0
+                            ? `< ${z.hrHigh}`
+                            : `${z.hrLow} – ${z.hrHigh}`}
+                      </td>
+                      <td className="text-right font-mono">
+                        {z.paceCeil === Infinity
+                          ? "libre"
+                          : z.key === "z5"
+                            ? `< ${fmtPace(z.paceCeil)}`
+                            : `> ${fmtPace(z.paceCeil)}`}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ) : (
+          <Hint height={120}>
+            Pas encore assez de kilomètres avec FC pour lire tes seuils (20 km-splits
+            minimum, et une vitesse critique calculable). Continue à courir avec la
+            ceinture — les zones se recaleront toutes seules.
+          </Hint>
+        )}
+      </Section>
 
       {/* ------------------------------------------------ Polarisation */}
       <div className="grid gap-6 lg:grid-cols-2">
