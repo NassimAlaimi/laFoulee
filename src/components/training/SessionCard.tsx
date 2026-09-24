@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
 import { fmtPace } from "@/lib/format";
+import { useTranslations } from "next-intl";
 import { KIND_LABELS, type SessionKind, type Step } from "@/lib/workouts";
 import { Frieze } from "./Frieze";
 
@@ -52,6 +53,7 @@ export function SessionCard({
   today?: boolean;
   compact?: boolean;
 }) {
+  const t = useTranslations("common");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -97,7 +99,7 @@ export function SessionCard({
             <span className={`text-sm font-medium ${done ? "text-sage" : ""}`}>
               {session.title}
             </span>
-            <span className="tag">{KIND_LABELS[session.kind as SessionKind] ?? session.kind}</span>
+            <span className="tag">{t(KIND_LABELS[session.kind as SessionKind] ?? `kind.${session.kind}`)}</span>
             {session.adapted && (
               <span className="tag border-ochre/40 text-ochre" title={session.adaptReason ?? ""}>
                 réadapté

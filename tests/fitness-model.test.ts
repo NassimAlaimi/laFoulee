@@ -261,14 +261,18 @@ describe("formHeadline", () => {
   it("une phrase par zone, qui cite l'écart", async () => {
     const { formHeadline } = await import("../src/lib/fitness-model.ts");
     const h = formHeadline({ tsb: -15.4, ctl: 35, zone: "productive", rampPerWeek: 3 });
-    assert.equal(h.title, "Tu construis");
-    assert.match(h.body, /15 points/);
-    assert.match(formHeadline({ tsb: 8, ctl: 50, zone: "optimal", rampPerWeek: 0 }).body, /\+8 sur une condition de 50/);
+    assert.equal(h.titleKey, "headline.productive.title");
+    assert.equal(h.bodyParts[0].params!.gap, 15);
+    const optimal = formHeadline({ tsb: 8, ctl: 50, zone: "optimal", rampPerWeek: 0 });
+    assert.equal(optimal.titleKey, "headline.optimal.title");
+    assert.equal(optimal.bodyParts[0].params!.ctl, 50);
   });
   it("ajoute l'alerte de charge ou de montée rapide", async () => {
     const { formHeadline } = await import("../src/lib/fitness-model.ts");
-    assert.match(formHeadline({ tsb: -5, ctl: 30, zone: "neutral", rampPerWeek: 9 }).body, /monte vite \(\+9\/sem\)/);
-    assert.match(formHeadline({ tsb: -5, ctl: 30, zone: "neutral", rampPerWeek: 9 }, "danger").body, /risque de blessure/);
+    const ramp = formHeadline({ tsb: -5, ctl: 30, zone: "neutral", rampPerWeek: 9 });
+    assert.ok(ramp.bodyParts.some((p) => p.key === "headline.rampTail"));
+    const danger = formHeadline({ tsb: -5, ctl: 30, zone: "neutral", rampPerWeek: 9 }, "danger");
+    assert.ok(danger.bodyParts.some((p) => p.key === "headline.dangerTail"));
   });
 });
 

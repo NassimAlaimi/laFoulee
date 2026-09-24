@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import type { DailyLog } from "@prisma/client";
 import { READINESS_COLOR, READINESS_LABEL, readinessScore } from "@/lib/readiness";
 import { localDayKey } from "@/lib/stats";
@@ -8,7 +9,9 @@ import { MiniLogForm } from "./MiniLogForm";
  * Bandeau « préparation du jour » de l'accueil : le score en grand, ses
  * facteurs, et le mini-carnet pour l'alimenter en dix secondes.
  */
-export function TodayLog({ log }: { log: DailyLog | null }) {
+export async function TodayLog({ log }: { log: DailyLog | null }) {
+  const t = await getTranslations("log");
+  const tc = await getTranslations("common");
   const readiness = readinessScore(log ?? {});
 
   return (
@@ -16,7 +19,7 @@ export function TodayLog({ log }: { log: DailyLog | null }) {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.6fr)] lg:items-center">
         <div>
           <div className="text-micro font-medium uppercase tracking-[0.16em] text-ink3">
-            Préparation du jour
+            {t("bandTitle")}
           </div>
           <div className="mt-1.5 flex items-baseline gap-3">
             <span className="display text-d3" style={{ color: READINESS_COLOR[readiness.zone] }}>
@@ -25,18 +28,18 @@ export function TodayLog({ log }: { log: DailyLog | null }) {
             <span className="text-sm text-ink3">
               {log ? (
                 <>
-                  {READINESS_LABEL[readiness.zone]}
+                  {tc(READINESS_LABEL[readiness.zone])}
                   {readiness.breakdown.length > 0 && (
                     <span className="text-ink2"> · {readiness.breakdown.join(", ")}</span>
                   )}
                 </>
               ) : (
-                "ton score apparaît dès que tu renseignes le mini-carnet"
+                t("bandHint")
               )}
             </span>
           </div>
           <Link href="/log" className="mt-2 inline-block text-micro text-clay hover:underline">
-            Carnet complet : tendance 14 j et historique →
+            {t("bandLink")}
           </Link>
         </div>
 

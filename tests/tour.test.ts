@@ -1,11 +1,15 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   bubblePosition,
   centeredBubble,
   TOUR_STEPS,
   TOUR_STORAGE_KEY,
 } from "../src/lib/tour.ts";
+
+/** Messages français : source de vérité pour les textes des étapes. */
+const fr = JSON.parse(readFileSync("messages/fr.json", "utf8"));
 
 const vw = { width: 1280, height: 800 };
 const bubble = { width: 360, height: 200 };
@@ -73,9 +77,12 @@ describe("TOUR_STEPS", () => {
     assert.equal(TOUR_STEPS[TOUR_STEPS.length - 1].anchor, "");
     const paths = TOUR_STEPS.map((s) => s.path).filter(Boolean);
     assert.deepEqual(paths, ["/", "/", "/activities", "/training", "/analysis", "/goals", "/corps"]);
+    const ids = TOUR_STEPS.map((s) => s.id);
+    assert.equal(new Set(ids).size, ids.length, "ids uniques");
     for (const s of TOUR_STEPS) {
-      assert.ok(s.title.length > 3);
-      assert.ok(s.body.length > 20);
+      const step = fr.tour?.steps?.[s.id];
+      assert.ok(step, `messages tour.steps.${s.id} manquant`);
+      assert.ok(step.title.length > 3 && step.body.length > 20, `textes manquants : ${s.id}`);
     }
   });
 

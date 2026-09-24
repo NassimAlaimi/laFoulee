@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 /**
  * Actions destructives du compte.
@@ -21,6 +22,8 @@ export function AccountActions({
   sessionCount: number;
 }) {
   const router = useRouter();
+  const t = useTranslations("account");
+  const tc = useTranslations("common");
   const [mode, setMode] = useState<"idle" | "confirm">("idle");
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
@@ -43,7 +46,7 @@ export function AccountActions({
     const res = await fetch("/api/auth/account", { method: "DELETE" });
     if (!res.ok) {
       setBusy(false);
-      setError("La suppression a échoué. Réessaie.");
+      setError(t("deleteFail"));
       return;
     }
     router.replace("/login");
@@ -53,9 +56,9 @@ export function AccountActions({
   return (
     <div className="space-y-5">
       <div className="grid gap-3 sm:grid-cols-3">
-        <Stat label="Activités" value={activityCount} />
-        <Stat label="Plans" value={planCount} />
-        <Stat label="Appareils connectés" value={sessionCount} />
+        <Stat label={t("statActivities")} value={activityCount} />
+        <Stat label={t("statPlans")} value={planCount} />
+        <Stat label={t("statDevices")} value={sessionCount} />
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -65,7 +68,7 @@ export function AccountActions({
           disabled={busy}
           className="btn-outline btn-sm"
         >
-          Déconnecter tous les appareils
+          {t("logoutAll")}
         </button>
 
         {mode === "idle" && (
@@ -74,7 +77,7 @@ export function AccountActions({
             onClick={() => setMode("confirm")}
             className="btn-quiet btn-sm text-rust"
           >
-            Supprimer mon compte
+            {t("deleteAccount")}
           </button>
         )}
       </div>
@@ -82,16 +85,14 @@ export function AccountActions({
       {mode === "confirm" && (
         <div className="rounded-card border border-negative/35 bg-negative/8 p-4">
           <p className="text-sm font-medium text-red-200">
-            Suppression définitive du compte
+            {t("deleteTitle")}
           </p>
           <p className="mt-1.5 text-[0.8125rem] leading-relaxed text-red-200/85">
-            {activityCount} activités, {planCount} plans, tes objectifs, tes réglages
-            et ton matériel seront effacés. Rien n&apos;est archivé, rien n&apos;est
-            récupérable. Ton compte Strava, lui, n&apos;est pas touché.
+            {t("deleteBody", { activities: activityCount, plans: planCount })}
           </p>
 
           <label className="field-label mt-4 block" htmlFor="confirm-name">
-            Tape <span className="font-mono">{expected}</span> pour confirmer
+            {t("typeToConfirm", { name: expected })}
           </label>
           <input
             id="confirm-name"
@@ -110,7 +111,7 @@ export function AccountActions({
               disabled={!matches || busy}
               className="btn-solid btn-sm bg-rust disabled:opacity-40"
             >
-              {busy ? "Suppression…" : "Supprimer définitivement"}
+              {busy ? t("deleting") : t("deleteFinal")}
             </button>
             <button
               type="button"
@@ -120,7 +121,7 @@ export function AccountActions({
               }}
               className="btn-quiet btn-sm"
             >
-              Annuler
+              {tc("cancel")}
             </button>
           </div>
         </div>

@@ -72,21 +72,22 @@ export type PaceSet = {
   derived: boolean;
 };
 
+/** Libellés de type de séance — clés i18n `common.kind.*`. */
 export const KIND_LABELS: Record<SessionKind, string> = {
-  rest: "Repos",
-  recovery: "Récupération",
-  easy: "Endurance",
-  long: "Sortie longue",
-  tempo: "Tempo",
-  threshold: "Seuil",
-  intervals: "VO2max",
-  hills: "Côtes",
-  fartlek: "Fartlek",
-  strides: "Lignes droites",
-  race: "Course",
-  strength: "Renforcement",
-  cross: "Cross-training",
-  mobility: "Mobilité",
+  rest: "common.kind.rest",
+  recovery: "common.kind.recovery",
+  easy: "common.kind.easy",
+  long: "common.kind.long",
+  tempo: "common.kind.tempo",
+  threshold: "common.kind.threshold",
+  intervals: "common.kind.intervals",
+  hills: "common.kind.hills",
+  fartlek: "common.kind.fartlek",
+  strides: "common.kind.strides",
+  race: "common.kind.race",
+  strength: "common.kind.strength",
+  cross: "common.kind.cross",
+  mobility: "common.kind.mobility",
 };
 
 /** Les séances qui comptent comme « qualité » (intensité ≥ 3). */

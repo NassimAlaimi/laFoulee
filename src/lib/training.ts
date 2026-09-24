@@ -44,13 +44,14 @@ export const DELOAD_FACTOR = 0.72;
 
 export type Phase = "base" | "build" | "peak" | "deload" | "taper" | "race";
 
+/** Libellés de phase — clés i18n `common.phase.*`, résolues à l'affichage. */
 export const PHASE_LABELS: Record<Phase, string> = {
-  base: "Base",
-  build: "Développement",
-  peak: "Spécifique",
-  deload: "Décharge",
-  taper: "Affûtage",
-  race: "Course",
+  base: "common.phase.base",
+  build: "common.phase.build",
+  peak: "common.phase.peak",
+  deload: "common.phase.deload",
+  taper: "common.phase.taper",
+  race: "common.phase.race",
 };
 
 /** Couleur de chaque phase, partagée par tous les graphiques de plan. */

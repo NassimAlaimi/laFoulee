@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { fmtDuration, fmtPace } from "@/lib/format";
 import type { RaceReadiness } from "@/lib/goal";
+import { getTranslations } from "next-intl/server";
 import { PHASE_COLOR, PHASE_LABELS, type Phase } from "@/lib/training";
 import { addDays, calendarDaysBetween, startOfWeek } from "@/lib/stats";
 
@@ -11,7 +12,7 @@ export type PosterWeek = { weekStart: Date; phase: string; km: number };
  * chemin qui y mène semaine par semaine (phases du plan), avec un repère
  * « aujourd'hui ». Posée dans une bande nuit, comme une affiche de départ.
  */
-export function RacePoster({
+export async function RacePoster({
   goal,
   p,
   weeks,
@@ -29,6 +30,7 @@ export function RacePoster({
   /** Première séance du plan, pour « le plan démarre dans N jours » */
   startsOn?: Date | null;
 }) {
+  const t = await getTranslations("common");
   const dateLabel = goal.raceDate.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const km = goal.distance / 1000;
 
@@ -86,7 +88,7 @@ export function RacePoster({
             const h = w.km ? 18 + (w.km / maxKm) * 46 : 20;
             const isRace = i === strip.length - 1;
             return (
-              <div key={i} className="relative flex h-full flex-1 flex-col justify-end" title={`${w.weekStart.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}${w.km ? ` · ${Math.round(w.km)} km` : ""}${w.phase ? ` · ${PHASE_LABELS[w.phase as Phase] ?? w.phase}` : ""}`}>
+              <div key={i} className="relative flex h-full flex-1 flex-col justify-end" title={`${w.weekStart.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}${w.km ? ` · ${Math.round(w.km)} km` : ""}${w.phase ? ` · ${t(PHASE_LABELS[w.phase as Phase] ?? `phase.${w.phase}`)}` : ""}`}>
                 {i === current && (
                   <span className="absolute -top-5 left-0 whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.12em] text-clay">
                     ▾ ici
@@ -116,7 +118,7 @@ export function RacePoster({
             {phasesInPlan.map((ph) => (
               <span key={ph} className="inline-flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-[2px]" style={{ background: PHASE_COLOR[ph] }} />
-                {PHASE_LABELS[ph as Phase] ?? ph}
+                {t(PHASE_LABELS[ph as Phase] ?? `phase.${ph}`)}
               </span>
             ))}
             {!phasesInPlan.length && <span>Aucun plan pour cette course : les semaines restantes, à remplir.</span>}

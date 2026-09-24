@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Bar } from "@/components/ui/Metric";
 import { fmtDateShort } from "@/lib/format";
+import { useTranslations } from "next-intl";
 import { PHASE_LABELS, type Phase } from "@/lib/training";
 import { PHASE_COLOR } from "@/lib/training";
 import { SessionCard, type SessionView } from "./SessionCard";
@@ -22,6 +23,7 @@ export type WeekView = {
  * La semaine en cours s'ouvre automatiquement : c'est celle qu'on vient voir.
  */
 export function WeekAccordion({ weeks }: { weeks: WeekView[] }) {
+  const t = useTranslations("common");
   const current = weeks.find((w) => w.isCurrent)?.weekNumber;
   const [open, setOpen] = useState<number | null>(current ?? weeks[0]?.weekNumber ?? null);
 
@@ -54,7 +56,7 @@ export function WeekAccordion({ weeks }: { weeks: WeekView[] }) {
               </span>
 
               <span className="hidden w-28 shrink-0 text-[0.8125rem] text-ink2 sm:block">
-                {PHASE_LABELS[(w.phase as Phase) ?? "base"]}
+                {t(PHASE_LABELS[(w.phase as Phase) ?? "base"])}
               </span>
 
               <span className="flex-1">

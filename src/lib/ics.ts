@@ -86,10 +86,10 @@ export function sessionSummary(s: IcsSession): string {
   return `${done}${s.title}${dist}`;
 }
 
-export function sessionDescription(s: IcsSession): string {
+export function sessionDescription(s: IcsSession, paceWord = "allure"): string {
   const lines: string[] = [];
   if (s.tagline) lines.push(s.tagline, "");
-  lines.push(`${s.kindLabel} · ~${s.durationMin} min${s.paceTarget ? ` · allure ${pace(s.paceTarget)}` : ""}`);
+  lines.push(`${s.kindLabel} · ~${s.durationMin} min${s.paceTarget ? ` · ${paceWord} ${pace(s.paceTarget)}` : ""}`);
   if (s.steps?.length) {
     lines.push("");
     // Le libellé d'une étape est déjà complet (« 4 × 20 s en accélération… ») :
@@ -105,11 +105,14 @@ export function buildCalendar({
   sessions,
   races,
   now = new Date(),
+  paceWord = "allure",
 }: {
   name: string;
   sessions: IcsSession[];
   races: IcsRace[];
   now?: Date;
+  /** Mot « allure » localisé, pour la description des séances */
+  paceWord?: string;
 }): string {
   const lines = [
     "BEGIN:VCALENDAR",
@@ -125,7 +128,7 @@ export function buildCalendar({
   ];
   for (const s of sessions) {
     if (s.status === "skipped") continue;
-    lines.push(...allDay(`${s.id}@foulee`, s.date, sessionSummary(s), sessionDescription(s), now, s.url));
+    lines.push(...allDay(`${s.id}@foulee`, s.date, sessionSummary(s), sessionDescription(s, paceWord), now, s.url));
   }
   for (const r of races) {
     const desc = [

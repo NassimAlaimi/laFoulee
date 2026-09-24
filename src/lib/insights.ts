@@ -5,6 +5,9 @@
  * étayée par les données : pas de message générique, pas de conseil affiché
  * « au cas où ». Chaque observation porte la mesure qui la justifie, pour que
  * tu puisses la vérifier toi-même.
+ *
+ * Les textes sont des clés i18n (`home.insights.*`) — la lib ne contient
+ * aucune chaîne affichable : seulement la logique et ses paramètres.
  */
 
 import { pacePerKm, speedToPace } from "./format";
@@ -17,10 +20,13 @@ export type InsightTone = "good" | "warn" | "risk" | "neutral";
 export type Insight = {
   id: string;
   tone: InsightTone;
-  title: string;
-  detail: string;
+  /** Clé i18n du titre — `home.insights.<id>.title` par convention */
+  titleKey: string;
+  titleParams?: Record<string, string | number>;
+  detailKey: string;
   /** Mesure chiffrée qui justifie l'observation */
-  evidence: string;
+  evidenceKey: string;
+  evidenceParams?: Record<string, string | number>;
 };
 
 export type InsightInput = {
@@ -60,28 +66,28 @@ export function buildInsights(input: InsightInput): Insight[] {
       out.push({
         id: "acwr-danger",
         tone: "risk",
-        title: "Montée de charge trop rapide",
-        detail:
-          "Ton volume récent dépasse nettement ce que ton corps a l'habitude d'encaisser. C'est la configuration classique qui précède une blessure. Prévois une semaine allégée de 30 à 40 %.",
-        evidence: `Ratio de charge ${current.ratio.toFixed(2)} (zone saine : 0,80 – 1,30)`,
+        titleKey: "insights.acwr-danger.title",
+        detailKey: "insights.acwr-danger.detail",
+        evidenceKey: "insights.acwr-danger.evidence",
+        evidenceParams: { ratio: current.ratio.toFixed(2) },
       });
     } else if (current.zone === "caution") {
       out.push({
         id: "acwr-caution",
         tone: "warn",
-        title: "Charge en hausse marquée",
-        detail:
-          "Rien d'alarmant, mais tu es au-dessus de la zone confortable. Stabilise le volume une semaine avant de repartir à la hausse.",
-        evidence: `Ratio de charge ${current.ratio.toFixed(2)}`,
+        titleKey: "insights.acwr-caution.title",
+        detailKey: "insights.acwr-caution.detail",
+        evidenceKey: "insights.acwr-caution.evidence",
+        evidenceParams: { ratio: current.ratio.toFixed(2) },
       });
     } else if (current.zone === "detraining" && last28.length >= 4) {
       out.push({
         id: "acwr-low",
         tone: "neutral",
-        title: "Marge pour augmenter",
-        detail:
-          "Ta charge récente est en dessous de ton habitude. Tu peux remonter le volume progressivement, sans dépasser +10 % par semaine.",
-        evidence: `Ratio de charge ${current.ratio.toFixed(2)}`,
+        titleKey: "insights.acwr-low.title",
+        detailKey: "insights.acwr-low.detail",
+        evidenceKey: "insights.acwr-low.evidence",
+        evidenceParams: { ratio: current.ratio.toFixed(2) },
       });
     }
   }
@@ -93,12 +99,14 @@ export function buildInsights(input: InsightInput): Insight[] {
     out.push({
       id: "volume-jump",
       tone: "warn",
-      title: "Bond de volume hebdomadaire",
-      detail:
-        "La règle des +10 % par semaine limite le risque de blessure de surcharge. Tu l'as largement dépassée.",
-      evidence: `${round(kmPrev7, 1)} km puis ${round(km7, 1)} km (+${Math.round(
-        ((km7 - kmPrev7) / kmPrev7) * 100
-      )} %)`,
+      titleKey: "insights.volume-jump.title",
+      detailKey: "insights.volume-jump.detail",
+      evidenceKey: "insights.volume-jump.evidence",
+      evidenceParams: {
+        prev: String(round(kmPrev7, 1)),
+        now: String(round(km7, 1)),
+        pct: Math.round(((km7 - kmPrev7) / kmPrev7) * 100),
+      },
     });
   }
 
@@ -109,10 +117,10 @@ export function buildInsights(input: InsightInput): Insight[] {
       out.push({
         id: "gap",
         tone: "warn",
-        title: "Coupure dans l'entraînement",
-        detail:
-          "Les adaptations aérobies commencent à se perdre après environ 10 jours sans stimulus. Reprends progressivement plutôt que de repartir au niveau d'avant.",
-        evidence: `${gaps} jours consécutifs sans sortie sur les 4 dernières semaines`,
+        titleKey: "insights.gap.title",
+        detailKey: "insights.gap.detail",
+        evidenceKey: "insights.gap.evidence",
+        evidenceParams: { days: gaps },
       });
     }
   }
@@ -128,21 +136,22 @@ export function buildInsights(input: InsightInput): Insight[] {
       out.push({
         id: "too-hard",
         tone: "warn",
-        title: "Trop d'intensité, pas assez de facile",
-        detail:
-          "Le modèle polarisé recommande environ 80 % du volume en endurance fondamentale. Courir trop souvent « moyennement dur » fatigue sans développer la base aérobie.",
-        evidence: `${Math.round(easyShare * 100)} % de tes séances sous ${Math.round(
-          easyThreshold
-        )} bpm (cible : 80 %)`,
+        titleKey: "insights.too-hard.title",
+        detailKey: "insights.too-hard.detail",
+        evidenceKey: "insights.too-hard.evidence",
+        evidenceParams: {
+          pct: Math.round(easyShare * 100),
+          bpm: Math.round(easyThreshold),
+        },
       });
     } else if (easyShare > 0.95 && withHr.length >= 8) {
       out.push({
         id: "no-intensity",
         tone: "neutral",
-        title: "Aucune séance rapide",
-        detail:
-          "Ta base aérobie est bien travaillée, mais sans séance de seuil ou de VO2max, la vitesse progresse peu. Une séance intense par semaine suffit.",
-        evidence: `${Math.round(easyShare * 100)} % des séances en endurance seulement`,
+        titleKey: "insights.no-intensity.title",
+        detailKey: "insights.no-intensity.detail",
+        evidenceKey: "insights.no-intensity.evidence",
+        evidenceParams: { pct: Math.round(easyShare * 100) },
       });
     }
   }
@@ -156,10 +165,10 @@ export function buildInsights(input: InsightInput): Insight[] {
       out.push({
         id: "stale-reference",
         tone: "neutral",
-        title: "Référence de performance ancienne",
-        detail:
-          "Ton niveau estimé s'appuie sur un effort qui commence à dater. Un test sur 5 km ou une sortie rapide chronométrée affinerait tes allures cibles.",
-        evidence: `Meilleur effort : ${profile.source.name}, il y a ${age} jours`,
+        titleKey: "insights.stale-reference.title",
+        detailKey: "insights.stale-reference.detail",
+        evidenceKey: "insights.stale-reference.evidence",
+        evidenceParams: { name: profile.source.name, days: age },
       });
     }
   }
@@ -173,19 +182,19 @@ export function buildInsights(input: InsightInput): Insight[] {
       out.push({
         id: "pace-improving",
         tone: "good",
-        title: "Allure moyenne en progrès",
-        detail:
-          "À volume comparable, tu cours plus vite qu'il y a un mois. C'est le signe que la charge est bien absorbée.",
-        evidence: `${Math.round(delta)} s/km gagnées sur 28 jours`,
+        titleKey: "insights.pace-improving.title",
+        detailKey: "insights.pace-improving.detail",
+        evidenceKey: "insights.pace-improving.evidence",
+        evidenceParams: { s: Math.round(delta) },
       });
     } else if (delta < -12) {
       out.push({
         id: "pace-slower",
         tone: "neutral",
-        title: "Allure moyenne en baisse",
-        detail:
-          "Ce n'est pas forcément négatif : cela arrive quand on augmente le volume ou qu'on court davantage en endurance. À surveiller si ça persiste avec une FC élevée.",
-        evidence: `${Math.abs(Math.round(delta))} s/km perdues sur 28 jours`,
+        titleKey: "insights.pace-slower.title",
+        detailKey: "insights.pace-slower.detail",
+        evidenceKey: "insights.pace-slower.evidence",
+        evidenceParams: { s: Math.abs(Math.round(delta)) },
       });
     }
   }
@@ -198,18 +207,18 @@ export function buildInsights(input: InsightInput): Insight[] {
         ? {
             id: "efficiency-up",
             tone: "good",
-            title: "Efficience aérobie en hausse",
-            detail:
-              "Tu cours plus vite pour une même fréquence cardiaque : ton moteur aérobie s'améliore.",
-            evidence: `+${drift} % de vitesse par battement vs mois précédent`,
+            titleKey: "insights.efficiency-up.title",
+            detailKey: "insights.efficiency-up.detail",
+            evidenceKey: "insights.efficiency-up.evidence",
+            evidenceParams: { pct: drift },
           }
         : {
             id: "efficiency-down",
             tone: "warn",
-            title: "Efficience aérobie en baisse",
-            detail:
-              "À FC égale tu cours moins vite. Fatigue accumulée, chaleur ou manque de récupération sont les causes les plus fréquentes.",
-            evidence: `${drift} % de vitesse par battement vs mois précédent`,
+            titleKey: "insights.efficiency-down.title",
+            detailKey: "insights.efficiency-down.detail",
+            evidenceKey: "insights.efficiency-down.evidence",
+            evidenceParams: { pct: drift },
           }
     );
   }
@@ -222,18 +231,25 @@ export function buildInsights(input: InsightInput): Insight[] {
       out.push({
         id: "goal-met",
         tone: "good",
-        title: "Objectif hebdomadaire tenu",
-        detail: "Tu es au niveau que tu t'es fixé, en moyenne sur le dernier mois.",
-        evidence: `${round(weeklyAvg, 1)} km/semaine pour un objectif de ${input.weeklyGoalKm} km`,
+        titleKey: "insights.goal-met.title",
+        detailKey: "insights.goal-met.detail",
+        evidenceKey: "insights.goal-met.evidence",
+        evidenceParams: {
+          avg: String(round(weeklyAvg, 1)),
+          goal: String(input.weeklyGoalKm),
+        },
       });
     } else if (weeklyAvg < input.weeklyGoalKm * 0.6) {
       out.push({
         id: "goal-far",
         tone: "neutral",
-        title: "Loin de l'objectif hebdomadaire",
-        detail:
-          "Soit l'objectif est trop ambitieux pour le moment, soit il faut ajouter une sortie par semaine. Un objectif irréaliste décourage plus qu'il ne motive.",
-        evidence: `${round(weeklyAvg, 1)} km/semaine pour un objectif de ${input.weeklyGoalKm} km`,
+        titleKey: "insights.goal-far.title",
+        detailKey: "insights.goal-far.detail",
+        evidenceKey: "insights.goal-far.evidence",
+        evidenceParams: {
+          avg: String(round(weeklyAvg, 1)),
+          goal: String(input.weeklyGoalKm),
+        },
       });
     }
   }
@@ -263,13 +279,14 @@ export function buildInsights(input: InsightInput): Insight[] {
       out.push({
         id: "recent-pr",
         tone: "good",
-        title:
+        titleKey:
           recent.length > 1
-            ? `${recent.length} records personnels ce mois-ci`
-            : "Nouveau record personnel",
-        detail:
-          "Tes meilleures performances sur les distances de référence datent du mois dernier — tu es en forme ascendante.",
-        evidence: recent.map((r) => r.name).join(", "),
+            ? "insights.recent-pr.titlePlural"
+            : "insights.recent-pr.title",
+        titleParams: recent.length > 1 ? { n: recent.length } : undefined,
+        detailKey: "insights.recent-pr.detail",
+        evidenceKey: "insights.recent-pr.evidence",
+        evidenceParams: { names: recent.map((r) => r.name).join(", ") },
       });
     }
   }

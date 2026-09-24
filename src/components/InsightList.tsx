@@ -1,21 +1,24 @@
+import { getTranslations } from "next-intl/server";
 import type { Insight, InsightTone } from "@/lib/insights";
 
-const TONE: Record<InsightTone, { mark: string; label: string }> = {
-  good: { mark: "rgb(var(--sage))", label: "Positif" },
-  warn: { mark: "rgb(var(--ochre))", label: "À surveiller" },
-  risk: { mark: "rgb(var(--rust))", label: "Alerte" },
-  neutral: { mark: "rgb(var(--hair-strong))", label: "Note" },
+const TONE: Record<InsightTone, { mark: string; key: string }> = {
+  good: { mark: "rgb(var(--sage))", key: "insights.tone.good" },
+  warn: { mark: "rgb(var(--ochre))", key: "insights.tone.warn" },
+  risk: { mark: "rgb(var(--rust))", key: "insights.tone.risk" },
+  neutral: { mark: "rgb(var(--hair-strong))", key: "insights.tone.neutral" },
 };
 
 /**
  * Observations présentées comme des entrées de carnet : un filet coloré
  * à gauche, un titre, une explication, et la mesure qui la justifie.
  */
-export function InsightList({ insights }: { insights: Insight[] }) {
+export async function InsightList({ insights }: { insights: Insight[] }) {
+  const t = await getTranslations("home");
+
   if (!insights.length) {
     return (
       <p className="py-8 text-[0.8125rem] text-ink3">
-        Rien à signaler sur la période — continue comme ça.
+        {t("insights.none")}
       </p>
     );
   }
@@ -36,15 +39,19 @@ export function InsightList({ insights }: { insights: Insight[] }) {
             />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <h3 className="text-[0.9375rem] font-medium">{i.title}</h3>
+                <h3 className="text-[0.9375rem] font-medium">
+                  {t(i.titleKey, i.titleParams)}
+                </h3>
                 <span className="text-micro uppercase tracking-[0.08em] text-ink3">
-                  {tone.label}
+                  {t(tone.key)}
                 </span>
               </div>
               <p className="mt-1.5 max-w-2xl text-[0.8125rem] leading-relaxed text-ink2">
-                {i.detail}
+                {t(i.detailKey)}
               </p>
-              <p className="mt-2 font-mono text-micro text-ink3">{i.evidence}</p>
+              <p className="mt-2 font-mono text-micro text-ink3">
+                {t(i.evidenceKey, i.evidenceParams)}
+              </p>
             </div>
           </li>
         );

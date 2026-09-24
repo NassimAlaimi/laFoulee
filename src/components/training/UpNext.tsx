@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { getRuns } from "@/lib/queries";
 import { addDays, round, startOfWeek } from "@/lib/stats";
 import { weekCompliance } from "@/lib/training";
+import { getTranslations } from "next-intl/server";
 import { KIND_LABELS, type SessionKind } from "@/lib/workouts";
 
 /**
@@ -20,6 +21,7 @@ export async function UpNext({
   now?: Date;
   userId: string;
 }) {
+  const t = await getTranslations("common");
   const plan = await getActivePlan(userId);
   if (!plan) {
     return (
@@ -96,7 +98,7 @@ export async function UpNext({
                   {s.title}
                 </div>
                 <div className="mt-1 flex flex-wrap gap-x-2.5 text-micro text-ink3">
-                  <span className="tag">{KIND_LABELS[s.kind as SessionKind] ?? s.kind}</span>
+                  <span className="tag">{t(KIND_LABELS[s.kind as SessionKind] ?? `kind.${s.kind}`)}</span>
                   {s.distanceKm > 0 && (
                     <span className="font-mono tabular-nums">{round(s.distanceKm, 1)} km</span>
                   )}

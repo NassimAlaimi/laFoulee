@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 
 export function SyncButton({
@@ -11,6 +12,7 @@ export function SyncButton({
   variant?: "primary" | "secondary";
 }) {
   const router = useRouter();
+  const t = useTranslations("account");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
   const [, startTransition] = useTransition();
@@ -27,16 +29,16 @@ export function SyncButton({
         body: JSON.stringify({ full }),
       });
       const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.error ?? "Échec de la synchro");
+      if (!res.ok || !data.ok) throw new Error(data.error ?? t("syncFail"));
       setResult({
         ok: true,
-        text: `${data.imported} nouvelle${data.imported > 1 ? "s" : ""} · ${data.updated} mise${data.updated > 1 ? "s" : ""} à jour`,
+        text: t("syncResult", { n: data.imported, m: data.updated }),
       });
       startTransition(() => router.refresh());
     } catch (e) {
       setResult({
         ok: false,
-        text: e instanceof Error ? e.message : "Erreur inconnue",
+        text: e instanceof Error ? e.message : t("unknownError"),
       });
     } finally {
       setLoading(false);
@@ -53,12 +55,12 @@ export function SyncButton({
         {loading ? (
           <>
             <Spinner />
-            Synchronisation…
+            {t("syncing")}
           </>
         ) : (
           <>
             {!full && <RefreshIcon />}
-            {full ? "Réimporter tout l'historique" : "Synchroniser"}
+            {full ? t("syncFull") : t("sync")}
           </>
         )}
       </button>

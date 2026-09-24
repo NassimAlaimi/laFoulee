@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
 const STALE_MS = 3 * 60 * 60 * 1000; // 3 h
@@ -17,6 +18,7 @@ const TAB_KEY = "foulee:autosync";
  */
 export function AutoSync({ lastSyncAt, connected }: { lastSyncAt: string | null; connected: boolean }) {
   const router = useRouter();
+  const t = useTranslations("account");
   const [state, setState] = useState<"idle" | "running" | { imported: number } | "error">("idle");
 
   useEffect(() => {
@@ -69,16 +71,16 @@ export function AutoSync({ lastSyncAt, connected }: { lastSyncAt: string | null;
       {state === "running" ? (
         <>
           <span className="h-2 w-2 animate-pulse rounded-full bg-clay" />
-          <span className="text-ink2">Synchronisation Strava…</span>
+          <span className="text-ink2">{t("autoSyncing")}</span>
         </>
       ) : (
         <>
           <span className="h-2 w-2 rounded-full bg-sage" />
           <span>
-            {state.imported} nouvelle{state.imported > 1 ? "s" : ""} activité{state.imported > 1 ? "s" : ""}
+            {t("autoImported", { n: state.imported })}
           </span>
           <Link href="/activities" className="font-medium text-clay hover:underline" onClick={() => setState("idle")}>
-            Voir
+            {t("see")}
           </Link>
         </>
       )}

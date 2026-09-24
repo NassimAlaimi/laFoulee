@@ -47,12 +47,13 @@ export type WeekCompliance = {
   zone: ComplianceZone;
 };
 
+/** Libellés de conformité — clés i18n `common.compliance.*`. */
 export const COMPLIANCE_LABEL: Record<ComplianceZone, string> = {
-  upcoming: "à venir",
-  empty: "sans course",
-  good: "au rendez-vous",
-  fair: "partiel",
-  low: "décroché",
+  upcoming: "common.compliance.upcoming",
+  empty: "common.compliance.empty",
+  good: "common.compliance.good",
+  fair: "common.compliance.fair",
+  low: "common.compliance.low",
 };
 
 /** Couleurs du bandeau — alignées sur les tokens de la palette. */

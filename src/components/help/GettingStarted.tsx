@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { onboardingSteps } from "@/lib/help";
 
 /**
@@ -17,6 +20,7 @@ export function GettingStarted({
   hasGoal: boolean;
   logDays: number;
 }) {
+  const t = useTranslations("home");
   const result = onboardingSteps({ stravaConnected, hasRuns, hasGoal, logDays });
   if (!result) return null;
 
@@ -24,7 +28,7 @@ export function GettingStarted({
     <section className="rise mb-8 border-y border-hair py-5">
       <div className="flex items-baseline justify-between gap-4">
         <div className="text-micro font-medium uppercase tracking-[0.16em] text-clay">
-          Bien démarrer
+          {t("onboarding.title")}
         </div>
         <span className="font-mono text-micro tabular-nums text-ink3">
           {result.done}/{result.total}
@@ -35,7 +39,9 @@ export function GettingStarted({
           s.done ? (
             <li key={s.id} className="flex items-baseline gap-2.5 text-sm text-ink3">
               <span className="text-sage">✓</span>
-              <span className="line-through decoration-hair-strong">{s.label}</span>
+              <span className="line-through decoration-hair-strong">
+                {t(`onboarding.steps.${s.id}`)}
+              </span>
             </li>
           ) : (
             <li key={s.id}>
@@ -44,7 +50,7 @@ export function GettingStarted({
                 className="flex items-baseline gap-2.5 text-sm text-ink transition-colors hover:text-clay"
               >
                 <span className="text-clay">→</span>
-                {s.label}
+                {t(`onboarding.steps.${s.id}`)}
               </Link>
             </li>
           )

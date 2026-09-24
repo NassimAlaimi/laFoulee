@@ -38,15 +38,18 @@ describe("seasonSentence", () => {
       run(10, 18, 7), run(13, 19, 6), run(15, 18, 5), run(17, 8, 12),
     ];
     const s = seasonSentence(acts, now)!;
-    assert.match(s, /Tu cours environ/);
-    assert.match(s, /surtout le soir/);
-    assert.match(s, /km sur 3 mois/);
-    assert.match(s, /\.$/);
+    const keys = s.map((p) => p.key);
+    assert.ok(keys.some((k) => /youRun/.test(k)), keys.join(", "));
+    assert.ok(keys.includes("season.slot4"), keys.join(", "));
+    assert.ok(keys.includes("season.km"), keys.join(", "));
+    assert.ok(s.some((p) => p.key === "season.km" && p.params && p.params.km), "paramètre km");
   });
 
   it("signale la série de jours d'affilée", () => {
     const acts = [run(1, 8, 5), run(2, 8, 5), run(3, 8, 5), run(4, 8, 5), run(5, 8, 5), run(6, 8, 5)];
-    assert.match(seasonSentence(acts, now)!, /dont \d+ jours d'affilée/);
+    const streak = seasonSentence(acts, now)!.find((p) => p.key === "season.streak");
+    assert.ok(streak, "fragment série manquant");
+    assert.equal(streak!.params!.days, 6);
   });
 
   it("compare au trimestre précédent", () => {
@@ -54,7 +57,9 @@ describe("seasonSentence", () => {
       run(1, 8, 5), run(4, 8, 5), run(8, 8, 5), run(12, 8, 5),
       run(95, 8, 20), run(110, 8, 20), run(130, 8, 20), run(150, 8, 20),
     ];
-    assert.match(seasonSentence(acts, now)!, /− ?\d+ % vs les 3 mois d'avant/);
+    const delta = seasonSentence(acts, now)!.find((p) => p.key === "season.deltaDown");
+    assert.ok(delta, "fragment delta manquant");
+    assert.ok(delta!.params && Number(delta!.params.pct) > 0);
   });
 
   it("met une virgule française et un multiplicateur pour les grands écarts", () => {
@@ -63,7 +68,10 @@ describe("seasonSentence", () => {
       run(95, 8, 1.1), run(110, 8, 1.1), run(130, 8, 1.1), run(150, 8, 1.1),
     ];
     const s = seasonSentence(acts, now)!;
-    assert.match(s, /20,8 km sur 3 mois/);
-    assert.match(s, /soit \d+,\d+ fois les 3 mois d'avant/);
+    const kmPart = s.find((p) => p.key === "season.km");
+    assert.equal(kmPart!.params!.km, "20,8");
+    const big = s.find((p) => p.key === "season.deltaBig");
+    assert.ok(big, "multiplicateur attendu");
+    assert.ok(Number((big!.params!.x as string).replace(",", ".")) > 4);
   });
 });

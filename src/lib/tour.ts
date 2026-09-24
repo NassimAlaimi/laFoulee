@@ -17,67 +17,17 @@ export type TourStep = {
   id: string;
   path: string;
   anchor: string;
-  title: string;
-  body: string;
 };
-
+/** Les textes vivent dans les messages i18n : `tour.steps.<id>.{title,body}`. */
 export const TOUR_STEPS: TourStep[] = [
-  {
-    id: "today",
-    path: "/",
-    anchor: '[data-tour="today"]',
-    title: "Ton tableau de bord du matin",
-    body: "La séance du jour, ta fraîcheur du moment et les chiffres de la semaine. Chaque page de l'app s'ouvre ainsi : un grand chiffre qui dit l'essentiel.",
-  },
-  {
-    id: "preparation",
-    path: "/",
-    anchor: '[data-tour="preparation"]',
-    title: "Le score de préparation",
-    body: "Sommeil, fatigue, douleurs : dix secondes par jour dans le mini-carnet, et le score 0-100 se calcule tout seul. L'historique et la tendance vivent dans le Carnet.",
-  },
-  {
-    id: "activities",
-    path: "/activities",
-    anchor: '[data-tour="activities"]',
-    title: "Tout ce que tu as couru",
-    body: "Chaque sortie a sa fiche : parcours, courbe cardiaque, intervalles repérés automatiquement, découplage aérobie. Clique une ligne pour l'ouvrir.",
-  },
-  {
-    id: "plan",
-    path: "/training",
-    anchor: '[data-tour="plan"]',
-    title: "Ton plan, semaine par semaine",
-    body: "Le plan se recale chaque semaine sur tes check-ins (douleur, fatigue, disponibilité). La section Conformité colore ce que tu as réellement exécuté.",
-  },
-  {
-    id: "analyse",
-    path: "/analysis",
-    anchor: '[data-tour="forme"]',
-    title: "La science derrière tes jambes",
-    body: "Condition, fatigue et fraîcheur (le modèle des équipes pro), tes seuils personnalisés et ta vitesse critique — tout est calculé depuis tes sorties.",
-  },
-  {
-    id: "objectifs",
-    path: "/goals",
-    anchor: '[data-tour="objectifs"]',
-    title: "Prépare une course",
-    body: "Un objectif ouvre le plan d'entraînement, le compte à rebours et le plan de course : importe le GPX du parcours, les allures s'ajustent à la pente.",
-  },
-  {
-    id: "corps",
-    path: "/corps",
-    anchor: '[data-tour="corps"]',
-    title: "La force et le matériel",
-    body: "La musculation du coureur (avec garde-fou de charge) et le kilométrage de tes chaussures. Le socle qui rend le plan soutenable.",
-  },
-  {
-    id: "fin",
-    path: "",
-    anchor: "",
-    title: "C'est parti",
-    body: "L'app se remplit au fil des synchronisations Strava. Remplis le carnet ce soir, et reviens demain matin : la page Aujourd'hui aura changé.",
-  },
+  { id: "today", path: "/", anchor: '[data-tour="today"]' },
+  { id: "preparation", path: "/", anchor: '[data-tour="preparation"]' },
+  { id: "activities", path: "/activities", anchor: '[data-tour="activities"]' },
+  { id: "plan", path: "/training", anchor: '[data-tour="plan"]' },
+  { id: "analyse", path: "/analysis", anchor: '[data-tour="forme"]' },
+  { id: "objectifs", path: "/goals", anchor: '[data-tour="objectifs"]' },
+  { id: "corps", path: "/corps", anchor: '[data-tour="corps"]' },
+  { id: "fin", path: "", anchor: "" },
 ];
 
 export type Rect = { top: number; left: number; width: number; height: number };

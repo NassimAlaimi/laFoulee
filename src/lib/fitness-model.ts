@@ -56,12 +56,13 @@ export function formZone(tsb: number, ctl: number): FormZone {
   return "overreaching"; // surcharge, terrain de blessure
 }
 
+/** Libellés de zone de forme — clés i18n `common.formZone.*`. */
 export const ZONE_LABEL: Record<FormZone, string> = {
-  fresh: "Frais",
-  optimal: "Pic de forme",
-  neutral: "Neutre",
-  productive: "En construction",
-  overreaching: "Surcharge",
+  fresh: "common.formZone.fresh",
+  optimal: "common.formZone.optimal",
+  neutral: "common.formZone.neutral",
+  productive: "common.formZone.productive",
+  overreaching: "common.formZone.overreaching",
 };
 
 export const ZONE_TONE: Record<FormZone, string> = {
@@ -259,35 +260,46 @@ export function formAtStart(series: FormPoint[], raceDate: Date): FormPoint | nu
  * L'état de forme dit en une phrase, pour l'ouverture de la bande « forme »
  * du tableau de bord : un titre court et une explication qui cite le chiffre.
  */
+export type HeadlinePart = {
+  key: string;
+  params?: Record<string, string | number>;
+};
+
+/** Titre et corps de la bande « forme » — clés i18n `home.headline.*`. */
 export function formHeadline(
   f: Pick<FormSummary, "tsb" | "ctl" | "zone" | "rampPerWeek">,
   acwr?: "insufficient" | "detraining" | "optimal" | "caution" | "danger"
-): { title: string; body: string } {
+): { titleKey: string; bodyParts: HeadlinePart[] } {
   const gap = Math.abs(Math.round(f.tsb));
-  const base: Record<FormZone, { title: string; body: string }> = {
+  const base: Record<FormZone, { titleKey: string; bodyKey: string }> = {
     overreaching: {
-      title: "Tu tires sur la corde",
-      body: `La fatigue dépasse ta condition de ${gap} points. Une ou deux journées faciles suffisent à repasser en zone de construction.`,
+      titleKey: "headline.overreaching.title",
+      bodyKey: "headline.overreaching.body",
     },
     productive: {
-      title: "Tu construis",
-      body: `La fatigue dépasse ta condition de ${gap} points : c'est là qu'on progresse, tant que la récupération suit.`,
+      titleKey: "headline.productive.title",
+      bodyKey: "headline.productive.body",
     },
     neutral: {
-      title: "Tu es en équilibre",
-      body: "Charge et récupération se compensent : ni fatigue qui s'accumule, ni condition qui s'érode.",
+      titleKey: "headline.neutral.title",
+      bodyKey: "headline.neutral.body",
     },
     optimal: {
-      title: "Tu es affûté",
-      body: `Fraîcheur de +${gap} sur une condition de ${Math.round(f.ctl)} : la fenêtre idéale pour une course ou un test.`,
+      titleKey: "headline.optimal.title",
+      bodyKey: "headline.optimal.body",
     },
     fresh: {
-      title: "Tu es frais, peut-être trop",
-      body: `Fraîcheur de +${gap} : bien reposé, mais une condition qui ne travaille plus finit par baisser.`,
+      titleKey: "headline.fresh.title",
+      bodyKey: "headline.fresh.body",
     },
   };
-  const out = { ...base[f.zone] };
-  if (acwr === "danger") out.body += " La charge de la semaine a bondi par rapport au mois : risque de blessure accru.";
-  else if (f.rampPerWeek > 7) out.body += ` Ta condition monte vite (+${f.rampPerWeek}/sem) : surveille les signaux.`;
-  return out;
+  const bodyParts: HeadlinePart[] = [
+    { key: base[f.zone].bodyKey, params: { gap, ctl: Math.round(f.ctl) } },
+  ];
+  if (acwr === "danger") {
+    bodyParts.push({ key: "headline.dangerTail" });
+  } else if (f.rampPerWeek > 7) {
+    bodyParts.push({ key: "headline.rampTail", params: { ramp: f.rampPerWeek } });
+  }
+  return { titleKey: base[f.zone].titleKey, bodyParts };
 }

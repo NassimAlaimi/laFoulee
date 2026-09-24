@@ -13,7 +13,67 @@
     "loading": "Chargement…",
     "error": "Une erreur est survenue",
     "today": "Aujourd'hui",
-    "empty": "Rien ici pour le moment"
+    "empty": "Rien ici pour le moment",
+    "phase": {
+      "base": "Base",
+      "build": "Développement",
+      "peak": "Spécifique",
+      "deload": "Décharge",
+      "taper": "Affûtage",
+      "race": "Course"
+    },
+    "kind": {
+      "rest": "Repos",
+      "recovery": "Récupération",
+      "easy": "Endurance",
+      "long": "Sortie longue",
+      "tempo": "Tempo",
+      "threshold": "Seuil",
+      "intervals": "VO2max",
+      "hills": "Côtes",
+      "fartlek": "Fartlek",
+      "strides": "Lignes droites",
+      "race": "Course",
+      "strength": "Renforcement",
+      "cross": "Cross-training",
+      "mobility": "Mobilité"
+    },
+    "formZone": {
+      "fresh": "Frais",
+      "optimal": "Pic de forme",
+      "neutral": "Neutre",
+      "productive": "En construction",
+      "overreaching": "Surcharge"
+    },
+    "acwr": {
+      "insufficient": "Historique insuffisant",
+      "detraining": "Sous-charge",
+      "optimal": "Zone optimale",
+      "caution": "Prudence",
+      "danger": "Risque élevé"
+    },
+    "readiness": {
+      "ready": "Prêt",
+      "solid": "Solide",
+      "fragile": "Fragile",
+      "recover": "Récupère"
+    },
+    "intensity": {
+      "1": "très facile",
+      "2": "facile",
+      "3": "modérée",
+      "4": "soutenue",
+      "5": "maximale"
+    },
+    "compliance": {
+      "upcoming": "à venir",
+      "empty": "sans course",
+      "good": "au rendez-vous",
+      "fair": "partiel",
+      "low": "décroché"
+    },
+    "calFeedName": "Foulée · entraînement",
+    "paceWord": "allure"
   },
   "nav": {
     "today": "Aujourd'hui",
@@ -31,6 +91,707 @@
   "settings": {
     "language": "Langue",
     "languageTitle": "Langue de l'interface",
-    "languageNote": "Le français reste la langue par défaut. Ton choix est enregistré sur ton profil et te suit sur tous tes appareils."
+    "languageNote": "Le français reste la langue par défaut. Ton choix est enregistré sur ton profil et te suit sur tous tes appareils.",
+    "calConfirm": "L'ancienne adresse cessera de fonctionner. Continuer ?",
+    "calBody": "Tes séances planifiées et tes courses objectif, directement dans ton agenda. Les modifications du plan (réadaptation, séance déplacée) s'y reportent automatiquement.",
+    "calActivate": "Activer l'abonnement",
+    "calAddress": "Adresse de l'agenda",
+    "calCopied": "Copié ✓",
+    "calCopy": "Copier",
+    "calOpenApple": "Ouvrir dans Calendrier (Apple)",
+    "calAddGoogle": "Ajouter à Google Agenda",
+    "calDownload": "Télécharger le .ics",
+    "calOutlookLabel": "Outlook :",
+    "calOutlookBody": "Ajouter un calendrier → À partir d'Internet → coller l'adresse. Les agendas se resynchronisent d'eux-mêmes (de quelques minutes à 24 h selon le service).",
+    "calPrivacyLabel": "Confidentialité :",
+    "calPrivacyBody": "quiconque possède cette adresse peut lire ton plan. Régénère-la si tu l'as partagée par erreur.",
+    "calRegenerate": "Régénérer l'adresse",
+    "calDisable": "Désactiver",
+    "confirmQuestion": "Confirmer ?",
+    "yes": "Oui",
+    "disconnect": "Déconnecter"
+  },
+  "help": {
+    "today": {
+      "title": "Aujourd'hui",
+      "lines": [
+        "La page du matin : la séance du jour, ta fraîcheur (TSB) et le mini-carnet pour alimenter ton score de préparation.",
+        "Les chiffres viennent de tes sorties synchronisées — plus tu cours, plus cette page parle."
+      ],
+      "links": [
+        {
+          "href": "/training",
+          "label": "Voir le plan"
+        },
+        {
+          "href": "/log",
+          "label": "Carnet complet"
+        }
+      ]
+    },
+    "log": {
+      "title": "Le carnet",
+      "lines": [
+        "Sommeil, fatigue, moral, douleurs : une ligne par jour, autant de passes que tu veux.",
+        "Le score de préparation (0-100) se calcule par pénalités transparentes — chaque retrait est expliqué.",
+        "La corrélation avec ta charge (ATL) dit si ta forme du matin répond à l'entraînement."
+      ],
+      "links": [
+        {
+          "href": "/",
+          "label": "Retour à Aujourd'hui"
+        }
+      ]
+    },
+    "activities": {
+      "title": "Tes activités",
+      "lines": [
+        "Tout ce que tu as couru, importé de Strava. Clique une sortie pour sa fiche : parcours, courbe cardiaque, intervalles repérés.",
+        "Les notes privées et le ressenti ne sont jamais écrasés par la synchronisation."
+      ],
+      "links": []
+    },
+    "training": {
+      "title": "Ton plan d'entraînement",
+      "lines": [
+        "Le plan se recale chaque semaine sur tes check-ins : douleur, fatigue, jours disponibles.",
+        "La section Conformité compare ce qui était prévu à ce qui a été fait, semaine par semaine.",
+        "Marque les séances « fait » pour nourrir les deux."
+      ],
+      "links": [
+        {
+          "href": "/workouts",
+          "label": "Bibliothèque de séances"
+        },
+        {
+          "href": "/goals",
+          "label": "Objectifs"
+        }
+      ]
+    },
+    "workouts": {
+      "title": "La bibliothèque de séances",
+      "lines": [
+        "Les séances fondamentales de la préparation, avec tes allures calculées depuis ton VDOT.",
+        "Un 5 km couru à fond recale toutes les allures — c'est la séance « Test d'étalonnage »."
+      ],
+      "links": []
+    },
+    "goals": {
+      "title": "Tes objectifs de course",
+      "lines": [
+        "Un objectif ouvre le compte à rebours, le plan d'entraînement et le plan de course.",
+        "Dans le plan de course, importe le GPX du parcours : les allures s'ajustent à la pente."
+      ],
+      "links": []
+    },
+    "analysis": {
+      "title": "Forme & charge",
+      "lines": [
+        "Condition (CTL), fatigue (ATL), fraîcheur (TSB) : le modèle qu'utilisent les équipes pro.",
+        "La répartition de l'intensité vérifie la règle des 80 % faciles / 20 % intenses."
+      ],
+      "links": [
+        {
+          "href": "/analysis/modeles",
+          "label": "Modèles & seuils"
+        },
+        {
+          "href": "/analysis/seances",
+          "label": "Séances passées"
+        }
+      ]
+    },
+    "modeles": {
+      "title": "Modèles & seuils",
+      "lines": [
+        "Vitesse critique, prédictions potentiel/réaliste, seuils LT1/LT2 : tes capacités mesurées.",
+        "Les seuils sont lus dans ta relation allure → fréquence cardiaque réelle, pas dans des % génériques."
+      ],
+      "links": []
+    },
+    "seances": {
+      "title": "Séances passées",
+      "lines": [
+        "Les intervalles sont repérés automatiquement dans tes kilomètres, avec régularité et fatigue.",
+        "Le découplage aérobie (< 5 % = bon) et l'efficience (EF) racontent ton développement d'endurance."
+      ],
+      "links": []
+    },
+    "records": {
+      "title": "Performance",
+      "lines": [
+        "Tes records, ton niveau (VDOT) et tes prédictions par distance.",
+        "Le VDOT monte quand un record tombe — c'est lui qui calibre toutes les allures de l'app."
+      ],
+      "links": [
+        {
+          "href": "/calculator",
+          "label": "Calculateur express"
+        }
+      ]
+    },
+    "calculator": {
+      "title": "Le calculateur",
+      "lines": [
+        "Entre une performance récente (une course, un 5 km à fond) : l'app en déduit ton niveau et toutes tes allures.",
+        "Pré-rempli avec ta meilleure performance réelle."
+      ],
+      "links": []
+    },
+    "corps": {
+      "title": "Corps",
+      "lines": [
+        "La musculation du coureur (avec garde-fou de charge) et le kilométrage de tes chaussures.",
+        "Le renforcement rend le plan soutenable : c'est le socle, pas l'annexe."
+      ],
+      "links": [
+        {
+          "href": "/strength",
+          "label": "Musculation"
+        },
+        {
+          "href": "/gear",
+          "label": "Matériel"
+        }
+      ]
+    },
+    "strength": {
+      "title": "Musculation",
+      "lines": [
+        "Séances, 1RM, force relative, objectifs de force et garde-fou de charge (ACWR muscu).",
+        "Épingle tes exercices favoris pour les retrouver en premier."
+      ],
+      "links": []
+    },
+    "gear": {
+      "title": "Matériel",
+      "lines": [
+        "Le kilométrage de chaque paire et son seuil de remplacement.",
+        "Marque une paire « principale » : elle apparaît sur le hub Corps."
+      ],
+      "links": []
+    },
+    "plus": {
+      "title": "Plus",
+      "lines": [
+        "La rétrospective annuelle imprimable, l'agenda iCal, l'export de tes données et les réglages.",
+        "C'est aussi ici que vit la visite guidée, si tu veux la refaire."
+      ],
+      "links": [
+        {
+          "href": "/lexique",
+          "label": "Lexique des termes"
+        }
+      ]
+    },
+    "settings": {
+      "title": "Réglages",
+      "lines": [
+        "Connexion Strava, synchronisation, profil athlète (FC, poids…) et préférences.",
+        "Les champs du profil alimentent les modèles : plus ils sont renseignés, plus les chiffres sont précis."
+      ],
+      "links": [
+        {
+          "href": "/lexique",
+          "label": "Lexique des termes"
+        }
+      ]
+    },
+    "recap": {
+      "title": "La rétrospective",
+      "lines": [
+        "L'année en un coup d'œil : kilomètres, courses, records, régularité. Imprimable.",
+        "Toute l'année sur une frise — idéale pour mesurer le chemin parcouru."
+      ],
+      "links": []
+    },
+    "lexique": {
+      "title": "Le lexique",
+      "lines": [
+        "Tous les termes de l'app traduits en langage courant.",
+        "CTL, VDOT, seuils, efficience : reviens ici quand un chiffre te résiste."
+      ],
+      "links": []
+    },
+    "pageAria": "Aide sur cette page",
+    "lexiqueLink": "Lexique"
+  },
+  "lexique": {
+    "title": "Lexique",
+    "kicker": "Les termes, simplement",
+    "meta": "CTL, VDOT, seuils, efficience — chaque chiffre de l'app, traduit.",
+    "missingTitle": "Un terme manque ?",
+    "missingBody": "Les définitions s'étoffent au fil des versions. Reviens par le « ? » d'une page ou le pôle Plus.",
+    "terms": {
+      "ctl": {
+        "term": "CTL",
+        "def": "Condition. Moyenne de ta charge sur 42 jours — ta « caisse » : elle monte lentement et se perd lentement."
+      },
+      "atl": {
+        "term": "ATL",
+        "def": "Fatigue. Moyenne de ta charge sur 7 jours — ce que tu as encaissé récemment."
+      },
+      "tsb": {
+        "term": "TSB",
+        "def": "Fraîcheur = condition − fatigue. Négative en période de charge, positive quand tu es affûté. C'est le chiffre du pic de forme."
+      },
+      "acwr": {
+        "term": "ACWR",
+        "def": "Rapport charge aiguë (7 j) / charge chronique (28 j). Au-dessus de 1,5, la montée en charge est rapide : risque de blessure."
+      },
+      "trimp": {
+        "term": "TRIMP",
+        "def": "Charge d'entraînement d'une séance, calculée depuis sa durée et ta fréquence cardiaque (ou un équivalent kilométrique)."
+      },
+      "vdot": {
+        "term": "VDOT",
+        "def": "Ton niveau de forme en un nombre (≈ VO2max effectif), déduit de ta meilleure performance. Il calibre toutes les allures de l'app."
+      },
+      "vma": {
+        "term": "VMA",
+        "def": "Vitesse maximale aérobie — l'allure à laquelle tu consommes ton maximum d'oxygène, tenable ~6 minutes."
+      },
+      "cs": {
+        "term": "Vitesse critique",
+        "abbr": "CS",
+        "def": "L'allure que tu peux tenir longtemps (~45-60 min). Calculée sur tes efforts de 2 à 20 minutes."
+      },
+      "dprime": {
+        "term": "D′",
+        "def": "Réserve anaérobie : la distance que tu peux courir au-dessus de ta vitesse critique avant d'exploser. Un D′ faible = profil diesel."
+      },
+      "lt1": {
+        "term": "LT1",
+        "def": "Seuil aérobie : la frontière entre l'endurance facile et le travail soutenu. En dessous, tu peux parler."
+      },
+      "lt2": {
+        "term": "LT2",
+        "def": "Seuil anaérobie : l'allure la plus rapide que tu peux tenir sans accumuler de lactate. Proche de ta vitesse critique."
+      },
+      "ef": {
+        "term": "Efficience",
+        "abbr": "EF",
+        "def": "Mètres par minute par battement de cœur. Elle monte quand le même cœur produit plus de vitesse : le marqueur de ta base aérobie."
+      },
+      "decoupling": {
+        "term": "Découplage aérobie",
+        "def": "Perte d'efficience entre la première et la seconde moitié d'une sortie. Sous 5 %, l'endurance tient la distance."
+      },
+      "polarization": {
+        "term": "Polarisation",
+        "def": "La répartition de ton volume : ~80 % facile, ~20 % intense. Éviter la « zone grise » entre les deux."
+      },
+      "fatigueExponent": {
+        "term": "Exposant de fatigue",
+        "def": "Comment ton allure se dégrade quand la distance double (référence : +4,2 %). Mesuré sur tes propres performances."
+      },
+      "negativeSplit": {
+        "term": "Split négatif",
+        "def": "Finir plus vite qu'on a commencé — la stratégie de course la plus fiable sur longue distance."
+      },
+      "oneRm": {
+        "term": "1RM",
+        "def": "Répétition maximale : la charge que tu peux soulever une seule fois, estimée depuis tes séries de musculation."
+      },
+      "rpe": {
+        "term": "RPE",
+        "def": "Effort perçu, noté de 1 à 10. Complète les chiffres quand la montre ne suffit pas."
+      }
+    }
+  },
+  "home": {
+    "onboarding": {
+      "title": "Bien démarrer",
+      "steps": {
+        "strava": "Connecter ton compte Strava",
+        "sync": "Synchroniser tes activités",
+        "goal": "Créer un objectif de course",
+        "log": "Remplir le carnet 3 jours de suite"
+      }
+    },
+    "season": {
+      "youRun5": "Tu cours 5 fois par semaine ou plus",
+      "youRun4": "Tu cours environ 4 fois par semaine",
+      "youRun3": "Tu cours environ 3 fois par semaine",
+      "youRun2": "Tu cours environ 2 fois par semaine",
+      "youRun1": "Tu cours environ 1 fois par semaine",
+      "slot0": "surtout tôt le matin",
+      "slot1": "surtout en matinée",
+      "slot2": "surtout à la mi-journée",
+      "slot3": "surtout l'après-midi",
+      "slot4": "surtout le soir",
+      "slot5": "surtout tard le soir",
+      "km": "{km} km sur 3 mois",
+      "deltaUp": "+{pct} % vs les 3 mois d'avant",
+      "deltaDown": "−{pct} % vs les 3 mois d'avant",
+      "deltaBig": "soit {x} fois les 3 mois d'avant",
+      "stable": "stable",
+      "streak": "dont {days} jours d'affilée"
+    },
+    "insights": {
+      "none": "Rien à signaler sur la période — continue comme ça.",
+      "tone": {
+        "good": "Positif",
+        "warn": "À surveiller",
+        "risk": "Alerte",
+        "neutral": "Note"
+      },
+      "acwr-danger": {
+        "title": "Montée de charge trop rapide",
+        "detail": "Ton volume récent dépasse nettement ce que ton corps a l'habitude d'encaisser. C'est la configuration classique qui précède une blessure. Prévois une semaine allégée de 30 à 40 %.",
+        "evidence": "Ratio de charge {ratio} (zone saine : 0,80 – 1,30)"
+      },
+      "acwr-caution": {
+        "title": "Charge en hausse marquée",
+        "detail": "Rien d'alarmant, mais tu es au-dessus de la zone confortable. Stabilise le volume une semaine avant de repartir à la hausse.",
+        "evidence": "Ratio de charge {ratio}"
+      },
+      "acwr-low": {
+        "title": "Marge pour augmenter",
+        "detail": "Ta charge récente est en dessous de ton habitude. Tu peux remonter le volume progressivement, sans dépasser +10 % par semaine.",
+        "evidence": "Ratio de charge {ratio}"
+      },
+      "volume-jump": {
+        "title": "Bond de volume hebdomadaire",
+        "detail": "La règle des +10 % par semaine limite le risque de blessure de surcharge. Tu l'as largement dépassée.",
+        "evidence": "{prev} km puis {now} km (+{pct} %)"
+      },
+      "gap": {
+        "title": "Coupure dans l'entraînement",
+        "detail": "Les adaptations aérobies commencent à se perdre après environ 10 jours sans stimulus. Reprends progressivement plutôt que de repartir au niveau d'avant.",
+        "evidence": "{days} jours consécutifs sans sortie sur les 4 dernières semaines"
+      },
+      "too-hard": {
+        "title": "Trop d'intensité, pas assez de facile",
+        "detail": "Le modèle polarisé recommande environ 80 % du volume en endurance fondamentale. Courir trop souvent « moyennement dur » fatigue sans développer la base aérobie.",
+        "evidence": "{pct} % de tes séances sous {bpm} bpm (cible : 80 %)"
+      },
+      "no-intensity": {
+        "title": "Aucune séance rapide",
+        "detail": "Ta base aérobie est bien travaillée, mais sans séance de seuil ou de VO2max, la vitesse progresse peu. Une séance intense par semaine suffit.",
+        "evidence": "{pct} % des séances en endurance seulement"
+      },
+      "stale-reference": {
+        "title": "Référence de performance ancienne",
+        "detail": "Ton niveau estimé s'appuie sur un effort qui commence à dater. Un test sur 5 km ou une sortie rapide chronométrée affinerait tes allures cibles.",
+        "evidence": "Meilleur effort : {name}, il y a {days} jours"
+      },
+      "pace-improving": {
+        "title": "Allure moyenne en progrès",
+        "detail": "À volume comparable, tu cours plus vite qu'il y a un mois. C'est le signe que la charge est bien absorbée.",
+        "evidence": "{s} s/km gagnées sur 28 jours"
+      },
+      "pace-slower": {
+        "title": "Allure moyenne en baisse",
+        "detail": "Ce n'est pas forcément négatif : cela arrive quand on augmente le volume ou qu'on court davantage en endurance. À surveiller si ça persiste avec une FC élevée.",
+        "evidence": "{s} s/km perdues sur 28 jours"
+      },
+      "efficiency-up": {
+        "title": "Efficience aérobie en hausse",
+        "detail": "Tu cours plus vite pour une même fréquence cardiaque : ton moteur aérobie s'améliore.",
+        "evidence": "+{pct} % de vitesse par battement vs mois précédent"
+      },
+      "efficiency-down": {
+        "title": "Efficience aérobie en baisse",
+        "detail": "À FC égale tu cours moins vite. Fatigue accumulée, chaleur ou manque de récupération sont les causes les plus fréquentes.",
+        "evidence": "{pct} % de vitesse par battement vs mois précédent"
+      },
+      "goal-met": {
+        "title": "Objectif hebdomadaire tenu",
+        "detail": "Tu es au niveau que tu t'es fixé, en moyenne sur le dernier mois.",
+        "evidence": "{avg} km/semaine pour un objectif de {goal} km"
+      },
+      "goal-far": {
+        "title": "Loin de l'objectif hebdomadaire",
+        "detail": "Soit l'objectif est trop ambitieux pour le moment, soit il faut ajouter une sortie par semaine. Un objectif irréaliste décourage plus qu'il ne motive.",
+        "evidence": "{avg} km/semaine pour un objectif de {goal} km"
+      },
+      "recent-pr": {
+        "title": "Nouveau record personnel",
+        "titlePlural": "{n} records personnels ce mois-ci",
+        "detail": "Tes meilleures performances sur les distances de référence datent du mois dernier — tu es en forme ascendante.",
+        "evidence": "{names}"
+      }
+    },
+    "headline": {
+      "overreaching": {
+        "title": "Tu tires sur la corde",
+        "body": "La fatigue dépasse ta condition de {gap} points. Une ou deux journées faciles suffisent à repasser en zone de construction."
+      },
+      "productive": {
+        "title": "Tu construis",
+        "body": "La fatigue dépasse ta condition de {gap} points : c'est là qu'on progresse, tant que la récupération suit."
+      },
+      "neutral": {
+        "title": "Tu es en équilibre",
+        "body": "Charge et récupération se compensent : ni fatigue qui s'accumule, ni condition qui s'érode."
+      },
+      "optimal": {
+        "title": "Tu es affûté",
+        "body": "Fraîcheur de +{gap} sur une condition de {ctl} : la fenêtre idéale pour une course ou un test."
+      },
+      "fresh": {
+        "title": "Tu es frais, peut-être trop",
+        "body": "Fraîcheur de +{gap} : bien reposé, mais une condition qui ne travaille plus finit par baisser."
+      },
+      "dangerTail": "La charge de la semaine a bondi par rapport au mois : risque de blessure accru.",
+      "rampTail": "Ta condition monte vite (+{ramp}/sem) : surveille les signaux."
+    },
+    "ui": {
+      "summary": "Résumé",
+      "meta": "{n} courses · dernière sortie {date}",
+      "emptyStravaTitle": "Connecte ton compte Strava",
+      "emptyStravaBody": "Relie ton compte pour importer tes courses. Toutes les analyses sont calculées à partir de ces données.",
+      "configure": "Configurer",
+      "emptyRunsTitle": "Aucune course importée",
+      "emptyRunsBody": "Ton compte est connecté mais aucune activité n'a encore été synchronisée.",
+      "syncNow": "Synchroniser",
+      "volume7": "Volume · 7 jours",
+      "goalNote": "objectif {km}",
+      "sessions": "Séances",
+      "hours": "{h} h",
+      "avgPace": "Allure moyenne",
+      "fitnessLevel": "Niveau de forme",
+      "dataSay": "Ce que disent tes données",
+      "dataSayNote": "Observations générées à partir de tes 8 dernières semaines. Chaque ligne indique la mesure qui la justifie.",
+      "loadTitle": "Charge d'entraînement",
+      "loadNote": "La charge aiguë (7 jours) comparée à la charge chronique (28 jours) indique si ta progression est soutenable.",
+      "acute": "Charge aiguë · 7 j",
+      "chronic": "Charge chronique · 28 j",
+      "volume28": "Volume · 28 j",
+      "vma": "VMA estimée",
+      "maxHr": "FC max",
+      "typed": "saisie",
+      "estimated": "estimée",
+      "stateToday": "État de forme · aujourd'hui",
+      "freshness": "Fraîcheur",
+      "condition": "Condition",
+      "fatigue": "Fatigue",
+      "last7": "7 derniers jours",
+      "loadRatio": "Charge 7 j / 28 j",
+      "volume28d": "Volume 28 j",
+      "vmaEst": "km/h estimée",
+      "detailed": "Analyse détaillée →",
+      "ctfTitle": "Condition · fatigue · fraîcheur",
+      "ctfNote": "120 jours, puis projection du plan en pointillés",
+      "acuteChronic": "Charge aiguë et chronique",
+      "ratioTitle": "Ratio aiguë / chronique",
+      "calendar": "Calendrier d'entraînement",
+      "last26": "26 dernières semaines",
+      "weeklyVolume": "Volume hebdomadaire",
+      "last12": "12 dernières semaines",
+      "elevation": "Dénivelé",
+      "paceAndHr": "Allure et cardio",
+      "prog12": "Progression sur 12 mois",
+      "need2Months": "Au moins 2 mois de données nécessaires.",
+      "efficiency28": "Efficience · 28 jours",
+      "scatterHint": "bas à gauche = plus rapide à FC plus basse",
+      "need3Hr": "Au moins 3 séances avec cardio nécessaires.",
+      "split": "Répartition et comparatif",
+      "zones28": "Zones cardiaques · 28 jours",
+      "noHr": "Aucune donnée cardio sur la période.",
+      "vsPrev": "28 jours vs période précédente",
+      "cVolume": "Volume",
+      "cTime": "Temps",
+      "cPace": "Allure",
+      "cAvgHr": "FC moyenne",
+      "cLongest": "Plus longue",
+      "records": "Records",
+      "seeAll": "Tout voir",
+      "casual": "sortie",
+      "casualTitle": "Couru sous ton potentiel",
+      "recent": "Dernières sorties",
+      "allActivities": "Toutes les activités",
+      "trace": "Tracé",
+      "date": "Date",
+      "session": "Séance",
+      "km": "km",
+      "time": "Temps",
+      "pace": "Allure",
+      "hr": "FC",
+      "elev": "D+"
+    },
+    "hero": {
+      "night": "Bonne nuit",
+      "morning": "Bonjour",
+      "afternoon": "Bon après-midi",
+      "evening": "Bonsoir",
+      "weekOf": "semaine {week} · {phase}",
+      "done": "Fait",
+      "intensity": "intensité {word}",
+      "startStrength": "Commencer la séance de renfo",
+      "seeWeek": "Voir la semaine",
+      "sessionDetail": "Détail de la séance",
+      "doneToday": "Séance du jour faite",
+      "rest": "Repos",
+      "noPlan": "Pas de plan en cours",
+      "restText": "Rien de prévu aujourd'hui : la récupération fait partie de l'entraînement.",
+      "noPlanText": "Génère un plan séance par séance calé sur ton volume actuel, avec ou sans course à préparer.",
+      "nextSession": "Prochaine séance",
+      "tomorrow": "demain",
+      "createPlan": "Créer un plan",
+      "weekSide": "Semaine",
+      "pctOf": "{pct} % du prévu",
+      "planFrom": "plan dès le {date}",
+      "offPlan": "hors plan",
+      "nextRace": "Prochaine course",
+      "addGoal": "Ajouter un objectif →",
+      "freshness": "Fraîcheur"
+    }
+  },
+  "tour": {
+    "steps": {
+      "today": {
+        "title": "Ton tableau de bord du matin",
+        "body": "La séance du jour, ta fraîcheur du moment et les chiffres de la semaine. Chaque page de l'app s'ouvre ainsi : un grand chiffre qui dit l'essentiel."
+      },
+      "preparation": {
+        "title": "Le score de préparation",
+        "body": "Sommeil, fatigue, douleurs : dix secondes par jour dans le mini-carnet, et le score 0-100 se calcule tout seul. L'historique et la tendance vivent dans le Carnet."
+      },
+      "activities": {
+        "title": "Tout ce que tu as couru",
+        "body": "Chaque sortie a sa fiche : parcours, courbe cardiaque, intervalles repérés automatiquement, découplage aérobie. Clique une ligne pour l'ouvrir."
+      },
+      "plan": {
+        "title": "Ton plan, semaine par semaine",
+        "body": "Le plan se recale chaque semaine sur tes check-ins (douleur, fatigue, disponibilité). La section Conformité colore ce que tu as réellement exécuté."
+      },
+      "analyse": {
+        "title": "La science derrière tes jambes",
+        "body": "Condition, fatigue et fraîcheur (le modèle des équipes pro), tes seuils personnalisés et ta vitesse critique — tout est calculé depuis tes sorties."
+      },
+      "objectifs": {
+        "title": "Prépare une course",
+        "body": "Un objectif ouvre le plan d'entraînement, le compte à rebours et le plan de course : importe le GPX du parcours, les allures s'ajustent à la pente."
+      },
+      "corps": {
+        "title": "La force et le matériel",
+        "body": "La musculation du coureur (avec garde-fou de charge) et le kilométrage de tes chaussures. Le socle qui rend le plan soutenable."
+      },
+      "fin": {
+        "title": "C'est parti",
+        "body": "L'app se remplit au fil des synchronisations Strava. Remplis le carnet ce soir, et reviens demain matin : la page Aujourd'hui aura changé."
+      }
+    },
+    "next": "Suivant",
+    "previous": "Précédent",
+    "skip": "Passer",
+    "finish": "C'est parti",
+    "ariaLabel": "Visite guidée",
+    "launcherTitle": "Visite guidée",
+    "launcherAria": "Lancer la visite guidée",
+    "doorTitle": "Visite guidée",
+    "doorBody": "Redécouvre l'app en une minute : le tour passe en revue chaque pôle, bulle par bulle.",
+    "doorMeta": "8 étapes · 1 minute",
+    "kicker": "Visite guidée · {n}/{total}",
+    "lastStep": "Dernière étape"
+  },
+  "log": {
+    "bandTitle": "Préparation du jour",
+    "bandHint": "ton score apparaît dès que tu renseignes le mini-carnet",
+    "bandLink": "Carnet complet : tendance 14 j et historique →",
+    "sleepLabel": "h de sommeil",
+    "sleepAria": "Sommeil de cette nuit (heures)",
+    "fatigue": "Fatigue",
+    "fatigueAria": "Fatigue du jour (1 à 5)",
+    "fatigueN": "Fatigue {n}/5",
+    "pain": "Douleur",
+    "painAria": "Douleurs",
+    "pain0": "Rien",
+    "pain1": "Gêne",
+    "pain2": "Douleur",
+    "pain3": "Empêche",
+    "saved": "Enregistré ✓"
+  },
+  "account": {
+    "sync": "Synchroniser",
+    "syncing": "Synchronisation…",
+    "syncFull": "Réimporter tout l'historique",
+    "syncFail": "Échec de la synchro",
+    "syncResult": "{n, plural, =1 {1 nouvelle} other {{n} nouvelles}} · {m, plural, =1 {1 mise à jour} other {{m} mises à jour}}",
+    "unknownError": "Erreur inconnue",
+    "athlete": "Athlète {id}",
+    "admin": "admin",
+    "settingsLink": "Réglages et compte Strava",
+    "logout": "Se déconnecter",
+    "loggingOut": "Déconnexion…",
+    "autoSyncing": "Synchronisation Strava…",
+    "autoImported": "{n, plural, =1 {1 nouvelle activité} other {{n} nouvelles activités}}",
+    "statActivities": "Activités",
+    "statPlans": "Plans",
+    "statDevices": "Appareils connectés",
+    "logoutAll": "Déconnecter tous les appareils",
+    "deleteAccount": "Supprimer mon compte",
+    "deleteTitle": "Suppression définitive du compte",
+    "deleteBody": "{activities} activités, {plans} plans, tes objectifs, tes réglages et ton matériel seront effacés. Rien n'est archivé, rien n'est récupérable. Ton compte Strava, lui, n'est pas touché.",
+    "deleteFail": "La suppression a échoué. Réessaie.",
+    "typeToConfirm": "Tape {name} pour confirmer",
+    "deleting": "Suppression…",
+    "deleteFinal": "Supprimer définitivement",
+    "see": "Voir"
+  },
+  "palette": {
+    "aria": "Palette de commandes",
+    "placeholder": "Aller à, chercher une séance, ou calculer « 10k 48:30 »…",
+    "go": "Aller à",
+    "actions": "Actions",
+    "goals": "Objectifs",
+    "plans": "Plans",
+    "sessions": "Séances",
+    "calc": "Calcul express",
+    "sync": "Synchroniser Strava",
+    "theme": "Basculer thème clair / sombre",
+    "strength": "Saisir une séance de musculation",
+    "planAction": "Plan d'entraînement : créer ou consulter",
+    "goalAction": "Ajouter un objectif de course",
+    "ics": "Abonner mon agenda au plan",
+    "helpAction": "Raccourcis clavier",
+    "syncRunning": "Synchronisation en cours…",
+    "syncFail": "Échec : {error}",
+    "syncResult": "{n, plural, =1 {1 nouvelle activité} other {{n} nouvelles activités}} · {m, plural, =1 {1 mise à jour} other {{m} mises à jour}}",
+    "activePlan": "actif",
+    "pages": {
+      "today": "Aujourd'hui",
+      "activities": "Activités",
+      "map": "Carte des parcours",
+      "training": "Entraînement",
+      "workouts": "Séances (bibliothèque)",
+      "goals": "Objectifs",
+      "records": "Performance",
+      "analysis": "Forme & charge",
+      "modeles": "Modèles & seuils",
+      "seances": "Séances passées",
+      "calculator": "Calculateur",
+      "log": "Carnet quotidien",
+      "corps": "Corps",
+      "strength": "Muscu",
+      "gear": "Matériel",
+      "plus": "Plus",
+      "recap": "Rétrospective",
+      "settings": "Réglages"
+    },
+    "feelings": {
+      "1": "très dur",
+      "2": "dur",
+      "3": "correct",
+      "4": "bien",
+      "5": "excellent"
+    },
+    "noResult": "Rien ne correspond à « {q} ».",
+    "navigate": "naviguer",
+    "openWord": "ouvrir",
+    "shortcuts": "raccourcis",
+    "openCalc": "Ouvrir dans le calculateur",
+    "equiv": "{label} équivalent",
+    "navG": "Navigation · g puis…",
+    "everywhere": "Partout",
+    "openPalette": "Ouvrir la palette (ou /)",
+    "thisHelp": "Cette aide",
+    "themeShortcut": "Thème clair / sombre",
+    "prevNext": "Séance précédente / suivante (fiche activité)",
+    "backToList": "Revenir à la liste",
+    "calcHint": "Tape une performance ou une allure dans la palette :"
   }
 }

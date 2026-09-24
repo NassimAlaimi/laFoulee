@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Empty, Hint, NightBand, PageHead, Section } from "@/components/ui/Layout";
 import { RouteGlyph } from "@/components/route/RouteGlyph";
 import { seasonSentence } from "@/lib/narrative";
@@ -62,6 +63,10 @@ const ZONE_TONE: Record<string, string> = {
 };
 
 export default async function SummaryPage() {
+  const t = await getTranslations("home");
+  const tc = await getTranslations("common");
+  const locale = await getLocale();
+
   const user = await requireUser();
   const userId = user.id;
   const [runs, efforts, settings, account, todayLog, goalCount, logDays] = await Promise.all([
@@ -87,14 +92,14 @@ export default async function SummaryPage() {
   if (!account && runs.length === 0) {
     return (
       <>
-        <PageHead title="Résumé" />
+        <PageHead title={t("ui.summary")} />
         {gettingStarted}
         <Empty
-          title="Connecte ton compte Strava"
-          body="Relie ton compte pour importer tes courses. Toutes les analyses sont calculées à partir de ces données."
+          title={t("ui.emptyStravaTitle")}
+          body={t("ui.emptyStravaBody")}
           action={
             <Link href="/settings" className="btn-solid">
-              Configurer
+              {t("ui.configure")}
             </Link>
           }
         />
@@ -105,14 +110,14 @@ export default async function SummaryPage() {
   if (runs.length === 0) {
     return (
       <>
-        <PageHead title="Résumé" />
+        <PageHead title={t("ui.summary")} />
         {gettingStarted}
         <Empty
-          title="Aucune course importée"
-          body="Ton compte est connecté mais aucune activité n'a encore été synchronisée."
+          title={t("ui.emptyRunsTitle")}
+          body={t("ui.emptyRunsBody")}
           action={
             <Link href="/settings" className="btn-solid">
-              Synchroniser
+              {t("ui.syncNow")}
             </Link>
           }
         />
@@ -206,13 +211,15 @@ export default async function SummaryPage() {
         <div className="flex items-baseline gap-2.5">
           <span className="display text-d1">{current.ready ? current.ratio.toFixed(2) : "—"}</span>
         </div>
-        <div className={`mt-2 text-sm font-medium ${ZONE_TONE[current.zone]}`}>{ACWR_LABELS[current.zone]}</div>
+        <div className={`mt-2 text-sm font-medium ${ZONE_TONE[current.zone]}`}>
+          {tc(ACWR_LABELS[current.zone])}
+        </div>
         <div className="mt-6">
-          <Row label="Charge aiguë · 7 j" value={current.acute.toFixed(0)} />
-          <Row label="Charge chronique · 28 j" value={current.chronic.toFixed(0)} />
-          <Row label="Volume · 28 j" value={`${month.km} km`} />
-          <Row label="VMA estimée" value={profile.vma > 0 ? `${profile.vma} km/h` : "—"} />
-          <Row label="FC max" value={`${maxHr} bpm`} note={settings.maxHr ? "saisie" : "estimée"} />
+          <Row label={t("ui.acute")} value={current.acute.toFixed(0)} />
+          <Row label={t("ui.chronic")} value={current.chronic.toFixed(0)} />
+          <Row label={t("ui.volume28")} value={`${month.km} km`} />
+          <Row label={t("ui.vma")} value={profile.vma > 0 ? `${profile.vma} km/h` : "—"} />
+          <Row label={t("ui.maxHr")} value={`${maxHr} bpm`} note={settings.maxHr ? t("ui.typed") : t("ui.estimated")} />
         </div>
       </div>
       <div className="space-y-8">
@@ -224,17 +231,17 @@ export default async function SummaryPage() {
 
   return (
     <>
-      <h1 className="sr-only">Résumé</h1>
+      <h1 className="sr-only">{t("ui.summary")}</h1>
       <div className="mb-4 flex items-center justify-between gap-4">
         <p className="text-micro text-ink3">
-          {runs.length} courses · dernière sortie {fmtDateShort(runs[0].startDate)}
+          {t("ui.meta", { n: runs.length, date: fmtDateShort(runs[0].startDate, locale) })}
         </p>
         <SyncButton />
       </div>
 
       {sentence && (
         <p className="rise mb-8 max-w-3xl text-[clamp(1.05rem,2vw,1.375rem)] font-medium leading-snug tracking-[-0.01em]">
-          {sentence}
+          {sentence.map((p) => t(p.key, p.params)).join(", ")}.
         </p>
       )}
 
@@ -247,22 +254,22 @@ export default async function SummaryPage() {
       {/* ---------------------------------------------------------- Chiffres */}
       <MetricBand>
         <Metric
-          label="Volume · 7 jours"
+          label={t("ui.volume7")}
           value={week.km}
           unit="km"
           trend={compareTrend(week.km, weekPrev.km)}
-          note={`objectif ${settings.weeklyKmGoal}`}
+          note={t("ui.goalNote", { km: settings.weeklyKmGoal })}
           visual={<MiniBars data={weekly.slice(-8).map((w) => w.km)} />}
         />
         <Metric
-          label="Séances"
+          label={t("ui.sessions")}
           value={week.sessions}
           trend={compareTrend(week.sessions, weekPrev.sessions)}
-          note={`${week.timeHours} h`}
+          note={t("ui.hours", { h: week.timeHours })}
           visual={<MiniBars data={weekly.slice(-8).map((w) => w.sessions)} />}
         />
         <Metric
-          label="Allure moyenne"
+          label={t("ui.avgPace")}
           value={fmtPace(week.avgPace, "")}
           unit="/km"
           trend={compareTrend(week.avgPace, weekPrev.avgPace)}
@@ -271,7 +278,7 @@ export default async function SummaryPage() {
           visual={<Sparkline data={weekly.slice(-8).map((w) => -w.avgPace)} />}
         />
         <Metric
-          label="Niveau de forme"
+          label={t("ui.fitnessLevel")}
           value={profile.vdot > 0 ? profile.vdotDisplay : "—"}
           unit="VDOT"
           note={profile.source ? `${level.label} · ${profile.source.name}` : undefined}
@@ -282,16 +289,16 @@ export default async function SummaryPage() {
         <UpNext now={now} userId={userId} />
 
         <Section
-          title="Ce que disent tes données"
-          note="Observations générées à partir de tes 8 dernières semaines. Chaque ligne indique la mesure qui la justifie."
+          title={t("ui.dataSay")}
+          note={t("ui.dataSayNote")}
         >
           <InsightList insights={insights} />
         </Section>
 
         {!form && (
           <Section
-            title="Charge d'entraînement"
-            note="La charge aiguë (7 jours) comparée à la charge chronique (28 jours) indique si ta progression est soutenable."
+            title={t("ui.loadTitle")}
+            note={t("ui.loadNote")}
           >
             {loadBlock}
           </Section>
@@ -303,53 +310,57 @@ export default async function SummaryPage() {
         <NightBand className="mt-16" id="forme">
           <div className="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,8fr)] lg:gap-14">
             <div className="flex flex-col">
-              <div className="text-micro font-medium uppercase tracking-[0.16em] text-clay">État de forme · aujourd&apos;hui</div>
+              <div className="text-micro font-medium uppercase tracking-[0.16em] text-clay">
+                {t("ui.stateToday")}
+              </div>
               <h2 className="mt-4 text-[clamp(2.1rem,4.4vw,3.4rem)] font-semibold leading-[0.96] tracking-[-0.035em]">
-                {headline.title}
+                {t(headline.titleKey)}
               </h2>
-              <p className="mt-4 max-w-md text-[0.9375rem] leading-relaxed text-ink2">{headline.body}</p>
+              <p className="mt-4 max-w-md text-[0.9375rem] leading-relaxed text-ink2">
+                {headline.bodyParts.map((p) => t(p.key, p.params)).join(" ")}
+              </p>
 
               <div className="mt-8 grid grid-cols-3 border-t border-hair">
                 <NightFig
-                  label="Fraîcheur"
+                  label={t("ui.freshness")}
                   value={`${form.tsb > 0 ? "+" : ""}${Math.round(form.tsb)}`}
-                  note={FORM_LABEL[form.zone]}
+                  note={tc(FORM_LABEL[form.zone])}
                   tone={FORM_TONE[form.zone]}
                   big
                 />
-                <NightFig label="Condition" value={String(Math.round(form.ctl))} note={`${form.rampPerWeek > 0 ? "+" : ""}${form.rampPerWeek}/sem`} />
-                <NightFig label="Fatigue" value={String(Math.round(form.atl))} note="7 derniers jours" />
+                <NightFig label={t("ui.condition")} value={String(Math.round(form.ctl))} note={`${form.rampPerWeek > 0 ? "+" : ""}${form.rampPerWeek}/sem`} />
+                <NightFig label={t("ui.fatigue")} value={String(Math.round(form.atl))} note={t("ui.last7")} />
               </div>
               <div className="grid grid-cols-3 border-t border-hair">
                 <NightFig
-                  label="Charge 7 j / 28 j"
+                  label={t("ui.loadRatio")}
                   value={current.ready ? current.ratio.toFixed(2) : "—"}
-                  note={ACWR_LABELS[current.zone]}
+                  note={tc(ACWR_LABELS[current.zone])}
                   tone={ZONE_TONE[current.zone]}
                 />
-                <NightFig label="Volume 28 j" value={`${month.km}`} note="km" />
-                <NightFig label="VMA" value={profile.vma > 0 ? String(profile.vma) : "—"} note="km/h estimée" />
+                <NightFig label={t("ui.volume28d")} value={`${month.km}`} note="km" />
+                <NightFig label="VMA" value={profile.vma > 0 ? String(profile.vma) : "—"} note={t("ui.vmaEst")} />
               </div>
               <div className="mt-8">
                 <Link href="/analysis" className="btn-outline">
-                  Analyse détaillée →
+                  {t("ui.detailed")}
                 </Link>
               </div>
             </div>
 
             <div className="min-w-0">
               <div className="mb-4 flex items-baseline justify-between gap-3">
-                <span className="eyebrow">Condition · fatigue · fraîcheur</span>
-                <span className="text-micro text-ink3">120 jours, puis projection du plan en pointillés</span>
+                <span className="eyebrow">{t("ui.ctfTitle")}</span>
+                <span className="text-micro text-ink3">{t("ui.ctfNote")}</span>
               </div>
               <FormChart data={formRows} height={300} marks={marks} />
               <div className="mt-10 grid gap-8 sm:grid-cols-2">
                 <div>
-                  <div className="eyebrow mb-3">Charge aiguë et chronique</div>
+                  <div className="eyebrow mb-3">{t("ui.acuteChronic")}</div>
                   <LoadChart data={load} />
                 </div>
                 <div>
-                  <div className="eyebrow mb-3">Ratio aiguë / chronique</div>
+                  <div className="eyebrow mb-3">{t("ui.ratioTitle")}</div>
                   <AcwrChart data={load} />
                 </div>
               </div>
@@ -359,77 +370,77 @@ export default async function SummaryPage() {
       )}
 
       <div className="mt-16 space-y-14">
-        <Section title="Calendrier d'entraînement" note="26 dernières semaines">
+        <Section title={t("ui.calendar")} note={t("ui.last26")}>
           <TrainingCalendar activities={runs} weeks={26} now={now} />
         </Section>
 
-        <Section title="Volume hebdomadaire" note="12 dernières semaines">
+        <Section title={t("ui.weeklyVolume")} note={t("ui.last12")}>
           <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
             <VolumeChart data={weekly} goalKm={settings.weeklyKmGoal} />
             <div>
-              <div className="eyebrow mb-3">Dénivelé</div>
+              <div className="eyebrow mb-3">{t("ui.elevation")}</div>
               <ElevationChart data={weekly} />
             </div>
           </div>
         </Section>
 
-        <Section title="Allure et cardio">
+        <Section title={t("ui.paceAndHr")}>
           <div className="grid gap-10 lg:grid-cols-2">
             <div>
-              <div className="eyebrow mb-3">Progression sur 12 mois</div>
+              <div className="eyebrow mb-3">{t("ui.prog12")}</div>
               {progression.filter((p) => p.avgPace).length >= 2 ? (
                 <PaceProgressionChart data={progression} />
               ) : (
-                <Hint height={220}>Au moins 2 mois de données nécessaires.</Hint>
+                <Hint height={220}>{t("ui.need2Months")}</Hint>
               )}
             </div>
             <div>
               <div className="eyebrow mb-3">
-                Efficience · 28 jours
+                {t("ui.efficiency28")}
                 <span className="ml-2 font-normal normal-case tracking-normal text-ink3">
-                  bas à gauche = plus rapide à FC plus basse
+                  {t("ui.scatterHint")}
                 </span>
               </div>
               {scatter.length >= 3 ? (
                 <PaceHrScatter data={scatter} />
               ) : (
-                <Hint height={220}>Au moins 3 séances avec cardio nécessaires.</Hint>
+                <Hint height={220}>{t("ui.need3Hr")}</Hint>
               )}
             </div>
           </div>
         </Section>
 
-        <Section title="Répartition et comparatif">
+        <Section title={t("ui.split")}>
           <div className="grid gap-10 lg:grid-cols-3">
             <div>
-              <div className="eyebrow mb-4">Zones cardiaques · 28 jours</div>
+              <div className="eyebrow mb-4">{t("ui.zones28")}</div>
               {zones.some((z) => z.seconds > 0) ? (
                 <HrZoneBars zones={zones} />
               ) : (
-                <Hint height={180}>Aucune donnée cardio sur la période.</Hint>
+                <Hint height={180}>{t("ui.noHr")}</Hint>
               )}
             </div>
 
             <div>
-              <div className="eyebrow mb-4">28 jours vs période précédente</div>
-              <Compare label="Volume" now={`${month.km} km`} was={`${monthPrev.km} km`} />
-              <Compare label="Séances" now={String(month.sessions)} was={String(monthPrev.sessions)} />
-              <Compare label="Temps" now={`${month.timeHours} h`} was={`${monthPrev.timeHours} h`} />
-              <Compare label="Allure" now={fmtPace(month.avgPace)} was={fmtPace(monthPrev.avgPace)} />
+              <div className="eyebrow mb-4">{t("ui.vsPrev")}</div>
+              <Compare label={t("ui.cVolume")} now={`${month.km} km`} was={`${monthPrev.km} km`} />
+              <Compare label={t("ui.sessions")} now={String(month.sessions)} was={String(monthPrev.sessions)} />
+              <Compare label={t("ui.cTime")} now={`${month.timeHours} h`} was={`${monthPrev.timeHours} h`} />
+              <Compare label={t("ui.cPace")} now={fmtPace(month.avgPace)} was={fmtPace(monthPrev.avgPace)} />
               <Compare
-                label="FC moyenne"
+                label={t("ui.cAvgHr")}
                 now={month.avgHr ? `${month.avgHr} bpm` : "—"}
                 was={monthPrev.avgHr ? `${monthPrev.avgHr} bpm` : "—"}
               />
-              <Compare label="Dénivelé" now={`${month.elevation} m`} was={`${monthPrev.elevation} m`} />
-              <Compare label="Plus longue" now={`${month.longestRunKm} km`} was={`${monthPrev.longestRunKm} km`} />
+              <Compare label={t("ui.elevation")} now={`${month.elevation} m`} was={`${monthPrev.elevation} m`} />
+              <Compare label={t("ui.cLongest")} now={`${month.longestRunKm} km`} was={`${monthPrev.longestRunKm} km`} />
             </div>
 
             <div>
               <div className="mb-4 flex items-baseline justify-between">
-                <span className="eyebrow">Records</span>
+                <span className="eyebrow">{t("ui.records")}</span>
                 <Link href="/records" className="text-micro text-ink2 hover:text-clay">
-                  Tout voir
+                  {t("ui.seeAll")}
                 </Link>
               </div>
               {majors.map((r) => (
@@ -437,8 +448,8 @@ export default async function SummaryPage() {
                   <span className="flex items-center gap-2 text-[0.8125rem]">
                     {r.name}
                     {!isMaximalEffort(r.vdot, profile.vdot) && (
-                      <span className="tag" title="Couru sous ton potentiel">
-                        sortie
+                      <span className="tag" title={t("ui.casualTitle")}>
+                        {t("ui.casual")}
                       </span>
                     )}
                   </span>
@@ -453,10 +464,10 @@ export default async function SummaryPage() {
         </Section>
 
         <Section
-          title="Dernières sorties"
+          title={t("ui.recent")}
           action={
             <Link href="/activities" className="btn-quiet">
-              Toutes les activités
+              {t("ui.allActivities")}
             </Link>
           }
         >
@@ -464,14 +475,14 @@ export default async function SummaryPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th className="w-10" aria-label="Tracé" />
-                  <th>Date</th>
-                  <th>Séance</th>
-                  <th className="text-right">km</th>
-                  <th className="text-right">Temps</th>
-                  <th className="text-right">Allure</th>
-                  <th className="hidden text-right sm:table-cell">FC</th>
-                  <th className="hidden text-right sm:table-cell">D+</th>
+                  <th className="w-10" aria-label={t("ui.trace")} />
+                  <th>{t("ui.date")}</th>
+                  <th>{t("ui.session")}</th>
+                  <th className="text-right">{t("ui.km")}</th>
+                  <th className="text-right">{t("ui.time")}</th>
+                  <th className="text-right">{t("ui.pace")}</th>
+                  <th className="hidden text-right sm:table-cell">{t("ui.hr")}</th>
+                  <th className="hidden text-right sm:table-cell">{t("ui.elev")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -480,7 +491,7 @@ export default async function SummaryPage() {
                     <td className="text-ink2">
                       <RouteGlyph polyline={glyphs.get(r.id)} size={30} strokeWidth={1.3} dot={false} />
                     </td>
-                    <td className="whitespace-nowrap text-ink2">{fmtDateShort(r.startDate)}</td>
+                    <td className="whitespace-nowrap text-ink2">{fmtDateShort(r.startDate, locale)}</td>
                     <td>
                       <Link href={`/activities/${r.id}`} className="inline-block max-w-[280px] truncate align-middle hover:text-clay">
                         {r.name}

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getLocale, getTranslations } from "next-intl/server";
 import { RouteGlyph } from "@/components/route/RouteGlyph";
 import { fmtDuration, fmtPace, pacePerKm } from "@/lib/format";
 import { actualKmForWeek, getActivePlan, linkActivities } from "@/lib/plan-store";
@@ -17,14 +18,13 @@ const STEP_TONE: Record<string, string> = {
   block: "rgb(var(--ochre))",
 };
 
-const INTENSITY_WORD = ["", "très facile", "facile", "modérée", "soutenue", "maximale"];
-
-function greeting(now: Date): string {
+/** Clé i18n du salut selon l'heure — `home.hero.*`. */
+function greetingKey(now: Date): string {
   const h = now.getHours();
-  if (h < 5) return "Bonne nuit";
-  if (h < 12) return "Bonjour";
-  if (h < 18) return "Bon après-midi";
-  return "Bonsoir";
+  if (h < 5) return "hero.night";
+  if (h < 12) return "hero.morning";
+  if (h < 18) return "hero.afternoon";
+  return "hero.evening";
 }
 
 /**
@@ -47,6 +47,9 @@ export async function TodayHero({
   /** Fraîcheur du jour et sa zone — mêmes mots que la bande « forme » */
   form: { tsb: number; zone: FormZone } | null;
 }) {
+  const t = await getTranslations("home");
+  const tc = await getTranslations("common");
+  const locale = await getLocale();
   const tsb = form?.tsb ?? null;
   const plan = await getActivePlan(userId);
   if (plan) await linkActivities(plan.id, now, userId);
@@ -100,7 +103,7 @@ export async function TodayHero({
 
   const steps: Step[] = session?.structure ? safeSteps(session.structure) : [];
 
-  const dateLabel = now.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+  const dateLabel = now.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" });
   const daysToRace = nextRace ? daysBetween(today, nextRace.raceDate) : null;
   const pct = compliance.plannedKm > 0 ? Math.min(1, compliance.doneKm / compliance.plannedKm) : 0;
 
@@ -110,11 +113,14 @@ export async function TodayHero({
         {/* ------------------------------------------------ Séance du jour */}
         <div className="relative p-6 sm:p-8">
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-micro font-medium uppercase tracking-[0.12em] text-ink3">
-            <span className="text-clay">{greeting(now)}{firstname ? ` ${firstname}` : ""}</span>
+            <span className="text-clay">{t(greetingKey(now))}{firstname ? ` ${firstname}` : ""}</span>
             <span className="first-letter:uppercase">{dateLabel}</span>
             {weekInfo && (
               <span>
-                semaine {weekInfo.weekNumber} · {PHASE_LABELS[weekInfo.phase as Phase] ?? weekInfo.phase}
+                {t("hero.weekOf", {
+                  week: weekInfo.weekNumber,
+                  phase: tc(PHASE_LABELS[weekInfo.phase as Phase] ?? `phase.${weekInfo.phase}`),
+                })}
               </span>
             )}
           </div>
@@ -130,7 +136,7 @@ export async function TodayHero({
                     <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden>
                       <path d="M2 6.5 5 9l5-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
-                    Fait
+                    {t("hero.done")}
                   </span>
                 )}
               </div>
@@ -143,7 +149,8 @@ export async function TodayHero({
                 <HeroFig value={`~${session.durationMin}`} unit="min" />
                 {session.paceTarget && <HeroFig value={fmtPace(session.paceTarget, "")} unit="/km" />}
                 <span className="text-[0.8125rem] text-ink3">
-                  {KIND_LABELS[session.kind as SessionKind] ?? session.kind} · intensité {INTENSITY_WORD[session.intensity] ?? session.intensity}
+                  {tc(KIND_LABELS[session.kind as SessionKind] ?? `kind.${session.kind}`)} ·{" "}
+                  {t("hero.intensity", { word: tc(`intensity.${session.intensity || 3}`) })}
                 </span>
               </div>
 
@@ -181,11 +188,11 @@ export async function TodayHero({
               <div className="mt-7 flex flex-wrap gap-2">
                 {session.kind === "strength" && !done ? (
                   <Link href="/strength/new" className="btn-solid">
-                    Commencer la séance de renfo
+                    {t("hero.startStrength")}
                   </Link>
                 ) : (
                   <Link href="/training" className={done ? "btn-outline" : "btn-solid"}>
-                    {done ? "Voir la semaine" : "Détail de la séance"}
+                    {done ? t("hero.seeWeek") : t("hero.sessionDetail")}
                   </Link>
                 )}
                 {extra.map((x) => (
@@ -199,23 +206,23 @@ export async function TodayHero({
           ) : (
             <>
               <h2 className="mt-5 text-[clamp(2.4rem,6vw,4.25rem)] font-semibold leading-[0.95] tracking-[-0.035em]">
-                {todayActivities.length ? "Séance du jour faite" : plan ? "Repos" : "Pas de plan en cours"}
+                {todayActivities.length ? t("hero.doneToday") : plan ? t("hero.rest") : t("hero.noPlan")}
               </h2>
               <p className="mt-3 max-w-xl text-[0.9375rem] leading-relaxed text-ink2">
                 {todayActivities.length
                   ? `${todayActivities[0].name} · ${(todayActivities[0].distance / 1000).toFixed(1)} km.`
                   : plan
-                    ? "Rien de prévu aujourd'hui : la récupération fait partie de l'entraînement."
-                    : "Génère un plan séance par séance calé sur ton volume actuel, avec ou sans course à préparer."}
+                    ? t("hero.restText")
+                    : t("hero.noPlanText")}
                 {nextSession && (
                   <>
                     {" "}
-                    Prochaine séance{" "}
+                    {t("hero.nextSession")}{" "}
                     {daysBetween(today, nextSession.date) <= 1
-                      ? "demain"
+                      ? t("hero.tomorrow")
                       : daysBetween(today, nextSession.date) < 7
-                        ? nextSession.date.toLocaleDateString("fr-FR", { weekday: "long" })
-                        : nextSession.date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}{" "}
+                        ? nextSession.date.toLocaleDateString(locale, { weekday: "long" })
+                        : nextSession.date.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" })}{" "}
                     :{" "}
                     <span className="text-ink">{nextSession.title}</span>
                     {nextSession.distanceKm > 0 ? ` (${round(nextSession.distanceKm, 1)} km)` : ""}.
@@ -224,7 +231,7 @@ export async function TodayHero({
               </p>
               <div className="mt-7">
                 <Link href="/training" className="btn-solid">
-                  {plan ? "Voir la semaine" : "Créer un plan"}
+                  {plan ? t("hero.seeWeek") : t("hero.createPlan")}
                 </Link>
               </div>
             </>
@@ -234,7 +241,7 @@ export async function TodayHero({
         {/* ------------------------------------------------ Repères */}
         <aside className="grid grid-cols-3 border-t border-hair lg:grid-cols-1 lg:border-l lg:border-t-0">
           <div className="flex flex-col items-start gap-3 border-r border-hair p-5 lg:border-b lg:border-r-0 lg:p-6">
-            <span className="eyebrow">Semaine</span>
+            <span className="eyebrow">{t("hero.weekSide")}</span>
             <div className="flex items-center gap-3">
               <Ring pct={pct} />
               <span>
@@ -246,16 +253,18 @@ export async function TodayHero({
                 </span>
                 <span className="text-micro text-ink3">
                   {compliance.plannedKm
-                    ? `${Math.round(pct * 100)} % du prévu`
+                    ? t("hero.pctOf", { pct: Math.round(pct * 100) })
                     : plan && nextSession
-                      ? `plan dès le ${nextSession.date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}`
-                      : "hors plan"}
+                      ? t("hero.planFrom", {
+                          date: nextSession.date.toLocaleDateString(locale, { day: "numeric", month: "short" }),
+                        })
+                      : t("hero.offPlan")}
                 </span>
               </span>
             </div>
           </div>
           <div className="flex flex-col gap-2 border-r border-hair p-5 lg:border-b lg:border-r-0 lg:p-6">
-            <span className="eyebrow">Prochaine course</span>
+            <span className="eyebrow">{t("hero.nextRace")}</span>
             {nextRace && daysToRace !== null ? (
               <Link href={`/goals/${nextRace.id}`} className="group">
                 <span className="display block text-d3 group-hover:text-clay">J−{daysToRace}</span>
@@ -265,19 +274,19 @@ export async function TodayHero({
               </Link>
             ) : (
               <Link href="/goals" className="text-[0.8125rem] text-ink2 hover:text-clay">
-                Ajouter un objectif →
+                {t("hero.addGoal")}
               </Link>
             )}
           </div>
           <div className="flex flex-col gap-2 p-5 lg:p-6">
-            <span className="eyebrow">Fraîcheur</span>
+            <span className="eyebrow">{t("hero.freshness")}</span>
             {tsb !== null ? (
               <Link href="/#forme" className="group">
                 <span className={`display block text-d3 group-hover:text-clay ${FORM_TONE[form!.zone]}`}>
                   {tsb > 0 ? "+" : ""}
                   {Math.round(tsb)}
                 </span>
-                <span className="mt-1 block text-micro text-ink3">{FORM_LABEL[form!.zone].toLowerCase()}</span>
+                <span className="mt-1 block text-micro text-ink3">{tc(FORM_LABEL[form!.zone]).toLowerCase()}</span>
               </Link>
             ) : (
               <span className="text-[0.8125rem] text-ink3">—</span>

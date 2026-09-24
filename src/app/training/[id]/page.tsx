@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { Section, SectionHead } from "@/components/ui/Layout";
 import { Bar } from "@/components/ui/Metric";
@@ -25,6 +26,7 @@ export default async function PlanDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const t = await getTranslations("common");
   const { id } = await params;
   const userId = await requireUserId();
   const plan = await prisma.trainingPlan.findFirst({
@@ -180,7 +182,7 @@ export default async function PlanDetailPage({
               <div key={kind} className="border-t border-hair pt-2.5">
                 <div className="flex items-baseline justify-between">
                   <span className="text-[0.8125rem] text-ink2">
-                    {KIND_LABELS[kind as SessionKind] ?? kind}
+                    {t(KIND_LABELS[kind as SessionKind] ?? `kind.${kind}`)}
                   </span>
                   <span className="font-mono text-micro tabular-nums text-ink3">
                     {v.count}
@@ -267,7 +269,7 @@ export default async function PlanDetailPage({
 
       <p className="text-micro text-ink3">
         Phase actuelle :{" "}
-        {PHASE_LABELS[(weeks.find((w) => w.isCurrent)?.phase as Phase) ?? "base"]}
+        {t(PHASE_LABELS[(weeks.find((w) => w.isCurrent)?.phase as Phase) ?? "base"])}
       </p>
     </div>
   );

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { Section } from "@/components/ui/Layout";
 import { Metric, MetricBand, Row } from "@/components/ui/Metric";
@@ -28,6 +29,7 @@ export default async function ActivityDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const t = await getTranslations("common");
   const { id } = await params;
   const userId = await requireUserId();
 
@@ -201,7 +203,7 @@ export default async function ActivityDetailPage({
             {activity.isRace && <span className="tag border-clay/40 text-clay">course</span>}
             {planned && (
               <span className="tag border-sage/40 text-sage">
-                plan · {KIND_LABELS[planned.kind as SessionKind] ?? planned.kind}
+                plan · {t(KIND_LABELS[planned.kind as SessionKind] ?? `kind.${planned.kind}`)}
               </span>
             )}
             {gear && <span className="text-micro text-ink3">chaussures · {gear.name}</span>}

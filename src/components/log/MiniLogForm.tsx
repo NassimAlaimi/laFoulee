@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 /**
@@ -15,6 +16,8 @@ export function MiniLogForm({
   today: string;
 }) {
   const router = useRouter();
+  const t = useTranslations("log");
+  const tc = useTranslations("common");
   const [sleep, setSleep] = useState(
     existing?.sleepHours != null ? String(existing.sleepHours) : ""
   );
@@ -58,13 +61,13 @@ export function MiniLogForm({
           }}
           placeholder="7,5"
           className="field w-16"
-          aria-label="Sommeil de cette nuit (heures)"
+          aria-label={t("sleepAria")}
         />
-        <span className="text-micro text-ink3">h de sommeil</span>
+        <span className="text-micro text-ink3">{t("sleepLabel")}</span>
       </div>
 
-      <div className="flex items-center gap-1.5" role="group" aria-label="Fatigue du jour (1 à 5)">
-        <span className="mr-1 text-micro text-ink3">Fatigue</span>
+      <div className="flex items-center gap-1.5" role="group" aria-label={t("fatigueAria")}>
+        <span className="mr-1 text-micro text-ink3">{t("fatigue")}</span>
         {Array.from({ length: 5 }, (_, i) => (
           <button
             key={i}
@@ -78,18 +81,18 @@ export function MiniLogForm({
                 ? "border-clay bg-clay/15 text-clay"
                 : "border-hair text-ink3 hover:border-hairStrong"
             }`}
-            aria-label={`Fatigue ${i + 1}/5`}
+            aria-label={t("fatigueN", { n: i + 1 })}
           >
             {i + 1}
           </button>
         ))}
       </div>
 
-      <div className="flex items-center gap-1.5" role="group" aria-label="Douleurs">
-        <span className="mr-1 text-micro text-ink3">Douleur</span>
-        {["Rien", "Gêne", "Douleur", "Empêche"].map((label, i) => (
+      <div className="flex items-center gap-1.5" role="group" aria-label={t("painAria")}>
+        <span className="mr-1 text-micro text-ink3">{t("pain")}</span>
+        {[0, 1, 2, 3].map((i) => (
           <button
-            key={label}
+            key={i}
             type="button"
             onClick={() => {
               setPain(i);
@@ -97,7 +100,7 @@ export function MiniLogForm({
             }}
             className={`btn-quiet px-2 ${pain === i ? "bg-clay/10 text-clay" : ""}`}
           >
-            {label}
+            {t(`pain${i}`)}
           </button>
         ))}
       </div>
@@ -108,7 +111,7 @@ export function MiniLogForm({
         disabled={busy}
         className="btn-primary btn-sm ml-auto"
       >
-        {busy ? "…" : done ? "Enregistré ✓" : "Enregistrer"}
+        {busy ? "…" : done ? t("saved") : tc("save")}
       </button>
     </div>
   );

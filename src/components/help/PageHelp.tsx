@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { helpFor } from "@/lib/help";
 
@@ -11,7 +12,8 @@ import { helpFor } from "@/lib/help";
  */
 export function PageHelp() {
   const pathname = usePathname();
-  const help = helpFor(pathname);
+  const entry = helpFor(pathname);
+  const t = useTranslations("help");
   const [open, setOpen] = useState(false);
   const [align, setAlign] = useState<"left" | "right">("left");
   const rootRef = useRef<HTMLDivElement>(null);
@@ -39,7 +41,11 @@ export function PageHelp() {
     setOpen(false); // changer de page referme le panneau
   }, [pathname]);
 
-  if (!help) return null;
+  if (!entry) return null;
+
+  const title = t(`${entry.key}.title`);
+  const lines = t.raw(`${entry.key}.lines`) as string[];
+  const links = t.raw(`${entry.key}.links`) as Array<{ href: string; label: string }>;
 
   const toggle = () => {
     if (!open) {
@@ -62,8 +68,8 @@ export function PageHelp() {
             ? "border-clay text-clay"
             : "border-hair text-ink3 hover:border-clay hover:text-clay"
         }`}
-        aria-label="Aide sur cette page"
-        title="Aide sur cette page"
+        aria-label={t("pageAria")}
+        title={t("pageAria")}
       >
         ?
       </button>
@@ -74,25 +80,25 @@ export function PageHelp() {
             align === "right" ? "right-0" : "left-0"
           }`}
           role="dialog"
-          aria-label={`Aide : ${help.title}`}
+          aria-label={`${t("pageAria")} : ${title}`}
         >
           <div className="flex items-baseline justify-between gap-3">
-            <span className="text-sm font-semibold tracking-tight">{help.title}</span>
+            <span className="text-sm font-semibold tracking-tight">{title}</span>
             <Link href="/lexique" className="text-micro text-clay hover:underline" onClick={() => setOpen(false)}>
-              Lexique
+              {t("lexiqueLink")}
             </Link>
           </div>
           <ul className="mt-2.5 space-y-2">
-            {help.lines.map((line, i) => (
+            {lines.map((line, i) => (
               <li key={i} className="flex gap-2.5 text-[0.8125rem] leading-relaxed text-ink2">
                 <span className="mt-[8px] h-[5px] w-[5px] shrink-0 rounded-full bg-clay/60" />
                 {line}
               </li>
             ))}
           </ul>
-          {help.links && help.links.length > 0 && (
+          {links && links.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 border-t border-hair pt-2.5">
-              {help.links.map((l) => (
+              {links.map((l) => (
                 <Link
                   key={l.href}
                   href={l.href}

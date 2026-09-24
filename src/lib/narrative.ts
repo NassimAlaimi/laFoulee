@@ -6,10 +6,21 @@ import { periodStats, type ActivityLike } from "./stats";
  * tu cours, à quel moment, combien de kilomètres sur trois mois, et l'élan.
  * Rien de normatif — c'est un constat, pas un conseil.
  *
+ * Les textes sont des clés i18n (`season.*`) : la lib renvoie la liste
+ * des fragments à assembler (virgules en série, pas de conjonction finale).
+ *
  * Renvoie null tant qu'il n'y a pas assez de sorties récentes pour en dire
  * quelque chose d'honnête (moins de 4 sur 90 jours).
  */
-export function seasonSentence(activities: ActivityLike[], now = new Date()): string | null {
+export type SentencePart = {
+  key: string;
+  params?: Record<string, string | number>;
+};
+
+export function seasonSentence(
+  activities: ActivityLike[],
+  now = new Date()
+): SentencePart[] | null {
   const start = (days: number) => {
     const d = new Date(now);
     d.setDate(d.getDate() - days);
@@ -26,42 +37,43 @@ export function seasonSentence(activities: ActivityLike[], now = new Date()): st
 
   const perWeek = r.sessions / (90 / 7);
   const freq =
-    perWeek >= 5 ? "5 fois par semaine ou plus"
-    : perWeek >= 4 ? "environ 4 fois par semaine"
-    : perWeek >= 3 ? "environ 3 fois par semaine"
-    : perWeek >= 2 ? "environ 2 fois par semaine"
-    : "environ 1 fois par semaine";
+    perWeek >= 5 ? 5
+    : perWeek >= 4 ? 4
+    : perWeek >= 3 ? 3
+    : perWeek >= 2 ? 2
+    : 1;
 
-  const parts: string[] = [`Tu cours ${freq}`];
-  if (when.favoriteSlot !== null) parts.push(`surtout ${TIME_PHRASE[when.favoriteSlot]}`);
-  parts.push(`${fr(r.km)} km sur 3 mois`);
-  if (p.km >= 1 && p.sessions >= 4) parts.push(volumeDelta(r.km, p.km));
-  if (streak.days >= 5) parts.push(`dont ${streak.days} jours d'affilée`);
+  const parts: SentencePart[] = [{ key: `season.youRun${freq}` }];
+  if (when.favoriteSlot !== null) {
+    parts.push({ key: `season.slot${when.favoriteSlot}` });
+  }
+  parts.push({ key: "season.km", params: { km: fmt(r.km) } });
+  const delta = volumeDelta(r.km, p.km, p.sessions);
+  if (delta) parts.push(delta);
+  if (streak.days >= 5) {
+    parts.push({ key: "season.streak", params: { days: streak.days } });
+  }
 
-  // « Tu cours … , surtout … , N km … , dont … . » — les virgules en série,
-  // pas de conjonction finale.
-  return parts.join(", ") + ".";
+  return parts;
 }
-
-const TIME_PHRASE = [
-  "tôt le matin",
-  "en matinée",
-  "à la mi-journée",
-  "l'après-midi",
-  "le soir",
-  "tard le soir",
-];
 
 /** « +12 % », « −30 % », « stable », ou « soit 3,8 fois » pour les grands écarts. */
-function volumeDelta(current: number, previous: number): string {
+function volumeDelta(
+  current: number,
+  previous: number,
+  previousSessions: number
+): SentencePart | null {
+  if (previous < 1 || previousSessions < 4) return null;
   const diff = current - previous;
   const pct = Math.round((Math.abs(diff) / previous) * 100);
-  if (pct < 5) return "stable";
+  if (pct < 5) return { key: "season.stable" };
   if (diff > 0) {
-    return pct < 60 ? `+${pct} % vs les 3 mois d'avant` : `soit ${fr(round1(current / previous))} fois les 3 mois d'avant`;
+    return pct < 60
+      ? { key: "season.deltaUp", params: { pct } }
+      : { key: "season.deltaBig", params: { x: fmt(round1(current / previous)) } };
   }
-  return `−${pct} % vs les 3 mois d'avant`;
+  return { key: "season.deltaDown", params: { pct } };
 }
 
-const fr = (n: number) => n.toLocaleString("fr-FR", { maximumFractionDigits: 1 });
+const fmt = (n: number) => n.toLocaleString("fr-FR", { maximumFractionDigits: 1 });
 const round1 = (n: number) => Math.round(n * 10) / 10;

@@ -127,7 +127,7 @@ describe("buildInsights", () => {
     ];
     const found = buildInsights(input(runs)).find((i) => i.id === "gap");
     assert.ok(found, "la coupure de 24 jours doit être signalée");
-    assert.match(found!.evidence, /jours/);
+    assert.ok(found!.evidenceParams && Number(found!.evidenceParams.days) >= 10);
   });
 
   it("signale un excès d'intensité", () => {
@@ -154,9 +154,9 @@ describe("buildInsights", () => {
     const list = buildInsights(input(runs));
     assert.ok(list.length > 0);
     for (const i of list) {
-      assert.ok(i.evidence.trim().length > 0, `${i.id} sans preuve`);
-      assert.ok(i.title.trim().length > 0);
-      assert.ok(i.detail.trim().length > 0);
+      assert.ok(i.evidenceKey.trim().length > 0, `${i.id} sans preuve`);
+      assert.ok(i.titleKey.trim().length > 0);
+      assert.ok(i.detailKey.trim().length > 0);
     }
   });
 

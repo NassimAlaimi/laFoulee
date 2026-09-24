@@ -2,6 +2,22 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { buildCalendar, type IcsSession } from "@/lib/ics";
 import { KIND_LABELS, type SessionKind, type Step } from "@/lib/workouts";
+import fr from "../../../../../messages/fr.json";
+import en from "../../../../../messages/en.json";
+import es from "../../../../../messages/es.json";
+
+const MESSAGES = { fr, en, es } as const;
+
+/** Résout une clé i18n pointée (`common.kind.easy`) dans la langue du profil. */
+function resolve(lang: string, key: string): string {
+  const root = MESSAGES[lang as keyof typeof MESSAGES] ?? MESSAGES.fr;
+  let node: unknown = root;
+  for (const part of key.split(".")) {
+    node = (node as Record<string, unknown>)?.[part];
+    if (node === undefined) return key;
+  }
+  return typeof node === "string" ? node : key;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +35,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ tok
 
   const user = await prisma.user.findUnique({
     where: { calendarToken: token },
-    select: { id: true, firstname: true },
+    select: { id: true, firstname: true, language: true },
   });
   if (!user) return new Response("Introuvable", { status: 404 });
 
@@ -51,14 +67,16 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ tok
     }),
   ]);
 
+  const lang = user.language;
   const ics = buildCalendar({
-    name: "Foulée · entraînement",
+    name: resolve(lang, "common.calFeedName"),
+    paceWord: resolve(lang, "common.paceWord"),
     sessions: sessions.map(
       (s): IcsSession => ({
         id: s.id,
         date: s.date,
         title: s.title,
-        kindLabel: KIND_LABELS[s.kind as SessionKind] ?? s.kind,
+        kindLabel: resolve(lang, KIND_LABELS[s.kind as SessionKind] ?? `common.kind.${s.kind}`),
         tagline: s.tagline,
         distanceKm: s.distanceKm,
         durationMin: s.durationMin,

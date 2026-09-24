@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 export type AccountInfo = {
   name: string;
@@ -22,6 +23,7 @@ export function AccountMenu({ user }: { user: AccountInfo }) {
   const [busy, setBusy] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const t = useTranslations("account");
 
   useEffect(() => {
     if (!open) return;
@@ -70,8 +72,8 @@ export function AccountMenu({ user }: { user: AccountInfo }) {
             <div className="min-w-0">
               <div className="truncate text-[0.8125rem] font-medium">{user.name}</div>
               <div className="text-micro text-ink3">
-                Athlète {user.athleteId}
-                {user.admin && " · admin"}
+                {t("athlete", { id: user.athleteId })}
+                {user.admin && ` · ${t("admin")}`}
               </div>
             </div>
           </div>
@@ -84,7 +86,7 @@ export function AccountMenu({ user }: { user: AccountInfo }) {
             onClick={() => setOpen(false)}
             className="block rounded px-2.5 py-2 text-[0.8125rem] text-ink2 transition-colors hover:bg-sunken hover:text-ink"
           >
-            Réglages et compte Strava
+            {t("settingsLink")}
           </Link>
           <button
             type="button"
@@ -93,7 +95,7 @@ export function AccountMenu({ user }: { user: AccountInfo }) {
             disabled={busy}
             className="block w-full rounded px-2.5 py-2 text-left text-[0.8125rem] text-ink2 transition-colors hover:bg-sunken hover:text-ink disabled:opacity-50"
           >
-            {busy ? "Déconnexion…" : "Se déconnecter"}
+            {busy ? t("loggingOut") : t("logout")}
           </button>
         </div>
       )}

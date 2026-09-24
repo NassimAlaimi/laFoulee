@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fmtDuration, fmtPace } from "@/lib/format";
 import { quickCalc, type QuickResult } from "@/lib/quick-calc";
@@ -24,25 +25,25 @@ type Item = {
 };
 
 /** Pages de l'app et leur raccourci « g + lettre ». */
-export const PAGES: Array<{ href: string; label: string; key: string; keywords?: string }> = [
-  { href: "/", label: "Aujourd'hui", key: "r", keywords: "accueil dashboard tableau de bord résumé" },
-  { href: "/activities", label: "Activités", key: "a", keywords: "liste courses sorties" },
-  { href: "/activities?view=map", label: "Carte des parcours", key: "k", keywords: "heatmap chaleur tracés gps" },
-  { href: "/training", label: "Entraînement", key: "e", keywords: "plan séances semaine" },
-  { href: "/workouts", label: "Séances (bibliothèque)", key: "w", keywords: "vdot allures fractionné seuil" },
-  { href: "/goals", label: "Objectifs", key: "o", keywords: "course préparation plan de course gpx" },
-  { href: "/records", label: "Performance", key: "p", keywords: "records vdot prédictions chronos" },
-  { href: "/analysis", label: "Forme & charge", key: "n", keywords: "pmc forme fraîcheur ctl atl tsb polarisation" },
-  { href: "/analysis/modeles", label: "Modèles & seuils", key: "d", keywords: "vitesse critique seuils lt1 lt2 prédictions" },
-  { href: "/analysis/seances", label: "Séances passées", key: "v", keywords: "intervalles dérive efficience" },
-  { href: "/calculator", label: "Calculateur", key: "c", keywords: "vma allure chrono" },
-  { href: "/log", label: "Carnet quotidien", key: "j", keywords: "sommeil récupération score préparation" },
-  { href: "/corps", label: "Corps", key: "b", keywords: "musculation renfo force matériel chaussures" },
-  { href: "/strength", label: "Muscu", key: "m", keywords: "musculation renfo force" },
-  { href: "/gear", label: "Matériel", key: "t", keywords: "chaussures usure" },
-  { href: "/plus", label: "Plus", key: "u", keywords: "rétrospective réglages export agenda" },
-  { href: "/recap", label: "Rétrospective", key: "y", keywords: "année bilan wrapped résumé annuel mois" },
-  { href: "/settings", label: "Réglages", key: "s", keywords: "profil strava compte" },
+export const PAGES: Array<{ href: string; labelKey: string; key: string; keywords?: string }> = [
+  { href: "/", labelKey: "today", key: "r", keywords: "accueil dashboard tableau de bord résumé" },
+  { href: "/activities", labelKey: "activities", key: "a", keywords: "liste courses sorties" },
+  { href: "/activities?view=map", labelKey: "map", key: "k", keywords: "heatmap chaleur tracés gps" },
+  { href: "/training", labelKey: "training", key: "e", keywords: "plan séances semaine" },
+  { href: "/workouts", labelKey: "workouts", key: "w", keywords: "vdot allures fractionné seuil" },
+  { href: "/goals", labelKey: "goals", key: "o", keywords: "course préparation plan de course gpx" },
+  { href: "/records", labelKey: "records", key: "p", keywords: "records vdot prédictions chronos" },
+  { href: "/analysis", labelKey: "analysis", key: "n", keywords: "pmc forme fraîcheur ctl atl tsb polarisation" },
+  { href: "/analysis/modeles", labelKey: "modeles", key: "d", keywords: "vitesse critique seuils lt1 lt2 prédictions" },
+  { href: "/analysis/seances", labelKey: "seances", key: "v", keywords: "intervalles dérive efficience" },
+  { href: "/calculator", labelKey: "calculator", key: "c", keywords: "vma allure chrono" },
+  { href: "/log", labelKey: "log", key: "j", keywords: "sommeil récupération score préparation" },
+  { href: "/corps", labelKey: "corps", key: "b", keywords: "musculation renfo force matériel chaussures" },
+  { href: "/strength", labelKey: "strength", key: "m", keywords: "musculation renfo force" },
+  { href: "/gear", labelKey: "gear", key: "t", keywords: "chaussures usure" },
+  { href: "/plus", labelKey: "plus", key: "u", keywords: "rétrospective réglages export agenda" },
+  { href: "/recap", labelKey: "recap", key: "y", keywords: "année bilan wrapped résumé annuel mois" },
+  { href: "/settings", labelKey: "settings", key: "s", keywords: "profil strava compte" },
 ];
 
 const strip = (s: string) =>
@@ -51,13 +52,13 @@ const strip = (s: string) =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
-/** Ressenti (1-5) → mot cherchable. */
+/** Ressenti (1-5) → mot cherchable, résolu à l'affichage. */
 const FEELING_WORD: Record<number, string> = {
-  1: "très dur",
-  2: "dur",
-  3: "correct",
-  4: "bien",
-  5: "excellent",
+  1: "palette.feelings.1",
+  2: "palette.feelings.2",
+  3: "palette.feelings.3",
+  4: "palette.feelings.4",
+  5: "palette.feelings.5",
 };
 
 function score(item: Item, q: string): number {
@@ -74,8 +75,8 @@ function score(item: Item, q: string): number {
   return s;
 }
 
-const shortDate = (iso: string) =>
-  new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "2-digit" });
+const shortDate = (iso: string, locale: string) =>
+  new Date(iso).toLocaleDateString(locale, { day: "numeric", month: "short", year: "2-digit" });
 
 /**
  * Palette de commandes (⌘K / Ctrl+K ou « / »).
@@ -86,6 +87,8 @@ const shortDate = (iso: string) =>
  */
 export function CommandPalette() {
   const router = useRouter();
+  const t = useTranslations("palette");
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(0);
@@ -177,8 +180,8 @@ export function CommandPalette() {
   const baseItems = useMemo<Item[]>(() => {
     const nav: Item[] = PAGES.map((p) => ({
       id: `nav:${p.href}`,
-      group: "Aller à",
-      label: p.label,
+      group: t("go"),
+      label: t(`pages.${p.labelKey}`),
       keywords: p.keywords,
       shortcut: ["g", p.key],
       run: () => go(p.href),
@@ -186,11 +189,11 @@ export function CommandPalette() {
     const actions: Item[] = [
       {
         id: "act:sync",
-        group: "Actions",
-        label: "Synchroniser Strava",
+        group: t("actions"),
+        label: t("sync"),
         keywords: "import mise à jour refresh",
         run: async () => {
-          setStatus("Synchronisation en cours…");
+          setStatus(t("syncRunning"));
           const res = await fetch("/api/strava/sync", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -199,8 +202,8 @@ export function CommandPalette() {
           const data = res ? await res.json().catch(() => null) : null;
           setStatus(
             data?.ok
-              ? `${data.imported} nouvelle${data.imported > 1 ? "s" : ""} activité${data.imported > 1 ? "s" : ""} · ${data.updated} mise${data.updated > 1 ? "s" : ""} à jour`
-              : `Échec : ${data?.error ?? "réseau indisponible"}`
+              ? t("syncResult", { n: data.imported, m: data.updated })
+              : t("syncFail", { error: data?.error ?? "network" })
           );
           router.refresh();
           loadIndex();
@@ -208,8 +211,8 @@ export function CommandPalette() {
       },
       {
         id: "act:theme",
-        group: "Actions",
-        label: "Basculer thème clair / sombre",
+        group: t("actions"),
+        label: t("theme"),
         keywords: "dark light nuit jour",
         shortcut: ["⇧", "D"],
         run: () => {
@@ -219,36 +222,36 @@ export function CommandPalette() {
       },
       {
         id: "act:strength",
-        group: "Actions",
-        label: "Saisir une séance de musculation",
+        group: t("actions"),
+        label: t("strength"),
         keywords: "muscu renfo nouvelle séance log",
         run: () => go("/strength/new"),
       },
       {
         id: "act:plan",
-        group: "Actions",
-        label: "Plan d'entraînement : créer ou consulter",
+        group: t("actions"),
+        label: t("planAction"),
         keywords: "nouveau plan générer semaine",
         run: () => go("/training"),
       },
       {
         id: "act:goal",
-        group: "Actions",
-        label: "Ajouter un objectif de course",
+        group: t("actions"),
+        label: t("goalAction"),
         keywords: "nouvelle course objectif",
         run: () => go("/goals#nouvel-objectif"),
       },
       {
         id: "act:ics",
-        group: "Actions",
-        label: "Abonner mon agenda au plan",
+        group: t("actions"),
+        label: t("ics"),
         keywords: "calendrier ics google apple outlook agenda",
         run: () => go("/settings#agenda"),
       },
       {
         id: "act:help",
-        group: "Actions",
-        label: "Raccourcis clavier",
+        group: t("actions"),
+        label: t("helpAction"),
         keywords: "aide help touches",
         shortcut: ["?"],
         run: () => setHelp(true),
@@ -256,25 +259,25 @@ export function CommandPalette() {
     ];
     const acts: Item[] = (index?.activities ?? []).map((a) => ({
       id: `a:${a.id}`,
-      group: "Séances",
+      group: t("sessions"),
       label: a.name,
-      hint: `${shortDate(a.date)} · ${a.km > 0 ? `${a.km} km · ` : ""}${fmtDuration(a.time)}`,
-      keywords: `${shortDate(a.date)} ${new Date(a.date).toLocaleDateString("fr-FR", { month: "long", year: "numeric", weekday: "long" })} ${a.km}km ${Math.round(a.km)}k ${a.type} ${a.race ? "course race compétition" : ""} ${a.note ?? ""} ${a.feeling ? FEELING_WORD[a.feeling] ?? "" : ""}`,
+      hint: `${shortDate(a.date, locale)} · ${a.km > 0 ? `${a.km} km · ` : ""}${fmtDuration(a.time)}`,
+      keywords: `${shortDate(a.date, locale)} ${new Date(a.date).toLocaleDateString(locale, { month: "long", year: "numeric", weekday: "long" })} ${a.km}km ${Math.round(a.km)}k ${a.type} ${a.race ? "course race compétition" : ""} ${a.note ?? ""} ${a.feeling ? t(FEELING_WORD[a.feeling]) : ""}`,
       run: () => go(`/activities/${a.id}`),
     }));
     const goals: Item[] = (index?.goals ?? []).map((g) => ({
       id: `g:${g.id}`,
-      group: "Objectifs",
+      group: t("goals"),
       label: g.name,
-      hint: `${shortDate(g.date)} · ${g.km} km`,
+      hint: `${shortDate(g.date, locale)} · ${g.km} km`,
       keywords: "objectif course",
       run: () => go(`/goals/${g.id}`),
     }));
     const plans: Item[] = (index?.plans ?? []).map((p) => ({
       id: `p:${p.id}`,
-      group: "Plans",
+      group: t("plans"),
       label: p.name,
-      hint: p.status === "active" ? "actif" : p.status,
+      hint: p.status === "active" ? t("activePlan") : p.status,
       keywords: "plan entraînement",
       run: () => go(`/training/${p.id}`),
     }));
@@ -295,7 +298,7 @@ export function CommandPalette() {
       .filter((x) => x.s > 0)
       .sort((a, b) => b.s - a.s);
     // On garde l'ordre des groupes, et au plus 8 séances
-    const groups = ["Aller à", "Actions", "Objectifs", "Plans", "Séances"];
+    const groups = [t("go"), t("actions"), t("goals"), t("plans"), t("sessions")];
     return groups.flatMap((g) =>
       scored
         .filter((x) => x.i.group === g)
@@ -307,8 +310,8 @@ export function CommandPalette() {
   const calcItem: Item | null = calc
     ? {
         id: "calc",
-        group: "Calcul express",
-        label: "Ouvrir dans le calculateur",
+        group: t("calc"),
+        label: t("openCalc"),
         run: () => go("/calculator"),
       }
     : null;
@@ -361,7 +364,7 @@ export function CommandPalette() {
       <div
         role="dialog"
         aria-modal
-        aria-label="Palette de commandes"
+        aria-label={t("aria")}
         className="palette w-full max-w-[640px] overflow-hidden rounded-[14px] border border-hairStrong bg-panel shadow-[0_24px_80px_-12px_rgb(0_0_0/0.35)]"
         onKeyDown={onKeyDown}
       >
@@ -378,7 +381,7 @@ export function CommandPalette() {
               setHelp(false);
               setStatus(null);
             }}
-            placeholder="Aller à, chercher une séance, ou calculer « 10k 48:30 »…"
+            placeholder={t("placeholder")}
             className="h-14 flex-1 bg-transparent text-[1.0625rem] placeholder:text-ink3"
             aria-autocomplete="list"
             spellCheck={false}
@@ -400,11 +403,11 @@ export function CommandPalette() {
             {calc && <CalcCard r={calc} />}
             {all.length === 0 && (
               <div className="px-3 py-10 text-center text-sm text-ink3">
-                Rien ne correspond à « {q} ».
+                {t("noResult", { q })}
               </div>
             )}
             {all.map((item, i) => {
-              const header = item.group !== lastGroup && item.group !== "Calcul express";
+              const header = item.group !== lastGroup && item.group !== t("calc");
               lastGroup = item.group;
               return (
                 <div key={item.id}>
@@ -444,13 +447,13 @@ export function CommandPalette() {
         <div className="flex items-center gap-4 border-t border-hair bg-sunken/40 px-4 py-2 text-micro text-ink3">
           <span className="flex items-center gap-1">
             <kbd className="kbd">↑</kbd>
-            <kbd className="kbd">↓</kbd> naviguer
+            <kbd className="kbd">↓</kbd> {t("navigate")}
           </span>
           <span className="flex items-center gap-1">
-            <kbd className="kbd">↵</kbd> ouvrir
+            <kbd className="kbd">↵</kbd> {t("openWord")}
           </span>
           <span className="ml-auto flex items-center gap-1">
-            <kbd className="kbd">?</kbd> raccourcis
+            <kbd className="kbd">?</kbd> {t("shortcuts")}
           </span>
         </div>
       </div>
@@ -459,11 +462,12 @@ export function CommandPalette() {
 }
 
 function CalcCard({ r }: { r: QuickResult }) {
+  const t = useTranslations("palette");
   if (r.kind === "pace") {
     return (
       <div className="mb-1 rounded-[10px] border border-hair bg-bg p-4">
         <div className="flex items-baseline justify-between">
-          <span className="text-micro font-medium uppercase tracking-[0.11em] text-clay">Calcul express</span>
+          <span className="text-micro font-medium uppercase tracking-[0.11em] text-clay">{t("calc")}</span>
           <span className="font-mono text-micro text-ink3">{r.kmh} km/h</span>
         </div>
         <div className="mt-2 flex items-baseline gap-1.5">
@@ -484,7 +488,7 @@ function CalcCard({ r }: { r: QuickResult }) {
   return (
     <div className="mb-1 rounded-[10px] border border-hair bg-bg p-4">
       <div className="flex items-baseline justify-between">
-        <span className="text-micro font-medium uppercase tracking-[0.11em] text-clay">Calcul express</span>
+        <span className="text-micro font-medium uppercase tracking-[0.11em] text-clay">{t("calc")}</span>
         <span className="font-mono text-micro text-ink3">
           {(r.meters / 1000).toFixed(r.meters % 1000 ? 2 : 0)} km en {fmtDuration(r.seconds)}
         </span>
@@ -503,7 +507,7 @@ function CalcCard({ r }: { r: QuickResult }) {
         <div className="mt-3 grid grid-cols-4 gap-2 border-t border-hair pt-3">
           {r.equivalents.map((s) => (
             <div key={s.label}>
-              <div className="text-micro text-ink3">{s.label} équivalent</div>
+              <div className="text-micro text-ink3">{t("equiv", { label: s.label })}</div>
               <div className="font-mono text-[0.8125rem] font-medium">{fmtDuration(s.seconds)}</div>
             </div>
           ))}
@@ -514,20 +518,21 @@ function CalcCard({ r }: { r: QuickResult }) {
 }
 
 function ShortcutHelp() {
+  const t = useTranslations("palette");
   const rows: Array<[string[], string]> = [
-    [["⌘", "K"], "Ouvrir la palette (ou /)"],
-    [["?"], "Cette aide"],
-    [["⇧", "D"], "Thème clair / sombre"],
-    [["←", "→"], "Séance précédente / suivante (fiche activité)"],
-    [["Échap"], "Revenir à la liste"],
+    [["⌘", "K"], t("openPalette")],
+    [["?"], t("thisHelp")],
+    [["⇧", "D"], t("themeShortcut")],
+    [["←", "→"], t("prevNext")],
+    [["Échap"], t("backToList")],
   ];
   return (
     <div className="grid max-h-[60vh] gap-8 overflow-y-auto p-5 sm:grid-cols-2">
       <div>
-        <div className="eyebrow mb-3">Navigation · g puis…</div>
+        <div className="eyebrow mb-3">{t("navG")}</div>
         {PAGES.map((p) => (
           <div key={p.href} className="flex items-center justify-between border-b border-hair py-1.5 text-[0.8125rem] last:border-b-0">
-            <span className="text-ink2">{p.label}</span>
+            <span className="text-ink2">{t(`pages.${p.labelKey}`)}</span>
             <span className="flex gap-0.5">
               <kbd className="kbd">g</kbd>
               <kbd className="kbd">{p.key}</kbd>
@@ -536,7 +541,7 @@ function ShortcutHelp() {
         ))}
       </div>
       <div>
-        <div className="eyebrow mb-3">Partout</div>
+        <div className="eyebrow mb-3">{t("everywhere")}</div>
         {rows.map(([keys, label]) => (
           <div key={label} className="flex items-center justify-between gap-3 border-b border-hair py-1.5 text-[0.8125rem] last:border-b-0">
             <span className="text-ink2">{label}</span>
@@ -549,9 +554,9 @@ function ShortcutHelp() {
             </span>
           </div>
         ))}
-        <div className="eyebrow mb-2 mt-6">Calcul express</div>
+        <div className="eyebrow mb-2 mt-6">{t("calc")}</div>
         <p className="text-[0.8125rem] leading-relaxed text-ink2">
-          Tape une performance ou une allure dans la palette :
+          {t("calcHint")}
         </p>
         <div className="mt-2 flex flex-wrap gap-1.5 font-mono text-micro">
           {["5k 24:30", "semi 1h45", "10 km en 49'50", "4'45/km", "13 km/h"].map((x) => (

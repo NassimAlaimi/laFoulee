@@ -38,7 +38,8 @@ export default async function RootLayout({
 
   // La langue vit sur le profil (persistante entre appareils) et dans le
   // cookie NEXT_LOCALE (consommé à chaque requête). Le profil fait foi :
-  // cookie absent ou divergent → on le réaligne et on re-rend une fois.
+  // cookie absent ou divergent → une redirection via /api/lang-sync pose le
+  // cookie (le layout ne peut pas en écrire), puis la page se re-rend.
   const cookieStore = await cookies();
   const cookieLang = cookieStore.get("NEXT_LOCALE")?.value;
   const user = await currentUser();
@@ -47,12 +48,8 @@ export default async function RootLayout({
       ? user.language
       : null;
   if (profileLang && cookieLang !== profileLang && profileLang !== locale) {
-    cookieStore.set("NEXT_LOCALE", profileLang, {
-      path: "/",
-      maxAge: 60 * 60 * 24 * 365,
-    });
     const path = (await headers()).get("x-invoke-path") ?? "/";
-    redirect(path);
+    redirect(`/api/lang-sync?lang=${profileLang}&next=${encodeURIComponent(path)}`);
   }
 
   // La nav n'est pas rendue tant qu'il n'y a pas de session : la page de

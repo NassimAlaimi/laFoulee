@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   bubblePosition,
   centeredBubble,
@@ -31,6 +32,7 @@ const PAD = 10; // respire du projecteur autour de l'ancre
 export function GuidedTour() {
   const router = useRouter();
   const pathname = usePathname();
+  const t = useTranslations("tour");
 
   const [active, setActive] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
@@ -254,7 +256,7 @@ export function GuidedTour() {
   const projectorHidden = navigating || settling;
 
   return (
-    <div className="fixed inset-0 z-[70]" role="dialog" aria-modal="true" aria-label="Visite guidée">
+    <div className="fixed inset-0 z-[70]" role="dialog" aria-modal="true" aria-label={t("ariaLabel")}>
       {/* Fond assombri avec la fenêtre du projecteur — reste allumé en
           permanence : éteindre/rallumer le fond à chaque étape faisait
           clignoter tout l'écran. Seul l'anneau s'efface pendant les
@@ -320,17 +322,19 @@ export function GuidedTour() {
 
             <div className="flex items-center justify-between gap-3">
               <span className="text-micro font-medium uppercase tracking-[0.16em] text-clay">
-                {last ? "Dernière étape" : `Visite guidée · ${stepIndex + 1}/${TOUR_STEPS.length - 1}`}
+                {last
+                  ? t("lastStep")
+                  : t("kicker", { n: stepIndex + 1, total: TOUR_STEPS.length - 1 })}
               </span>
               <button type="button" onClick={finish} className="text-micro text-ink3 hover:text-ink">
-                Passer
+                {t("skip")}
               </button>
             </div>
 
             <h2 className="mt-2.5 text-lg font-semibold leading-snug tracking-[-0.01em]">
-              {step.title}
+              {t(`steps.${step.id}.title`)}
             </h2>
-            <p className="mt-2 text-sm leading-relaxed text-ink2">{step.body}</p>
+            <p className="mt-2 text-sm leading-relaxed text-ink2">{t(`steps.${step.id}.body`)}</p>
 
             <div className="mt-5 flex items-center justify-between gap-4">
               <div className="flex items-center gap-1.5" aria-hidden>
@@ -347,12 +351,12 @@ export function GuidedTour() {
               </div>
               <div className="flex items-center gap-2">
                 {stepIndex > 0 && (
-                  <button type="button" onClick={prev} className="btn-quiet">
+                  <button type="button" onClick={prev} className="btn-quiet" aria-label={t("previous")}>
                     ←
                   </button>
                 )}
                 <button type="button" onClick={next} className="btn-primary btn-sm">
-                  {last ? "C'est parti →" : "Suivant →"}
+                  {last ? `${t("finish")} →` : `${t("next")} →`}
                 </button>
               </div>
             </div>

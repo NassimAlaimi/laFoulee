@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { notFound, redirect } from "next/navigation";
 import { FormChart } from "@/components/charts/Lazy";
 import { VolumeCurve } from "@/components/training/PlanBuilder";
@@ -30,6 +31,7 @@ export default async function GoalDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const t = await getTranslations("common");
   const { id } = await params;
   const userId = await requireUserId();
   // findFirst + userId : l'objectif d'un autre utilisateur donne un 404, pas
@@ -189,7 +191,7 @@ export default async function GoalDetailPage({
           value={raceForm ? `${raceForm.tsb > 0 ? "+" : ""}${Math.round(raceForm.tsb)}` : "—"}
           note={
             raceForm
-              ? `${ZONE_LABEL[raceForm.zone]} · condition ${Math.round(raceForm.ctl)}`
+              ? `${t(ZONE_LABEL[raceForm.zone])} · condition ${Math.round(raceForm.ctl)}`
               : plan
                 ? "au-delà de la projection"
                 : "aucun plan rattaché"

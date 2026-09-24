@@ -13,7 +13,67 @@
     "loading": "Loading…",
     "error": "Something went wrong",
     "today": "Today",
-    "empty": "Nothing here yet"
+    "empty": "Nothing here yet",
+    "phase": {
+      "base": "Base",
+      "build": "Build",
+      "peak": "Specific",
+      "deload": "Deload",
+      "taper": "Taper",
+      "race": "Race"
+    },
+    "kind": {
+      "rest": "Rest",
+      "recovery": "Recovery",
+      "easy": "Easy",
+      "long": "Long run",
+      "tempo": "Tempo",
+      "threshold": "Threshold",
+      "intervals": "VO2max",
+      "hills": "Hills",
+      "fartlek": "Fartlek",
+      "strides": "Strides",
+      "race": "Race",
+      "strength": "Strength",
+      "cross": "Cross-training",
+      "mobility": "Mobility"
+    },
+    "formZone": {
+      "fresh": "Fresh",
+      "optimal": "Peak shape",
+      "neutral": "Neutral",
+      "productive": "Building",
+      "overreaching": "Overreaching"
+    },
+    "acwr": {
+      "insufficient": "Insufficient history",
+      "detraining": "Under-load",
+      "optimal": "Optimal zone",
+      "caution": "Caution",
+      "danger": "High risk"
+    },
+    "readiness": {
+      "ready": "Ready",
+      "solid": "Solid",
+      "fragile": "Fragile",
+      "recover": "Recover"
+    },
+    "intensity": {
+      "1": "very easy",
+      "2": "easy",
+      "3": "moderate",
+      "4": "hard",
+      "5": "maximal"
+    },
+    "compliance": {
+      "upcoming": "upcoming",
+      "empty": "no runs",
+      "good": "on track",
+      "fair": "partial",
+      "low": "falling behind"
+    },
+    "calFeedName": "Foulée · training",
+    "paceWord": "pace"
   },
   "nav": {
     "today": "Today",
@@ -31,6 +91,707 @@
   "settings": {
     "language": "Language",
     "languageTitle": "Interface language",
-    "languageNote": "French remains the default language. Your choice is saved to your profile and follows you across devices."
+    "languageNote": "French remains the default language. Your choice is saved to your profile and follows you across devices.",
+    "calConfirm": "The old address will stop working. Continue?",
+    "calBody": "Your planned sessions and goal races, directly in your calendar. Plan changes (rescheduling, moved session) carry over automatically.",
+    "calActivate": "Enable subscription",
+    "calAddress": "Calendar address",
+    "calCopied": "Copied ✓",
+    "calCopy": "Copy",
+    "calOpenApple": "Open in Calendar (Apple)",
+    "calAddGoogle": "Add to Google Calendar",
+    "calDownload": "Download the .ics",
+    "calOutlookLabel": "Outlook:",
+    "calOutlookBody": "Add calendar → From Internet → paste the address. Calendars resync on their own (from a few minutes to 24 h depending on the service).",
+    "calPrivacyLabel": "Privacy:",
+    "calPrivacyBody": "anyone with this address can read your plan. Regenerate it if you shared it by mistake.",
+    "calRegenerate": "Regenerate address",
+    "calDisable": "Disable",
+    "confirmQuestion": "Confirm?",
+    "yes": "Yes",
+    "disconnect": "Disconnect"
+  },
+  "help": {
+    "today": {
+      "title": "Today",
+      "lines": [
+        "Your morning page: today's session, your freshness (TSB) and the mini-log that feeds your readiness score.",
+        "The numbers come from your synced runs — the more you run, the more this page has to say."
+      ],
+      "links": [
+        {
+          "href": "/training",
+          "label": "View the plan"
+        },
+        {
+          "href": "/log",
+          "label": "Full log"
+        }
+      ]
+    },
+    "log": {
+      "title": "The log",
+      "lines": [
+        "Sleep, fatigue, mood, aches: one line per day, as many passes as you like.",
+        "The readiness score (0-100) is built on transparent penalties — every deduction is explained.",
+        "The correlation with your load (ATL) tells you whether your morning shape responds to training."
+      ],
+      "links": [
+        {
+          "href": "/",
+          "label": "Back to Today"
+        }
+      ]
+    },
+    "activities": {
+      "title": "Your activities",
+      "lines": [
+        "Everything you have run, imported from Strava. Click a run for its card: route, heart-rate curve, detected intervals.",
+        "Private notes and perceived effort are never overwritten by sync."
+      ],
+      "links": []
+    },
+    "training": {
+      "title": "Your training plan",
+      "lines": [
+        "The plan recalibrates every week from your check-ins: pain, fatigue, available days.",
+        "The Compliance section compares what was planned to what was actually done, week by week.",
+        "Mark sessions as done to feed both."
+      ],
+      "links": [
+        {
+          "href": "/workouts",
+          "label": "Workout library"
+        },
+        {
+          "href": "/goals",
+          "label": "Goals"
+        }
+      ]
+    },
+    "workouts": {
+      "title": "The workout library",
+      "lines": [
+        "The fundamental sessions of race preparation, with your paces computed from your VDOT.",
+        "An all-out 5 km recalibrates every pace — that's the “Calibration test” session."
+      ],
+      "links": []
+    },
+    "goals": {
+      "title": "Your race goals",
+      "lines": [
+        "A goal opens the countdown, the training plan and the race plan.",
+        "In the race plan, import the course GPX: paces adjust to the gradient."
+      ],
+      "links": []
+    },
+    "analysis": {
+      "title": "Fitness & load",
+      "lines": [
+        "Fitness (CTL), fatigue (ATL), freshness (TSB): the model used by pro teams.",
+        "The intensity distribution checks the 80% easy / 20% hard rule."
+      ],
+      "links": [
+        {
+          "href": "/analysis/modeles",
+          "label": "Models & thresholds"
+        },
+        {
+          "href": "/analysis/seances",
+          "label": "Past sessions"
+        }
+      ]
+    },
+    "modeles": {
+      "title": "Models & thresholds",
+      "lines": [
+        "Critical speed, potential/realistic predictions, LT1/LT2 thresholds: your measured abilities.",
+        "Thresholds are read from your actual pace → heart-rate relationship, not from generic percentages."
+      ],
+      "links": []
+    },
+    "seances": {
+      "title": "Past sessions",
+      "lines": [
+        "Intervals are detected automatically in your kilometres, with consistency and fatigue.",
+        "Aerobic decoupling (< 5% = good) and efficiency (EF) tell the story of your endurance development."
+      ],
+      "links": []
+    },
+    "records": {
+      "title": "Performance",
+      "lines": [
+        "Your records, your level (VDOT) and your predictions by distance.",
+        "VDOT rises when a record falls — it calibrates every pace in the app."
+      ],
+      "links": [
+        {
+          "href": "/calculator",
+          "label": "Quick calculator"
+        }
+      ]
+    },
+    "calculator": {
+      "title": "The calculator",
+      "lines": [
+        "Enter a recent performance (a race, an all-out 5 km): the app derives your level and all your paces.",
+        "Pre-filled with your real best performance."
+      ],
+      "links": []
+    },
+    "corps": {
+      "title": "Body",
+      "lines": [
+        "Runner strength training (with load guardrails) and your shoes' mileage.",
+        "Strength work makes the plan sustainable: it's the foundation, not the appendix."
+      ],
+      "links": [
+        {
+          "href": "/strength",
+          "label": "Strength"
+        },
+        {
+          "href": "/gear",
+          "label": "Gear"
+        }
+      ]
+    },
+    "strength": {
+      "title": "Strength",
+      "lines": [
+        "Workouts, 1RM, relative strength, strength goals and load guardrails (strength ACWR).",
+        "Pin your favourite exercises to find them first."
+      ],
+      "links": []
+    },
+    "gear": {
+      "title": "Gear",
+      "lines": [
+        "The mileage of each pair and its replacement threshold.",
+        "Mark a pair as “main”: it shows up on the Body hub."
+      ],
+      "links": []
+    },
+    "plus": {
+      "title": "More",
+      "lines": [
+        "The printable yearly retrospective, the iCal feed, your data export and settings.",
+        "This is also where the guided tour lives, if you want to do it again."
+      ],
+      "links": [
+        {
+          "href": "/lexique",
+          "label": "Glossary"
+        }
+      ]
+    },
+    "settings": {
+      "title": "Settings",
+      "lines": [
+        "Strava connection, sync, athlete profile (HR, weight…) and preferences.",
+        "The profile fields feed the models: the more you fill in, the more accurate the numbers."
+      ],
+      "links": [
+        {
+          "href": "/lexique",
+          "label": "Glossary"
+        }
+      ]
+    },
+    "recap": {
+      "title": "The retrospective",
+      "lines": [
+        "Your year at a glance: kilometres, races, records, consistency. Printable.",
+        "The whole year on a timeline — perfect for measuring how far you have come."
+      ],
+      "links": []
+    },
+    "lexique": {
+      "title": "The glossary",
+      "lines": [
+        "Every term of the app translated into plain language.",
+        "CTL, VDOT, thresholds, efficiency: come back here whenever a number resists you."
+      ],
+      "links": []
+    },
+    "pageAria": "Help for this page",
+    "lexiqueLink": "Glossary"
+  },
+  "lexique": {
+    "title": "Glossary",
+    "kicker": "The terms, simply put",
+    "meta": "CTL, VDOT, thresholds, efficiency — every number of the app, translated.",
+    "missingTitle": "Missing a term?",
+    "missingBody": "Definitions grow with each release. Come back through the “?” on any page or the More hub.",
+    "terms": {
+      "ctl": {
+        "term": "CTL",
+        "def": "Fitness. Your 42-day average load — your “base”: it rises slowly and fades slowly."
+      },
+      "atl": {
+        "term": "ATL",
+        "def": "Fatigue. Your 7-day average load — what you have absorbed recently."
+      },
+      "tsb": {
+        "term": "TSB",
+        "def": "Freshness = fitness − fatigue. Negative during loading phases, positive when you are tapered. The peak-shape number."
+      },
+      "acwr": {
+        "term": "ACWR",
+        "def": "Acute load (7 d) / chronic load (28 d) ratio. Above 1.5, the ramp-up is steep: injury risk."
+      },
+      "trimp": {
+        "term": "TRIMP",
+        "def": "A session's training load, computed from its duration and your heart rate (or a distance equivalent)."
+      },
+      "vdot": {
+        "term": "VDOT",
+        "def": "Your fitness level as one number (≈ effective VO2max), derived from your best performance. It calibrates every pace in the app."
+      },
+      "vma": {
+        "term": "vVO2max",
+        "def": "Maximal aerobic speed — the pace at which you consume your maximum oxygen, sustainable for ~6 minutes."
+      },
+      "cs": {
+        "term": "Critical speed",
+        "abbr": "CS",
+        "def": "The pace you can hold for a long time (~45-60 min). Computed from your 2- to 20-minute efforts."
+      },
+      "dprime": {
+        "term": "D′",
+        "def": "Anaerobic reserve: the distance you can run above your critical speed before blowing up. A small D′ = diesel profile."
+      },
+      "lt1": {
+        "term": "LT1",
+        "def": "Aerobic threshold: the boundary between easy endurance and sustained work. Below it, you can talk."
+      },
+      "lt2": {
+        "term": "LT2",
+        "def": "Anaerobic threshold: the fastest pace you can hold without accumulating lactate. Close to your critical speed."
+      },
+      "ef": {
+        "term": "Efficiency",
+        "abbr": "EF",
+        "def": "Metres per minute per heartbeat. It rises when the same heart produces more speed: the marker of your aerobic base."
+      },
+      "decoupling": {
+        "term": "Aerobic decoupling",
+        "def": "Efficiency loss between the first and second half of a run. Under 5%, your endurance holds the distance."
+      },
+      "polarization": {
+        "term": "Polarization",
+        "def": "Your volume distribution: ~80% easy, ~20% hard. Avoid the “grey zone” in between."
+      },
+      "fatigueExponent": {
+        "term": "Fatigue exponent",
+        "def": "How your pace degrades when distance doubles (reference: +4.2%). Measured on your own performances."
+      },
+      "negativeSplit": {
+        "term": "Negative split",
+        "def": "Finishing faster than you started — the most reliable racing strategy over long distances."
+      },
+      "oneRm": {
+        "term": "1RM",
+        "def": "One-rep max: the load you can lift a single time, estimated from your strength sets."
+      },
+      "rpe": {
+        "term": "RPE",
+        "def": "Perceived effort, rated from 1 to 10. Complements the numbers when the watch is not enough."
+      }
+    }
+  },
+  "home": {
+    "onboarding": {
+      "title": "Get started",
+      "steps": {
+        "strava": "Connect your Strava account",
+        "sync": "Sync your activities",
+        "goal": "Create a race goal",
+        "log": "Fill the log 3 days in a row"
+      }
+    },
+    "season": {
+      "youRun5": "You run 5 times a week or more",
+      "youRun4": "You run about 4 times a week",
+      "youRun3": "You run about 3 times a week",
+      "youRun2": "You run about 2 times a week",
+      "youRun1": "You run about once a week",
+      "slot0": "mostly early in the morning",
+      "slot1": "mostly in the morning",
+      "slot2": "mostly around midday",
+      "slot3": "mostly in the afternoon",
+      "slot4": "mostly in the evening",
+      "slot5": "mostly late at night",
+      "km": "{km} km over 3 months",
+      "deltaUp": "+{pct}% vs the previous 3 months",
+      "deltaDown": "−{pct}% vs the previous 3 months",
+      "deltaBig": "that is {x} times the previous 3 months",
+      "stable": "stable",
+      "streak": "including {days} days in a row"
+    },
+    "insights": {
+      "none": "Nothing to report over the period — keep it up.",
+      "tone": {
+        "good": "Positive",
+        "warn": "Watch out",
+        "risk": "Alert",
+        "neutral": "Note"
+      },
+      "acwr-danger": {
+        "title": "Load rising too fast",
+        "detail": "Your recent volume clearly exceeds what your body is used to absorbing. This is the classic configuration that precedes an injury. Plan a lighter week of 30 to 40%.",
+        "evidence": "Load ratio {ratio} (healthy zone: 0.80 – 1.30)"
+      },
+      "acwr-caution": {
+        "title": "Load rising markedly",
+        "detail": "Nothing alarming, but you are above the comfort zone. Stabilise the volume for one week before ramping up again.",
+        "evidence": "Load ratio {ratio}"
+      },
+      "acwr-low": {
+        "title": "Room to increase",
+        "detail": "Your recent load is below your habit. You can raise volume progressively, without exceeding +10% per week.",
+        "evidence": "Load ratio {ratio}"
+      },
+      "volume-jump": {
+        "title": "Weekly volume spike",
+        "detail": "The +10% per week rule limits the risk of overuse injury. You have gone well past it.",
+        "evidence": "{prev} km then {now} km (+{pct}%)"
+      },
+      "gap": {
+        "title": "Break in training",
+        "detail": "Aerobic adaptations start fading after about 10 days without stimulus. Resume progressively rather than jumping back to your previous level.",
+        "evidence": "{days} consecutive days without a run over the last 4 weeks"
+      },
+      "too-hard": {
+        "title": "Too much intensity, not enough easy",
+        "detail": "The polarised model recommends about 80% of volume in base endurance. Running “moderately hard” too often tires you without building your aerobic base.",
+        "evidence": "{pct}% of your sessions under {bpm} bpm (target: 80%)"
+      },
+      "no-intensity": {
+        "title": "No fast sessions",
+        "detail": "Your aerobic base is well trained, but without threshold or VO2max sessions, speed progresses little. One intense session per week is enough.",
+        "evidence": "{pct}% of sessions in endurance only"
+      },
+      "stale-reference": {
+        "title": "Old performance reference",
+        "detail": "Your estimated level relies on an effort that is starting to date. A 5 km test or a timed fast run would refine your target paces.",
+        "evidence": "Best effort: {name}, {days} days ago"
+      },
+      "pace-improving": {
+        "title": "Average pace improving",
+        "detail": "At comparable volume, you run faster than a month ago. That is the sign that the load is well absorbed.",
+        "evidence": "{s} s/km gained over 28 days"
+      },
+      "pace-slower": {
+        "title": "Average pace dropping",
+        "detail": "Not necessarily negative: it happens when volume increases or when you run more endurance. Watch it if it persists with a high HR.",
+        "evidence": "{s} s/km lost over 28 days"
+      },
+      "efficiency-up": {
+        "title": "Aerobic efficiency rising",
+        "detail": "You run faster for the same heart rate: your aerobic engine is improving.",
+        "evidence": "+{pct}% speed per beat vs previous month"
+      },
+      "efficiency-down": {
+        "title": "Aerobic efficiency falling",
+        "detail": "At equal HR you run slower. Accumulated fatigue, heat or lack of recovery are the most common causes.",
+        "evidence": "{pct}% speed per beat vs previous month"
+      },
+      "goal-met": {
+        "title": "Weekly goal held",
+        "detail": "You are at the level you set, on average over the last month.",
+        "evidence": "{avg} km/week for a goal of {goal} km"
+      },
+      "goal-far": {
+        "title": "Far from the weekly goal",
+        "detail": "Either the goal is too ambitious for now, or one more run per week is needed. An unrealistic goal discourages more than it motivates.",
+        "evidence": "{avg} km/week for a goal of {goal} km"
+      },
+      "recent-pr": {
+        "title": "New personal record",
+        "titlePlural": "{n} personal records this month",
+        "detail": "Your best performances on reference distances date from the last month — you are on an upward curve.",
+        "evidence": "{names}"
+      }
+    },
+    "headline": {
+      "overreaching": {
+        "title": "You are pulling the rope",
+        "body": "Fatigue exceeds your fitness by {gap} points. One or two easy days are enough to get back into building territory."
+      },
+      "productive": {
+        "title": "You are building",
+        "body": "Fatigue exceeds your fitness by {gap} points: that is where progress happens, as long as recovery follows."
+      },
+      "neutral": {
+        "title": "You are in balance",
+        "body": "Load and recovery offset each other: no fatigue piling up, no fitness eroding."
+      },
+      "optimal": {
+        "title": "You are tapered",
+        "body": "Freshness of +{gap} on a fitness of {ctl}: the ideal window for a race or a test."
+      },
+      "fresh": {
+        "title": "You are fresh, maybe too much",
+        "body": "Freshness of +{gap}: well rested, but fitness that stops working eventually declines."
+      },
+      "dangerTail": "This week's load has jumped compared to the month: increased injury risk.",
+      "rampTail": "Your fitness is rising fast (+{ramp}/week): watch the signals."
+    },
+    "ui": {
+      "summary": "Summary",
+      "meta": "{n} runs · last run {date}",
+      "emptyStravaTitle": "Connect your Strava account",
+      "emptyStravaBody": "Link your account to import your runs. All analyses are computed from this data.",
+      "configure": "Set up",
+      "emptyRunsTitle": "No runs imported",
+      "emptyRunsBody": "Your account is connected but no activity has been synced yet.",
+      "syncNow": "Sync",
+      "volume7": "Volume · 7 days",
+      "goalNote": "goal {km}",
+      "sessions": "Sessions",
+      "hours": "{h} h",
+      "avgPace": "Average pace",
+      "fitnessLevel": "Fitness level",
+      "dataSay": "What your data says",
+      "dataSayNote": "Observations generated from your last 8 weeks. Each line states the measurement behind it.",
+      "loadTitle": "Training load",
+      "loadNote": "Acute load (7 days) compared to chronic load (28 days) shows whether your progression is sustainable.",
+      "acute": "Acute load · 7 d",
+      "chronic": "Chronic load · 28 d",
+      "volume28": "Volume · 28 d",
+      "vma": "Estimated vVO2max",
+      "maxHr": "Max HR",
+      "typed": "entered",
+      "estimated": "estimated",
+      "stateToday": "Form state · today",
+      "freshness": "Freshness",
+      "condition": "Fitness",
+      "fatigue": "Fatigue",
+      "last7": "last 7 days",
+      "loadRatio": "Load 7 d / 28 d",
+      "volume28d": "Volume 28 d",
+      "vmaEst": "km/h estimated",
+      "detailed": "Detailed analysis →",
+      "ctfTitle": "Fitness · fatigue · freshness",
+      "ctfNote": "120 days, then plan projection in dashes",
+      "acuteChronic": "Acute and chronic load",
+      "ratioTitle": "Acute / chronic ratio",
+      "calendar": "Training calendar",
+      "last26": "last 26 weeks",
+      "weeklyVolume": "Weekly volume",
+      "last12": "last 12 weeks",
+      "elevation": "Elevation",
+      "paceAndHr": "Pace and heart rate",
+      "prog12": "12-month progression",
+      "need2Months": "At least 2 months of data required.",
+      "efficiency28": "Efficiency · 28 days",
+      "scatterHint": "bottom left = faster at lower HR",
+      "need3Hr": "At least 3 sessions with heart rate required.",
+      "split": "Distribution and comparison",
+      "zones28": "Heart-rate zones · 28 days",
+      "noHr": "No heart-rate data over the period.",
+      "vsPrev": "28 days vs previous period",
+      "cVolume": "Volume",
+      "cTime": "Time",
+      "cPace": "Pace",
+      "cAvgHr": "Avg HR",
+      "cLongest": "Longest",
+      "records": "Records",
+      "seeAll": "See all",
+      "casual": "run",
+      "casualTitle": "Run below your potential",
+      "recent": "Recent runs",
+      "allActivities": "All activities",
+      "trace": "Route",
+      "date": "Date",
+      "session": "Session",
+      "km": "km",
+      "time": "Time",
+      "pace": "Pace",
+      "hr": "HR",
+      "elev": "Elev"
+    },
+    "hero": {
+      "night": "Good night",
+      "morning": "Good morning",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening",
+      "weekOf": "week {week} · {phase}",
+      "done": "Done",
+      "intensity": "intensity {word}",
+      "startStrength": "Start the strength session",
+      "seeWeek": "View the week",
+      "sessionDetail": "Session details",
+      "doneToday": "Today's session done",
+      "rest": "Rest",
+      "noPlan": "No active plan",
+      "restText": "Nothing planned today: recovery is part of training.",
+      "noPlanText": "Generate a plan session by session, tuned to your current volume, with or without a race to prepare.",
+      "nextSession": "Next session",
+      "tomorrow": "tomorrow",
+      "createPlan": "Create a plan",
+      "weekSide": "Week",
+      "pctOf": "{pct}% of plan",
+      "planFrom": "plan from {date}",
+      "offPlan": "off plan",
+      "nextRace": "Next race",
+      "addGoal": "Add a goal →",
+      "freshness": "Freshness"
+    }
+  },
+  "tour": {
+    "steps": {
+      "today": {
+        "title": "Your morning dashboard",
+        "body": "Today's session, your current freshness and the week's numbers. Every page of the app opens like this: one big number that says what matters."
+      },
+      "preparation": {
+        "title": "The readiness score",
+        "body": "Sleep, fatigue, aches: ten seconds a day in the mini-log, and the 0-100 score computes itself. History and trends live in the Log."
+      },
+      "activities": {
+        "title": "Everything you have run",
+        "body": "Each run has its own card: route, heart-rate curve, automatically detected intervals, aerobic decoupling. Click a row to open it."
+      },
+      "plan": {
+        "title": "Your plan, week by week",
+        "body": "The plan recalibrates every week from your check-ins (pain, fatigue, availability). The Compliance section colours what you actually executed."
+      },
+      "analyse": {
+        "title": "The science behind your legs",
+        "body": "Fitness, fatigue and freshness (the pro-team model), your personalised thresholds and your critical speed — everything is computed from your runs."
+      },
+      "objectifs": {
+        "title": "Prepare a race",
+        "body": "A goal opens the training plan, the countdown and the race plan: import the course GPX, paces adjust to the gradient."
+      },
+      "corps": {
+        "title": "Strength and gear",
+        "body": "Runner strength training (with load guardrails) and your shoes' mileage. The foundation that makes the plan sustainable."
+      },
+      "fin": {
+        "title": "Off you go",
+        "body": "The app fills up as Strava syncs roll in. Fill the log tonight, and come back tomorrow morning: the Today page will have changed."
+      }
+    },
+    "next": "Next",
+    "previous": "Previous",
+    "skip": "Skip",
+    "finish": "Off you go",
+    "ariaLabel": "Guided tour",
+    "launcherTitle": "Guided tour",
+    "launcherAria": "Start the guided tour",
+    "doorTitle": "Guided tour",
+    "doorBody": "Rediscover the app in one minute: the tour walks through every hub, bubble by bubble.",
+    "doorMeta": "8 steps · 1 minute",
+    "kicker": "Guided tour · {n}/{total}",
+    "lastStep": "Last step"
+  },
+  "log": {
+    "bandTitle": "Today's readiness",
+    "bandHint": "your score appears as soon as you fill the mini-log",
+    "bandLink": "Full log: 14-day trend and history →",
+    "sleepLabel": "h of sleep",
+    "sleepAria": "Sleep last night (hours)",
+    "fatigue": "Fatigue",
+    "fatigueAria": "Fatigue today (1 to 5)",
+    "fatigueN": "Fatigue {n}/5",
+    "pain": "Pain",
+    "painAria": "Aches",
+    "pain0": "None",
+    "pain1": "Niggles",
+    "pain2": "Pain",
+    "pain3": "Blocks",
+    "saved": "Saved ✓"
+  },
+  "account": {
+    "sync": "Sync",
+    "syncing": "Syncing…",
+    "syncFull": "Re-import full history",
+    "syncFail": "Sync failed",
+    "syncResult": "{n, plural, =1 {1 new} other {{n} new}} · {m, plural, =1 {1 updated} other {{m} updated}}",
+    "unknownError": "Unknown error",
+    "athlete": "Athlete {id}",
+    "admin": "admin",
+    "settingsLink": "Settings and Strava account",
+    "logout": "Sign out",
+    "loggingOut": "Signing out…",
+    "autoSyncing": "Syncing Strava…",
+    "autoImported": "{n, plural, =1 {1 new activity} other {{n} new activities}}",
+    "statActivities": "Activities",
+    "statPlans": "Plans",
+    "statDevices": "Connected devices",
+    "logoutAll": "Sign out every device",
+    "deleteAccount": "Delete my account",
+    "deleteTitle": "Permanent account deletion",
+    "deleteBody": "{activities} activities, {plans} plans, your goals, settings and gear will be erased. Nothing is archived, nothing is recoverable. Your Strava account itself is untouched.",
+    "deleteFail": "Deletion failed. Try again.",
+    "typeToConfirm": "Type {name} to confirm",
+    "deleting": "Deleting…",
+    "deleteFinal": "Delete permanently",
+    "see": "View"
+  },
+  "palette": {
+    "aria": "Command palette",
+    "placeholder": "Go to, find a session, or calculate “10k 48:30”…",
+    "go": "Go to",
+    "actions": "Actions",
+    "goals": "Goals",
+    "plans": "Plans",
+    "sessions": "Sessions",
+    "calc": "Quick calc",
+    "sync": "Sync Strava",
+    "theme": "Toggle light / dark theme",
+    "strength": "Log a strength session",
+    "planAction": "Training plan: create or view",
+    "goalAction": "Add a race goal",
+    "ics": "Subscribe my calendar to the plan",
+    "helpAction": "Keyboard shortcuts",
+    "syncRunning": "Syncing…",
+    "syncFail": "Failed: {error}",
+    "syncResult": "{n, plural, =1 {1 new activity} other {{n} new activities}} · {m, plural, =1 {1 update} other {{m} updates}}",
+    "activePlan": "active",
+    "pages": {
+      "today": "Today",
+      "activities": "Activities",
+      "map": "Route map",
+      "training": "Training",
+      "workouts": "Sessions (library)",
+      "goals": "Goals",
+      "records": "Performance",
+      "analysis": "Fitness & load",
+      "modeles": "Models & thresholds",
+      "seances": "Past sessions",
+      "calculator": "Calculator",
+      "log": "Daily log",
+      "corps": "Body",
+      "strength": "Strength",
+      "gear": "Gear",
+      "plus": "More",
+      "recap": "Retrospective",
+      "settings": "Settings"
+    },
+    "feelings": {
+      "1": "very hard",
+      "2": "hard",
+      "3": "okay",
+      "4": "good",
+      "5": "excellent"
+    },
+    "noResult": "Nothing matches “{q}”.",
+    "navigate": "navigate",
+    "openWord": "open",
+    "shortcuts": "shortcuts",
+    "openCalc": "Open in the calculator",
+    "equiv": "{label} equivalent",
+    "navG": "Navigation · g then…",
+    "everywhere": "Everywhere",
+    "openPalette": "Open the palette (or /)",
+    "thisHelp": "This help",
+    "themeShortcut": "Light / dark theme",
+    "prevNext": "Previous / next session (activity page)",
+    "backToList": "Back to the list",
+    "calcHint": "Type a performance or a pace in the palette:"
   }
 }

@@ -1,4 +1,5 @@
 import { PHASE_COLOR, PHASE_LABELS, type Phase } from "@/lib/training";
+import { getTranslations } from "next-intl/server";
 import {
   COMPLIANCE_COLOR,
   COMPLIANCE_LABEL,
@@ -16,7 +17,8 @@ import {
  * Rendu statique, aucune bibliothèque de graphes.
  */
 
-export function ComplianceOverview({ rows }: { rows: WeekCompliance[] }) {
+export async function ComplianceOverview({ rows }: { rows: WeekCompliance[] }) {
+  const t = await getTranslations("common");
   const overall = overallCompliance(rows);
   const phases = phaseCompliance(rows);
   return (
@@ -40,7 +42,7 @@ export function ComplianceOverview({ rows }: { rows: WeekCompliance[] }) {
               className="text-micro font-medium uppercase tracking-[0.14em]"
               style={{ color: PHASE_COLOR[p.phase] ?? undefined }}
             >
-              {PHASE_LABELS[p.phase as Phase] ?? p.phase}
+              {t(PHASE_LABELS[p.phase as Phase] ?? `phase.${p.phase}`)}
             </dt>
             <dd className="mt-0.5 text-lg font-semibold leading-none">
               {p.sessionPct === null ? "—" : `${p.sessionPct} %`}
@@ -55,7 +57,8 @@ export function ComplianceOverview({ rows }: { rows: WeekCompliance[] }) {
   );
 }
 
-export function ComplianceBand({ rows }: { rows: WeekCompliance[] }) {
+export async function ComplianceBand({ rows }: { rows: WeekCompliance[] }) {
+  const t = await getTranslations("common");
   if (rows.length === 0) {
     return <p className="py-4 text-sm text-ink3">Aucune séance dans ce plan.</p>;
   }
@@ -78,7 +81,7 @@ export function ComplianceBand({ rows }: { rows: WeekCompliance[] }) {
           aria-label="Conformité semaine par semaine : hauteur = part des séances réalisées, couleur = niveau de suivi"
         >
           {rows.map((r) => (
-            <WeekBar key={r.weekNumber} row={r} current={r.weekNumber === currentWeek} />
+            <WeekBar key={r.weekNumber} row={r} current={r.weekNumber === currentWeek} t={t} />
           ))}
         </div>
       </div>
@@ -90,7 +93,7 @@ export function ComplianceBand({ rows }: { rows: WeekCompliance[] }) {
               className="h-[9px] w-[9px] rounded-[1px]"
               style={{ background: COMPLIANCE_COLOR[z] }}
             />
-            {COMPLIANCE_LABEL[z]}
+            {t(`compliance.${z}`)}
           </span>
         ))}
         <span className="ml-auto hidden sm:inline">
@@ -101,12 +104,20 @@ export function ComplianceBand({ rows }: { rows: WeekCompliance[] }) {
   );
 }
 
-function WeekBar({ row, current }: { row: WeekCompliance; current: boolean }) {
+function WeekBar({
+  row,
+  current,
+  t,
+}: {
+  row: WeekCompliance;
+  current: boolean;
+  t: (key: string) => string;
+}) {
   const upcoming = row.zone === "upcoming";
   const pct = row.donePct ?? 0;
   const title = upcoming
     ? `Semaine ${row.weekNumber} — ${row.sessionsPlanned} séances prévues · ${row.plannedKm} km`
-    : `${current ? "Semaine en cours" : `Semaine ${row.weekNumber}`} — ${row.sessionsDone}/${row.sessionsPlanned} séances · ${row.actualKm}/${row.plannedKm} km · ${COMPLIANCE_LABEL[row.zone]}`;
+    : `${current ? "Semaine en cours" : `Semaine ${row.weekNumber}`} — ${row.sessionsDone}/${row.sessionsPlanned} séances · ${row.actualKm}/${row.plannedKm} km · ${t(`compliance.${row.zone}`)}`;
 
   return (
     <div

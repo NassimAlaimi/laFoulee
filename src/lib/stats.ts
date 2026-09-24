@@ -245,12 +245,13 @@ export function acwrZone(ratio: number): LoadPoint["zone"] {
   return "danger";
 }
 
+/** Libellés de zone ACWR — clés i18n `common.acwr.*`. */
 export const ACWR_LABELS: Record<LoadPoint["zone"], string> = {
-  insufficient: "Historique insuffisant",
-  detraining: "Sous-charge",
-  optimal: "Zone optimale",
-  caution: "Prudence",
-  danger: "Risque élevé",
+  insufficient: "common.acwr.insufficient",
+  detraining: "common.acwr.detraining",
+  optimal: "common.acwr.optimal",
+  caution: "common.acwr.caution",
+  danger: "common.acwr.danger",
 };
 
 // ---------------------------------------------------------------- Zones FC

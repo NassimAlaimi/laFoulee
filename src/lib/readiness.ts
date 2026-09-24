@@ -34,11 +34,12 @@ export type DailyLogInput = {
 
 export type ReadinessZone = "ready" | "solid" | "fragile" | "recover";
 
+/** Libellés de préparation — clés i18n `common.readiness.*`. */
 export const READINESS_LABEL: Record<ReadinessZone, string> = {
-  ready: "Prêt",
-  solid: "Solide",
-  fragile: "Fragile",
-  recover: "Récupère",
+  ready: "common.readiness.ready",
+  solid: "common.readiness.solid",
+  fragile: "common.readiness.fragile",
+  recover: "common.readiness.recover",
 };
 
 export const READINESS_COLOR: Record<ReadinessZone, string> = {

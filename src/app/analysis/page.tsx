@@ -1,4 +1,5 @@
 import { Bar } from "@/components/ui/Metric";
+import { getTranslations } from "next-intl/server";
 import { Section, SectionHead } from "@/components/ui/Layout";
 import { ConsistencyHeatmap } from "@/components/analysis/ConsistencyHeatmap";
 import { Legend, Stat } from "@/components/analysis/Bits";import {
@@ -19,6 +20,7 @@ export const dynamic = "force-dynamic";
  * fraîcheur (PMC), répartition de l'intensité, régularité, cumul annuel.
  */
 export default async function FormePage() {
+  const t = await getTranslations("common");
   const now = new Date();
   const userId = await requireUserId();
   const data = await loadForme(now, userId);
@@ -48,7 +50,7 @@ export default async function FormePage() {
                 {form ? `${form.tsb > 0 ? "+" : ""}${Math.round(form.tsb)}` : "—"}
               </span>
               <span className="text-sm text-ink3">
-                {form ? `${ZONE_LABEL[form.zone]} · TSB` : "condition − fatigue"}
+                {form ? `${t(ZONE_LABEL[form.zone])} · TSB` : "condition − fatigue"}
               </span>
             </div>
           </div>

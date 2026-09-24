@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Empty, PageHead, Section } from "@/components/ui/Layout";
 import { PoleStrip } from "@/components/ui/PoleStrip";
 import { Bar } from "@/components/ui/Metric";
@@ -40,6 +41,7 @@ export const dynamic = "force-dynamic";
  * trajectoire, assiduité) vient après.
  */
 export default async function TrainingPage() {
+  const t = await getTranslations("common");
   const now = new Date();
   const userId = await requireUserId();
   const plan = await getActivePlan(userId);
@@ -177,7 +179,7 @@ export default async function TrainingPage() {
                   Semaine {currentWeek.weekNumber}
                   <span className="text-ink3"> / {curve.length}</span>
                   <span className="ml-3 align-middle text-[0.45em] font-medium tracking-normal" style={{ color: PHASE_COLOR[currentWeek.phase] }}>
-                    ● {PHASE_LABELS[(currentWeek.phase as Phase) ?? "base"]}
+                    ● {t(PHASE_LABELS[(currentWeek.phase as Phase) ?? "base"])}
                   </span>
                 </>
               ) : (

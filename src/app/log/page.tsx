@@ -1,4 +1,5 @@
 import { PageHead, Section } from "@/components/ui/Layout";
+import { getTranslations } from "next-intl/server";
 import { LogForm } from "@/components/log/LogForm";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
@@ -25,6 +26,7 @@ export const dynamic = "force-dynamic";
  * à l'entraînement des jours précédents.
  */
 export default async function LogPage() {
+  const t = await getTranslations("common");
   const now = new Date();
   const userId = await requireUserId();
   const since = new Date(now.getTime() - 20 * 86400000);
@@ -77,7 +79,7 @@ export default async function LogPage() {
               <span className="text-sm text-ink3">
                 {today ? (
                   <>
-                    {READINESS_LABEL[readiness.zone]}
+                    {t(READINESS_LABEL[readiness.zone])}
                     {readiness.breakdown.length > 0 && (
                       <span className="text-ink2"> · {readiness.breakdown.join(", ")}</span>
                     )}
