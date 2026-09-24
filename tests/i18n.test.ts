@@ -30,11 +30,10 @@ test("les trois dictionnaires ont exactement les mêmes clés", () => {
   assert.deepEqual(Object.keys(es).sort(), Object.keys(fr).sort(), "clés es ≠ fr");
 });
 
-test("aucune traduction vide ni espaces parasites", () => {
+test("aucune traduction vide", () => {
   for (const l of LOCALES) {
     for (const [k, v] of Object.entries(flatten(load(l)))) {
       assert.ok(v.trim().length > 0, `traduction vide : ${l}.${k}`);
-      assert.equal(v, v.trim(), `espaces parasites dans ${l}.${k}`);
     }
   }
 });

@@ -31,7 +31,8 @@ export default async function GoalDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const t = await getTranslations("common");
+  const t = await getTranslations("goals");
+  const tc = await getTranslations("common");
   const { id } = await params;
   const userId = await requireUserId();
   // findFirst + userId : l'objectif d'un autre utilisateur donne un 404, pas
@@ -151,14 +152,14 @@ export default async function GoalDetailPage({
         <div className="flex flex-row items-end gap-6 lg:flex-col lg:items-end">
           <div>
             <div className="eyebrow">
-              {r.daysRemaining > 0 ? "Jours restants" : r.daysRemaining === 0 ? "C'est le jour J" : "Course passée"}
+              {r.daysRemaining > 0 ? t("daysRemaining") : r.daysRemaining === 0 ? t("raceDay") : t("racePast")}
             </div>
             <div className={`display text-[clamp(4.5rem,10vw,8.5rem)] leading-[0.85] ${countdownTone}`}>
               {r.daysRemaining > 0 ? r.daysRemaining : r.daysRemaining === 0 ? "J" : "—"}
             </div>
           </div>
           <div className="pb-2 text-right text-sm text-ink3">
-            <div>{r.weeksRemaining > 0 ? `${r.weeksRemaining} semaine${r.weeksRemaining > 1 ? "s" : ""}` : "dernière ligne droite"}</div>
+            <div>{r.weeksRemaining > 0 ? t("weeksN", { n: r.weeksRemaining, s: r.weeksRemaining > 1 ? "s" : "" }) : t("lastStretch")}</div>
             <div>préparation {r.readiness}/100</div>
           </div>
         </div>
@@ -167,34 +168,34 @@ export default async function GoalDetailPage({
       {/* ------------------------------------------------ KPI */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Kpi
-          label="Volume actuel"
+          label={t("currentVolume")}
           value={`${ctx.fitness.weeklyKm} km`}
           note={`${ctx.fitness.weeklyKm4w} km/sem sur 4 sem. · ${ctx.fitness.sessionsPerWeek} sorties/sem`}
         />
         <Kpi
-          label="Préparation"
+          label={t("preparation")}
           value={`${r.readiness}/100`}
           bar={r.readiness}
           note={facts[0]}
         />
         <Kpi
-          label="Chrono réaliste"
+          label={t("realisticTime")}
           value={r.prediction ? fmtDuration(r.prediction.realistic) : "—"}
           note={
             r.prediction
               ? `${fmtPace(r.prediction.pace)} · potentiel ${fmtDuration(r.prediction.potential)}`
-              : "pas assez de données"
+              : t("notEnoughData")
           }
         />
         <Kpi
-          label="Fraîcheur jour J"
+          label={t("raceDayFreshness")}
           value={raceForm ? `${raceForm.tsb > 0 ? "+" : ""}${Math.round(raceForm.tsb)}` : "—"}
           note={
             raceForm
               ? `${t(ZONE_LABEL[raceForm.zone])} · condition ${Math.round(raceForm.ctl)}`
               : plan
-                ? "au-delà de la projection"
-                : "aucun plan rattaché"
+                ? t("beyondProjection")
+                : t("noPlanAttached")
           }
           tone={raceForm ? ZONE_TONE[raceForm.zone] : undefined}
         />
@@ -204,12 +205,12 @@ export default async function GoalDetailPage({
       {r.gap && r.prediction && (
         <Section>
           <SectionHead
-            title="Écart au chrono visé"
+            title={t("gapTitle")}
             note={`Objectif ${fmtDuration(r.targetSeconds ?? 0)} · niveau actuel ${fmtDuration(r.prediction.realistic)}`}
           />
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <Fact
-              label="À trouver"
+              label={t("toFind")}
               value={
                 r.gap.secondsToFind > 0
                   ? `−${fmtDuration(Math.abs(r.gap.secondsToFind))}`
@@ -218,18 +219,18 @@ export default async function GoalDetailPage({
               tone={r.gap.secondsToFind > 0 ? "text-clay" : "text-sage"}
             />
             <Fact
-              label="Niveau requis"
+              label={t("requiredLevel")}
               value={`VDOT ${r.gap.requiredVdot}`}
               note={`actuel ${r.gap.currentVdot} · écart ${r.gap.gap > 0 ? "+" : ""}${r.gap.gap}`}
             />
             <Fact
-              label="Temps nécessaire"
+              label={t("timeNeeded")}
               value={`${r.gap.weeksNeeded} sem.`}
               note={`${r.weeksRemaining} disponibles · +${r.gap.monthlyVdotGain} VDOT/mois`}
               tone={r.gap.feasible ? "text-sage" : "text-ochre"}
             />
             <Fact
-              label="Fourchette"
+              label={t("range")}
               value={`${fmtDuration(r.prediction.low)} – ${fmtDuration(r.prediction.high)}`}
               note={r.prediction.reason}
             />
@@ -259,7 +260,7 @@ export default async function GoalDetailPage({
               <p className="mt-1 text-xs text-ink3">
                 {weeks.length} semaines · {round(weeks.reduce((a, w) => a + w.km, 0), 0)} km
                 planifiés · pic {plan.targetPeakKm} km/sem
-                {plan.status === "paused" && " · en pause"}
+                {plan.status === "paused" && ` · ${t("paused")}`}
               </p>
             </div>
             <Link href={`/training/${plan.id}`} className="btn-outline btn-sm">
@@ -346,8 +347,8 @@ export default async function GoalDetailPage({
       ) : (
         <Section>
           <SectionHead
-            title="Plan d'entraînement"
-            note="Aucun plan n'est rattaché à cet objectif"
+            title={t("planTitle")}
+            note={t("planNone")}
           />
           <CreatePlanForGoal
             goalId={goal.id}
@@ -364,8 +365,8 @@ export default async function GoalDetailPage({
       {plan && future.length > 0 && (
         <Section>
           <SectionHead
-            title="Forme projetée"
-            note="Condition, fatigue et fraîcheur — la partie en pointillés découle des séances planifiées"
+            title={t("projectedForm")}
+            note={t("projectedFormNote")}
           />
           <FormChart data={formRows} marks={raceForm ? [{ label: raceForm.label, kind: "race", date: goal.raceDate } as ChartMark] : []} />
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-micro text-ink3">
@@ -380,7 +381,7 @@ export default async function GoalDetailPage({
       {splits.length > 0 && (
         <Section>
           <SectionHead
-            title="Plan d'allure"
+            title={t("pacePlan")}
             note={
               r.targetSeconds
                 ? `Négatif léger : premier tiers retenu, dernier tiers accéléré — ${fmtDuration(r.targetSeconds)} au total (chrono visé)`
@@ -430,7 +431,7 @@ export default async function GoalDetailPage({
       {/* ------------------------------------------------ Prérequis */}
       <Section>
         <SectionHead
-          title="Prérequis de la distance"
+          title={t("prereq")}
           note={`${r.raceKm} km — seuils utilisés aussi par le générateur de plan`}
         />
         <div className="space-y-4">

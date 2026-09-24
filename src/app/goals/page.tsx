@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { revalidatePath } from "next/cache";
 import { Hint, NightBand, PageHead, Section, SectionHead } from "@/components/ui/Layout";
 import { PoleStrip } from "@/components/ui/PoleStrip";
@@ -28,6 +29,7 @@ const KIND_LABEL: Record<string, string> = {
 };
 
 export default async function GoalsPage() {
+  const t = await getTranslations("goals");
   const now = new Date();
   const userId = await requireUserId();
   const [goals, ctx, plans] = await Promise.all([
@@ -129,11 +131,15 @@ export default async function GoalsPage() {
   return (
     <div className="space-y-10">
       <PageHead
-        title="Objectifs"
+        title={t("title")}
         meta={
           upcoming.length
-            ? `${upcoming.length} course${upcoming.length > 1 ? "s" : ""} à venir${past.length ? ` · ${past.length} passée${past.length > 1 ? "s" : ""}` : ""}`
-            : "Prépare tes échéances et suis ton niveau de préparation en temps réel"
+            ? t("upcoming", {
+                n: upcoming.length,
+                s: upcoming.length > 1 ? "s" : "",
+                past: past.length ? t("pastTail", { n: past.length, s: past.length > 1 ? "s" : "" }) : "",
+              })
+            : t("none")
         }
         action={
           <a href="#nouvel-objectif" className="btn-outline">
@@ -238,7 +244,7 @@ export default async function GoalsPage() {
                       {fmtDate(goal.raceDate)} · {(goal.distance / 1000).toFixed(1)} km
                       {goal.targetTime && (
                         <>
-                          {" · objectif "}
+                          {` · ${t("goalTag")} `}
                           <span className="font-medium text-ink">
                             {fmtDuration(goal.targetTime)}
                           </span>
@@ -252,7 +258,7 @@ export default async function GoalsPage() {
                     <div className="text-right">
                       <div className="display text-d3">{p.daysRemaining}</div>
                       <div className="text-micro text-ink3">
-                        jour{p.daysRemaining > 1 ? "s" : ""} · {p.weeksRemaining} sem.
+                        {t("dayLeft", { s: p.daysRemaining > 1 ? "s" : "", w: p.weeksRemaining })}
                       </div>
                     </div>
                     <DeleteGoalButton id={goal.id} />
@@ -307,19 +313,19 @@ export default async function GoalsPage() {
 
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Metric
-                      label="Volume hebdo"
+                      label={t("weeklyVolume")}
                       value={`${ctx.fitness.weeklyKm} km`}
                       note={`référence ${p.needs.weeklyKm} km`}
                       ok={ctx.fitness.weeklyKm >= p.needs.weeklyKm}
                     />
                     <Metric
-                      label="Sortie la plus longue"
+                      label={t("longestRun")}
                       value={`${ctx.fitness.longestRunKm} km`}
                       note={`cible ${p.needs.longRunKm} km`}
                       ok={ctx.fitness.longestRunKm >= p.needs.longRunKm}
                     />
                     <Metric
-                      label="Chrono réaliste"
+                      label={t("realisticTime")}
                       value={p.prediction ? fmtDuration(p.prediction.realistic) : "—"}
                       note={
                         p.prediction
@@ -333,7 +339,7 @@ export default async function GoalsPage() {
                       }
                     />
                     <Metric
-                      label="Niveau requis"
+                      label={t("requiredLevel")}
                       value={p.gap ? `VDOT ${p.gap.requiredVdot}` : "—"}
                       note={p.gap ? `actuel ${p.gap.currentVdot}` : undefined}
                       ok={p.gap ? p.gap.gap <= 0 : undefined}
@@ -364,7 +370,7 @@ export default async function GoalsPage() {
       {/* -------------------------------------------------- Nouvel objectif */}
       <Section className="scroll-mt-24">
         <div id="nouvel-objectif" className="scroll-mt-24" />
-        <SectionHead title="Nouvel objectif" note="Une course à préparer : la préparation se calcule tout de suite, et tu peux en tirer un plan séance par séance." />
+        <SectionHead title={t("newGoal")} note={t("newGoalNote")} />
         <form action={createGoal} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <div className="sm:col-span-2">
             <label className="field-label" htmlFor="name">
@@ -374,7 +380,7 @@ export default async function GoalsPage() {
               id="name"
               name="name"
               required
-              placeholder="Semi-marathon de Paris"
+              placeholder={t("placeholder")}
               className="field"
             />
           </div>
@@ -437,8 +443,8 @@ export default async function GoalsPage() {
       <Section className="scroll-mt-24">
         <div id="nouvel-objectif-quotidien" className="scroll-mt-24" />
         <SectionHead
-          title="Objectif du quotidien"
-          note="Un chiffre à tenir, sans course : des kilomètres dans le mois, des jours d'affilée, ou des sorties par semaine."
+          title={t("dailyGoal")}
+          note={t("dailyGoalNote")}
         />
         <form action={createDailyGoal} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <div className="sm:col-span-2">
@@ -452,9 +458,9 @@ export default async function GoalsPage() {
               Type
             </label>
             <select id="kind" name="kind" className="field">
-              <option value="volume">Volume · km/mois</option>
-              <option value="streak">Série · jours d'affilée</option>
-              <option value="frequency">Fréquence · sorties/sem</option>
+              <option value="volume">{t("optVolume")}</option>
+              <option value="streak">{t("optStreak")}</option>
+              <option value="frequency">{t("optFrequency")}</option>
             </select>
           </div>
           <div>
