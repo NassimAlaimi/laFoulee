@@ -1,4 +1,5 @@
 import { Section, SectionHead } from "@/components/ui/Layout";
+import { getTranslations } from "next-intl/server";
 import { Stat } from "@/components/analysis/Bits";
 import {
   CriticalSpeedChart,
@@ -19,18 +20,19 @@ export const dynamic = "force-dynamic";
  * personnalisés LT1/LT2 lus dans tes données.
  */
 export default async function ModelesPage() {
+  const t = await getTranslations("analysis");
   const now = new Date();
   const userId = await requireUserId();
   const data = await loadModeles(now, userId);
-  if (data.runs.length < 5) return <NotEnough title="Modèles & seuils" />;
+  if (data.runs.length < 5) return <NotEnough title={t("modeles")} />;
 
   const { settings, cs, curve, predictions, gapRows, thresholds, endurance } = data;
 
   return (
     <div className="space-y-6">
       <AnalysisHead
-        title="Modèles & seuils"
-        meta="Prédictions, vitesse critique, courbe allure-durée et seuils personnalisés"
+        title={t("modeles")}
+        meta={t("modelesMeta")}
       />
       <AnalysisPoleStrip active="/analysis/modeles" />
 
@@ -46,18 +48,18 @@ export default async function ModelesPage() {
               <span className="text-sm text-ink3">
                 {cs
                   ? `tenable ~45-60 min · D′ ${cs.dPrime} m`
-                  : "2 efforts de 2 à 20 min requis pour la calculer"}
+                  : t("need2Efforts")}
               </span>
             </div>
           </div>
           <dl className="flex gap-8">
             <Figure
-              label="seuil anaérobie"
+              label={t("anaerobicThreshold")}
               value={thresholds ? `${thresholds.lt2Hr} bpm` : "—"}
               note={thresholds ? `mesuré · R² ${thresholds.r2}` : undefined}
             />
             <Figure
-              label="indice d'endurance"
+              label={t("enduranceIndex")}
               value={endurance.exponent.toFixed(3)}
               note={`référence ${RIEGEL_DEFAULT}`}
             />
@@ -69,8 +71,8 @@ export default async function ModelesPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Section>
           <SectionHead
-            title="Potentiel contre réalisable"
-            note="Écart entre ce que la physiologie autorise et ce que l'entraînement actuel permet"
+            title={t("potentialVsReal")}
+            note={t("potentialVsRealNote")}
           />
           {gapRows.length > 0 ? (
             <>
@@ -119,8 +121,8 @@ export default async function ModelesPage() {
 
         <Section>
           <SectionHead
-            title="Courbe allure-durée"
-            note="Records par distance, comparés au modèle personnel"
+            title={t("durationCurve")}
+            note={t("durationCurveNote")}
           />
           <DurationCurveChart data={curve} />
           <div className="mt-4 border-t border-hair pt-4">
@@ -131,7 +133,7 @@ export default async function ModelesPage() {
                 <span className="ml-2 text-micro text-ink3">
                   {endurance.measured
                     ? `mesuré sur ${endurance.samples} perfs · R² ${endurance.r2.toFixed(2)}`
-                    : "valeur de référence"}
+                    : t("referenceValue")}
                 </span>
               </span>
             </div>
@@ -148,24 +150,24 @@ export default async function ModelesPage() {
       {cs && (
         <Section>
           <SectionHead
-            title="Vitesse critique"
-            note="Modèle à deux paramètres : distance = CS × temps + D′ (efforts de 2 à 20 min)"
+            title={t("criticalSpeed")}
+            note={t("criticalSpeedNote")}
           />
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
             <CriticalSpeedChart points={cs.points} cs={cs.cs} dPrime={cs.dPrime} />
             <div className="space-y-4">
               <Stat
-                label="Vitesse critique"
+                label={t("csLabel")}
                 value={`${cs.cs.toFixed(2)} m/s`}
                 note={`${fmtPace(cs.pace)} — allure tenable ~45-60 min`}
               />
               <Stat
-                label="Réserve anaérobie (D′)"
+                label={t("dprimeLabel")}
                 value={`${cs.dPrime} m`}
-                note="distance parcourable au-dessus de la vitesse critique"
+                note={t("dprimeNote")}
               />
               <Stat
-                label="VMA estimée"
+                label={t("vmaLabel")}
                 value={`${cs.vmaEstimate} km/h`}
                 note={`CS ≈ 90 % de la VMA · ajustement R² ${cs.r2.toFixed(3)}`}
               />
@@ -181,24 +183,24 @@ export default async function ModelesPage() {
       {/* ------------------------------------------------ Seuils personnalisés */}
       <Section>
         <SectionHead
-          title="Seuils personnalisés"
-          note="LT1 et LT2 lus sur ta relation allure → FC réelle, ancrés sur la vitesse critique"
+          title={t("thresholdsTitle")}
+          note={t("thresholdsNote")}
         />
         {thresholds ? (
           <>
             <div className="grid gap-6 sm:grid-cols-3">
               <Stat
-                label="Seuil aérobie (LT1)"
+                label={t("lt1Label")}
                 value={`${thresholds.lt1Hr} bpm`}
                 note={`jusqu'à ${fmtPace(thresholds.lt1Pace)}`}
               />
               <Stat
-                label="Seuil anaérobie (LT2)"
+                label={t("lt2Label")}
                 value={`${thresholds.lt2Hr} bpm`}
                 note={`ancré sur la vitesse critique ${fmtPace(thresholds.csPace)}`}
               />
               <Stat
-                label="Qualité de l'estimation"
+                label={t("qualityLabel")}
                 value={`R² ${thresholds.r2}`}
                 note={`${thresholds.points} km-splits avec FC`}
               />
@@ -209,8 +211,8 @@ export default async function ModelesPage() {
                 Les % de FC max donneraient un seuil à {genericLt2Hr(settings.maxHr)} bpm —
                 {" "}
                 {Math.abs(thresholds.lt2Hr - genericLt2Hr(settings.maxHr)) <= 4
-                  ? "ton seuil mesuré colle au générique."
-                  : `ton seuil mesuré est à ${thresholds.lt2Hr > genericLt2Hr(settings.maxHr) ? "au-dessus" : "en dessous"} : tes zones génériques sont ${thresholds.lt2Hr > genericLt2Hr(settings.maxHr) ? "sous-estimées" : "surestimées"}.`}
+                  ? t("thresholdMatches")
+                  : thresholds.lt2Hr > genericLt2Hr(settings.maxHr) ? t("thresholdAbove") : t("thresholdBelow")}
               </p>
             )}
 
@@ -241,7 +243,7 @@ export default async function ModelesPage() {
                       </td>
                       <td className="text-right font-mono">
                         {z.paceCeil === Infinity
-                          ? "libre"
+                          ? t("free")
                           : z.key === "z5"
                             ? `< ${fmtPace(z.paceCeil)}`
                             : `> ${fmtPace(z.paceCeil)}`}

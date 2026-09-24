@@ -20,19 +20,20 @@ export const dynamic = "force-dynamic";
  * fraîcheur (PMC), répartition de l'intensité, régularité, cumul annuel.
  */
 export default async function FormePage() {
-  const t = await getTranslations("common");
+  const t = await getTranslations("analysis");
+  const tc = await getTranslations("common");
   const now = new Date();
   const userId = await requireUserId();
   const data = await loadForme(now, userId);
-  if (data.runs.length < 5) return <NotEnough title="Forme & charge" />;
+  if (data.runs.length < 5) return <NotEnough title={t("title")} />;
 
   const { form, formRows, marks, yoy, polar, polarSum, paceZones, grid, timeline, fitness } = data;
 
   return (
     <div className="space-y-6">
       <AnalysisHead
-        title="Forme & charge"
-        meta="Condition, fatigue, fraîcheur — et comment tu répartis l'intensité"
+        title={t("title")}
+        meta={t("meta")}
       />
       <AnalysisPoleStrip active="/analysis" />
 
@@ -41,7 +42,7 @@ export default async function FormePage() {
         <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
           <div>
             <div className="text-micro font-medium uppercase tracking-[0.16em] text-ink3">
-              Ta fraîcheur du moment
+              {t("freshnessNow")}
             </div>
             <div className="mt-2 flex items-baseline gap-4">
               <span
@@ -50,20 +51,20 @@ export default async function FormePage() {
                 {form ? `${form.tsb > 0 ? "+" : ""}${Math.round(form.tsb)}` : "—"}
               </span>
               <span className="text-sm text-ink3">
-                {form ? `${t(ZONE_LABEL[form.zone])} · TSB` : "condition − fatigue"}
+                {form ? `${tc(ZONE_LABEL[form.zone])} · TSB` : t("condMinusFat")}
               </span>
             </div>
           </div>
           <dl className="flex gap-8">
             <Figure
-              label="condition (CTL)"
+              label={t("conditionCtl")}
               value={form ? String(Math.round(form.ctl)) : "—"}
               note={form ? `${form.ctlDelta28 >= 0 ? "+" : ""}${form.ctlDelta28} sur 28 j` : undefined}
             />
             <Figure
-              label="progression"
+              label={t("progression")}
               value={form ? `${form.rampPerWeek}/sem` : "—"}
-              note={form && form.rampPerWeek > 7 ? "au-delà de 7, risque accru" : "objectif : 3-7"}
+              note={form && form.rampPerWeek > 7 ? t("rampRisk") : t("rampTarget")}
             />
           </dl>
         </div>
@@ -72,19 +73,19 @@ export default async function FormePage() {
       {/* ------------------------------------------------ PMC */}
       <Section>
         <SectionHead
-          title="Condition, fatigue et fraîcheur"
-          note="Moyennes exponentielles 42 j / 7 j — la partie pointillée est projetée depuis le plan"
+          title={t("pmcTitle")}
+          note={t("pmcNote")}
         />
         <FormChart data={formRows} height={300} legend={false} marks={marks} />
         <div className="mt-4 grid gap-4 border-t border-hair pt-4 sm:grid-cols-3">
-          <Legend color="rgb(var(--slate))" label="Condition (CTL)" note="ce que tu encaisses" />
-          <Legend color="rgb(var(--clay))" label="Fatigue (ATL)" note="charge des 7 derniers jours" />
-          <Legend color="rgb(var(--sage))" label="Fraîcheur (TSB)" note="condition − fatigue" />
+          <Legend color="rgb(var(--slate))" label={t("ctlLegend")} note={t("ctlNote")} />
+          <Legend color="rgb(var(--clay))" label={t("atlLegend")} note={t("atlNote")} />
+          <Legend color="rgb(var(--sage))" label={t("tsbLegend")} note={t("tsbNote")} />
           {marks.some((m) => m.kind === "race") && (
-            <Legend color="rgb(var(--rust))" label="Course" note="jour de course" />
+            <Legend color="rgb(var(--rust))" label={t("raceLegend")} note={t("raceNote")} />
           )}
           {marks.some((m) => m.kind === "pr") && (
-            <Legend color="rgb(var(--plum))" label="Record" note="record personnel" />
+            <Legend color="rgb(var(--plum))" label={t("recordLegend")} note={t("recordNote")} />
           )}
         </div>
       </Section>
@@ -93,17 +94,17 @@ export default async function FormePage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Section>
           <SectionHead
-            title="Répartition de l'intensité"
-            note="Part du volume mensuel par zone — le modèle polarisé vise 80 % en facile"
+            title={t("intensitySplit")}
+            note={t("intensityNote")}
           />
           {polar.length > 0 ? (
             <>
               <PolarizationChart data={polar} />
               {polarSum && (
                 <div className="mt-4 grid grid-cols-3 gap-4 border-t border-hair pt-4">
-                  <Stat label="Facile" value={`${polarSum.easy} %`} />
-                  <Stat label="Zone grise" value={`${polarSum.moderate} %`} />
-                  <Stat label="Intense" value={`${polarSum.hard} %`} />
+                  <Stat label={t("easy")} value={`${polarSum.easy} %`} />
+                  <Stat label={t("greyZone")} value={`${polarSum.moderate} %`} />
+                  <Stat label={t("hard")} value={`${polarSum.hard} %`} />
                 </div>
               )}
               {polarSum && (
@@ -127,8 +128,8 @@ export default async function FormePage() {
 
         <Section>
           <SectionHead
-            title="Allure par zone"
-            note="Sorties faciles et séances rapides, mois par mois"
+            title={t("paceByZone")}
+            note={t("paceByZoneNote")}
           />
           <PaceZoneChart data={paceZones} />
           <p className="mt-4 border-t border-hair pt-4 font-mono text-micro leading-relaxed tabular-nums text-ink3">
@@ -141,8 +142,8 @@ export default async function FormePage() {
       {/* ------------------------------------------------ Année / année */}
       <Section>
         <SectionHead
-          title="Cumul annuel"
-          note="Kilomètres cumulés semaine après semaine, année après année"
+          title={t("yearCumul")}
+          note={t("yearCumulNote")}
         />
         <YearCompareChart data={yoy.rows as never} years={yoy.years} />
         <div className="mt-4 grid gap-4 border-t border-hair pt-4 sm:grid-cols-3">
@@ -164,15 +165,15 @@ export default async function FormePage() {
       {/* ------------------------------------------------ Régularité */}
       <Section>
         <SectionHead
-          title="Régularité"
-          note="26 dernières semaines — une case par jour, l'intensité de la teinte suit le kilométrage"
+          title={t("consistency")}
+          note={t("consistencyNote")}
         />
         <ConsistencyHeatmap grid={grid} />
         <div className="mt-5 grid gap-4 border-t border-hair pt-4 sm:grid-cols-3">
-          <Stat label="Série en cours" value={`${grid.currentStreak} sem.`} note="avec au moins une sortie" />
-          <Stat label="Meilleure série" value={`${grid.bestStreak} sem.`} />
+          <Stat label={t("currentStreak")} value={`${grid.currentStreak} sem.`} note={t("streakNote")} />
+          <Stat label={t("bestStreak")} value={`${grid.bestStreak} sem.`} />
           <Stat
-            label="Semaines actives"
+            label={t("activeWeeks")}
             value={`${grid.activeRate} %`}
             note={`${fitness.sessionsPerWeek} sorties/sem en moyenne`}
           />
@@ -186,8 +187,8 @@ export default async function FormePage() {
       {timeline.length > 0 && (
         <Section>
           <SectionHead
-            title="Barres passées"
-            note="Chaque fois qu'un record personnel est tombé"
+            title={t("prBars")}
+            note={t("prBarsNote")}
           />
           <table className="data-table">
             <thead>

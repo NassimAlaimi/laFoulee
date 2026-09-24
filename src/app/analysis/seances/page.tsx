@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Section, SectionHead } from "@/components/ui/Layout";
+import { getTranslations } from "next-intl/server";
 import { Sparkline } from "@/components/ui/Spark";
 import { fmtDateShort, fmtDuration, fmtPace, fmtSigned } from "@/lib/format";
 import { requireUserId } from "@/lib/auth";
@@ -16,6 +17,7 @@ export const dynamic = "force-dynamic";
  * automatiquement et dérive/efficience des sorties longues.
  */
 export default async function SeancesPage() {
+  const t = await getTranslations("analysis");
   const now = new Date();
   const userId = await requireUserId();
   const { intervalList, longStreams, efTrend, classProgression, intervalClass } =
@@ -26,8 +28,8 @@ export default async function SeancesPage() {
   return (
     <div className="space-y-6">
       <AnalysisHead
-        title="Séances passées"
-        meta="Intervalles repérés automatiquement, dérive cardiaque et efficience des sorties longues"
+        title={t("seances")}
+        meta={t("seancesMeta")}
       />
       <AnalysisPoleStrip active="/analysis/seances" />
 
@@ -41,20 +43,20 @@ export default async function SeancesPage() {
             <div className="mt-2 flex items-baseline gap-4">
               <span className="display text-d4">{ef ?? "—"}</span>
               <span className="text-sm text-ink3">
-                {ef ? "EF · m/min par battement (moyenne glissante 4 séances)" : "encore aucune sortie longue analysée"}
+                {ef ? t("efLegend") : t("noLongRun")}
               </span>
             </div>
           </div>
           <dl className="flex gap-8">
             <Figure
-              label="séances d'intervalles"
+              label={t("intervalSessions")}
               value={String(intervalList.length)}
-              note="repérées sur 6 mois"
+              note={t("last6m")}
             />
             <Figure
-              label="sorties longues"
+              label={t("longRuns")}
               value={String(longStreams.length)}
-              note="avec courbe cardio"
+              note={t("withHr")}
             />
           </dl>
         </div>
@@ -64,8 +66,8 @@ export default async function SeancesPage() {
       {intervalList.length > 0 && (
         <Section>
           <SectionHead
-            title="Séances d'intervalles"
-            note="Fractions répétées repérées automatiquement — l'allure moyenne des mêmes séances raconte la progression"
+            title={t("intervalTitle")}
+            note={t("intervalNote")}
           />
           <div className="space-y-8">
             {(["court", "1000", "long"] as IntervalClass[])
@@ -173,8 +175,8 @@ export default async function SeancesPage() {
       {longStreams.length > 0 && (
         <Section>
           <SectionHead
-            title="Dérive & efficience"
-            note="Sorties longues : le découplage aérobie dit si le cœur paie de plus en plus cher, l'EF si la machine devient économe"
+            title={t("driftTitle")}
+            note={t("driftNote")}
           />
           {efTrend.length >= 2 && (
             <div className="mb-4 flex items-center gap-3">

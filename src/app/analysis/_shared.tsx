@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Hint, PageHead } from "@/components/ui/Layout";
 import { PoleStrip } from "@/components/ui/PoleStrip";
 import { athleteContext } from "@/lib/plan-store";
@@ -33,47 +34,55 @@ import { activityMarks } from "@/lib/race-marks";
 const FOCUS_DISTANCES = ["5k", "10k", "half", "marathon"];
 
 export const ANALYSIS_POLES = [
-  { href: "/analysis", label: "Forme & charge" },
-  { href: "/analysis/modeles", label: "Modèles & seuils" },
-  { href: "/analysis/seances", label: "Séances passées" },
-  { href: "/records", label: "Performance" },
-  { href: "/calculator", label: "Calculateur" },
+  { href: "/analysis", labelKey: "poleForme" },
+  { href: "/analysis/modeles", labelKey: "poleModeles" },
+  { href: "/analysis/seances", labelKey: "poleSeances" },
+  { href: "/records", labelKey: "poleRecords" },
+  { href: "/calculator", labelKey: "poleCalculator" },
 ];
 
 /** Bandeau de pôle : les pages du pôle Analyse, l'active soulignée. */
-export function AnalysisPoleStrip({ active }: { active: string }) {
-  return <PoleStrip items={ANALYSIS_POLES} active={active} />;
+export async function AnalysisPoleStrip({ active }: { active: string }) {
+  const t = await getTranslations("analysis");
+  return (
+    <PoleStrip
+      items={ANALYSIS_POLES.map((p) => ({ href: p.href, label: t(p.labelKey) }))}
+      active={active}
+    />
+  );
 }
 
 /** En-tête commun aux trois pages du pôle. */
-export function AnalysisHead({ title, meta }: { title: string; meta: string }) {
-  return <PageHead title={title} kicker="Analyse" meta={meta} />;
+export async function AnalysisHead({ title, meta }: { title: string; meta: string }) {
+  const t = await getTranslations("analysis");
+  return <PageHead title={title} kicker={t("kicker")} meta={meta} />;
 }
 
 /** Trop peu de sorties : les modèles n'ont pas de matière — et le mode d'emploi pour y remédier. */
-export function NotEnough({ title }: { title: string }) {
+export async function NotEnough({ title }: { title: string }) {
+  const t = await getTranslations("analysis");
   return (
     <div className="space-y-6">
-      <AnalysisHead title={title} meta="Modèles de performance et charge d'entraînement" />
+      <AnalysisHead title={title} meta={t("notEnoughMeta")} />
       <AnalysisPoleStrip active="/analysis" />
       <Hint height={230}>
-        <p>Il faut au moins quelques sorties pour que les modèles aient du sens.</p>
+        <p>{t("notEnoughIntro")}</p>
         <ol className="mt-3 space-y-2">
           {[
             {
-              text: "Synchronise Strava pour importer tes activités.",
+              text: t("stepSync"),
               href: "/settings",
-              label: "Synchroniser",
+              label: t("syncAction"),
             },
             {
-              text: "Cours avec ta ceinture cardio : les seuils et la charge se calculent dessus.",
+              text: t("stepHr"),
               href: null,
               label: null,
             },
             {
-              text: "Un 5 km couru à fond cale ton VDOT — et toutes les allures de l'app avec.",
+              text: t("step5k"),
               href: "/workouts",
-              label: "Voir la séance test",
+              label: t("testAction"),
             },
           ].map((s, i) => (
             <li key={i} className="flex items-baseline gap-2.5 text-sm text-ink2">
