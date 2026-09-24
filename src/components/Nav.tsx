@@ -12,6 +12,7 @@ const NAV = [
   { href: "/records", label: "Performance" },
   { href: "/analysis", label: "Analyse" },
   { href: "/calculator", label: "Calculateur" },
+  { href: "/workouts", label: "Séances" },
   { href: "/goals", label: "Objectifs" },
   { href: "/gear", label: "Matériel" },
   { href: "/strength", label: "Muscu" },
