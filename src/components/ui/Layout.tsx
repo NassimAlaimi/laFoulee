@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { NightScope } from "@/components/ui/NightScope";
+import { PageHelp } from "@/components/help/PageHelp";
 
 /**
  * En-tête de page : un titre qui a de la présence (grand, serré), un
@@ -22,7 +23,10 @@ export function PageHead({
         {kicker && (
           <div className="mb-3 text-micro font-medium uppercase tracking-[0.16em] text-clay">{kicker}</div>
         )}
-        <h1 className="text-[clamp(2.1rem,4.4vw,3.1rem)] font-semibold leading-[0.95] tracking-[-0.035em]">{title}</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-[clamp(2.1rem,4.4vw,3.1rem)] font-semibold leading-[0.95] tracking-[-0.035em]">{title}</h1>
+          <PageHelp />
+        </div>
         {meta && <p className="mt-3 text-[0.9375rem] text-ink2">{meta}</p>}
       </div>
       {action}

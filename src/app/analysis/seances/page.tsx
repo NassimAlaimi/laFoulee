@@ -239,10 +239,28 @@ export default async function SeancesPage() {
 
       {/* ------------------------------------------------ Rien à montrer */}
       {intervalList.length === 0 && longStreams.length === 0 && (
-        <p className="py-8 text-sm text-ink3">
-          Rien à montrer pour l'instant : fais une séance de fractions et une sortie
-          longue avec cardio, et cette page se remplit toute seule.
-        </p>
+        <div className="border-t-2 border-hair pt-4">
+          <p className="text-sm text-ink2">
+            Rien à montrer pour l'instant — cette page se remplit toute seule avec trois habitudes :
+          </p>
+          <ol className="mt-3 space-y-2">
+            <li className="flex items-baseline gap-2.5 text-sm text-ink2">
+              <span className="font-mono text-clay">1.</span>
+              Une séance de fractions par semaine : les intervalles se repèrent tout seuls.
+            </li>
+            <li className="flex items-baseline gap-2.5 text-sm text-ink2">
+              <span className="font-mono text-clay">2.</span>
+              Des sorties longues avec ta ceinture cardio : elles alimentent la dérive et l'efficience.
+            </li>
+            <li className="flex items-baseline gap-2.5 text-sm text-ink2">
+              <span className="font-mono text-clay">3.</span>
+              <span>
+                Des idées de fractions dans la{" "}
+                <Link href="/workouts" className="text-clay hover:underline">bibliothèque de séances →</Link>
+              </span>
+            </li>
+          </ol>
+        </div>
       )}
     </div>
   );

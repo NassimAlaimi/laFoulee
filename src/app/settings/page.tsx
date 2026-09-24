@@ -214,27 +214,34 @@ export default async function SettingsPage({
         <SectionHead title="Profil athlète"
           note="Affine le calcul des zones cardiaques, de la charge d'entraînement et des allures cibles"
         />
+        <ProfileGauge settings={settings} />
         <form action={saveSettings} className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           <Field
             name="maxHr"
             label="FC max (bpm)"
             defaultValue={settings.maxHr}
             placeholder="auto"
-            note="Vide = estimée depuis tes séances"
+            note="Sert aux zones cardiaques et à la charge (TRIMP). Vide = estimée depuis tes séances"
           />
-          <Field name="restHr" label="FC au repos (bpm)" defaultValue={settings.restHr} />
+          <Field
+            name="restHr"
+            label="FC au repos (bpm)"
+            defaultValue={settings.restHr}
+            note="Le plancher du calcul de charge — une FC repos basse = plus de marge"
+          />
           <Field
             name="birthYear"
             label="Année de naissance"
             defaultValue={settings.birthYear}
             placeholder="1995"
-            note="Sert à estimer la FC max"
+            note="Sert à estimer la FC max si elle n'est pas mesurée"
           />
           <Field
             name="weightKg"
             label="Poids (kg)"
             defaultValue={settings.weightKg}
             step="0.1"
+            note="Force relative en muscu (1RM ÷ poids) et charge musculaire"
           />
           <Field
             name="vmaKmh"
@@ -248,6 +255,7 @@ export default async function SettingsPage({
             name="weeklyKmGoal"
             label="Objectif hebdomadaire (km)"
             defaultValue={settings.weeklyKmGoal}
+            note="La cible du compteur de volume sur l'accueil"
           />
           <div className="sm:col-span-2 xl:col-span-3">
             <button type="submit" className="btn-solid">
@@ -352,6 +360,28 @@ function Info({
     <div className="rounded-lg border border-hair bg-sunken px-3.5 py-3">
       <div className="text-micro uppercase tracking-wider text-ink3">{label}</div>
       <div className={`mt-1 text-sm font-medium ${toneClass}`}>{value}</div>
+    </div>
+  );
+}
+
+/** Jauge de complétude du profil — chaque champ alimente les modèles. */
+function ProfileGauge({ settings }: { settings: Awaited<ReturnType<typeof getSettings>> }) {
+  const fields = [settings.maxHr, settings.birthYear, settings.weightKg, settings.vmaKmh];
+  const done = fields.filter((f) => f != null).length;
+  return (
+    <div className="mb-5 flex flex-wrap items-center gap-4">
+      <div className="h-[3px] w-full max-w-[220px] overflow-hidden rounded-full bg-hair">
+        <div
+          className="h-full rounded-full bg-clay transition-all duration-500"
+          style={{ width: `${(done / 4) * 100}%` }}
+        />
+      </div>
+      <span className="text-micro text-ink3">
+        {done}/4 renseignés —{" "}
+        {done === 4
+          ? "profil complet, les modèles tournent au mieux"
+          : "chaque champ rend les modèles plus précis"}
+      </span>
     </div>
   );
 }

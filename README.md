@@ -29,6 +29,12 @@ Une **visite guidée** accueille la première connexion : un projecteur se
 promène sur les six pôles avec des bulles d'infos, se relance à tout moment
 via le bouton « ? » flottant ou le pôle Plus.
 
+L'**accueil des nouveaux** est guidé : une carte « Bien démarrer » suit les
+quatre premières étapes (Strava, synchro, objectif, carnet) jusqu'à leur
+complétion, un bouton « ? » sur chaque page explique « cette page en trois
+phrases », un **lexique** traduit les termes (CTL, VDOT, seuils…), et le
+profil athlète affiche sa complétude dans les réglages.
+
 ## Démarrage
 
 ```bash

@@ -50,15 +50,45 @@ export function AnalysisHead({ title, meta }: { title: string; meta: string }) {
   return <PageHead title={title} kicker="Analyse" meta={meta} />;
 }
 
-/** Trop peu de sorties : les modèles n'ont pas de matière. */
+/** Trop peu de sorties : les modèles n'ont pas de matière — et le mode d'emploi pour y remédier. */
 export function NotEnough({ title }: { title: string }) {
   return (
     <div className="space-y-6">
       <AnalysisHead title={title} meta="Modèles de performance et charge d'entraînement" />
       <AnalysisPoleStrip active="/analysis" />
-      <Hint height={160}>
-        Il faut au moins quelques sorties pour que les modèles aient du sens.
-        Synchronise Strava depuis <Link href="/settings" className="text-clay">les réglages</Link>.
+      <Hint height={230}>
+        <p>Il faut au moins quelques sorties pour que les modèles aient du sens.</p>
+        <ol className="mt-3 space-y-2">
+          {[
+            {
+              text: "Synchronise Strava pour importer tes activités.",
+              href: "/settings",
+              label: "Synchroniser",
+            },
+            {
+              text: "Cours avec ta ceinture cardio : les seuils et la charge se calculent dessus.",
+              href: null,
+              label: null,
+            },
+            {
+              text: "Un 5 km couru à fond cale ton VDOT — et toutes les allures de l'app avec.",
+              href: "/workouts",
+              label: "Voir la séance test",
+            },
+          ].map((s, i) => (
+            <li key={i} className="flex items-baseline gap-2.5 text-sm text-ink2">
+              <span className="font-mono text-clay">{i + 1}.</span>
+              <span>
+                {s.text}{" "}
+                {s.href && s.label && (
+                  <Link href={s.href} className="text-clay hover:underline">
+                    {s.label} →
+                  </Link>
+                )}
+              </span>
+            </li>
+          ))}
+        </ol>
       </Hint>
     </div>
   );

@@ -52,6 +52,7 @@ export default async function RecordsPage() {
             </Link>
           }
         />
+        <EmptySteps />
       </>
     );
   }
@@ -367,5 +368,23 @@ function HeroStat({ label, value, note }: { label: string; value: string; note?:
         {note && <span className="ml-1.5 text-sm font-normal text-ink3">{note}</span>}
       </dd>
     </div>
+  );
+}
+
+/** Ce qui débloque la page Performance, en trois étapes. */
+function EmptySteps() {
+  return (
+    <ol className="mt-8 max-w-xl space-y-2 border-t border-hair pt-5">
+      {[
+        "Synchronise Strava : tes activités et tes efforts chronométrés arrivent.",
+        "Cours un 5 km (ou un 10 km) à fond : c'est lui qui cale ton VDOT.",
+        "Les records tombent tout seuls ensuite — et le niveau de forme monte.",
+      ].map((t, i) => (
+        <li key={i} className="flex items-baseline gap-2.5 text-sm text-ink2">
+          <span className="font-mono text-clay">{i + 1}.</span>
+          {t}
+        </li>
+      ))}
+    </ol>
   );
 }

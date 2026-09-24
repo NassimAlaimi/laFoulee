@@ -10,6 +10,7 @@ import { SyncButton } from "@/components/SyncButton";
 import { UpNext } from "@/components/training/UpNext";
 import { TodayHero } from "@/components/TodayHero";
 import { TodayLog } from "@/components/log/TodayLog";
+import { GettingStarted } from "@/components/help/GettingStarted";
 import {
   AcwrChart,
   ElevationChart,
@@ -63,7 +64,7 @@ const ZONE_TONE: Record<string, string> = {
 export default async function SummaryPage() {
   const user = await requireUser();
   const userId = user.id;
-  const [runs, efforts, settings, account, todayLog] = await Promise.all([
+  const [runs, efforts, settings, account, todayLog, goalCount, logDays] = await Promise.all([
     getRuns(undefined, userId),
     getBestEfforts(userId),
     getSettings(userId),
@@ -71,12 +72,23 @@ export default async function SummaryPage() {
     prisma.dailyLog.findFirst({
       where: { userId, date: new Date(new Date().setHours(0, 0, 0, 0)) },
     }),
+    prisma.raceGoal.count({ where: { userId } }),
+    prisma.dailyLog.count({ where: { userId } }),
   ]);
+  const gettingStarted = (
+    <GettingStarted
+      stravaConnected={Boolean(account)}
+      hasRuns={runs.length > 0}
+      hasGoal={goalCount > 0}
+      logDays={logDays}
+    />
+  );
 
   if (!account && runs.length === 0) {
     return (
       <>
         <PageHead title="Résumé" />
+        {gettingStarted}
         <Empty
           title="Connecte ton compte Strava"
           body="Relie ton compte pour importer tes courses. Toutes les analyses sont calculées à partir de ces données."
@@ -94,6 +106,7 @@ export default async function SummaryPage() {
     return (
       <>
         <PageHead title="Résumé" />
+        {gettingStarted}
         <Empty
           title="Aucune course importée"
           body="Ton compte est connecté mais aucune activité n'a encore été synchronisée."
@@ -224,6 +237,8 @@ export default async function SummaryPage() {
           {sentence}
         </p>
       )}
+
+      {gettingStarted}
 
       <TodayHero userId={userId} firstname={user.firstname} runs={runs} now={now} form={form ? { tsb: form.tsb, zone: form.zone } : null} />
 

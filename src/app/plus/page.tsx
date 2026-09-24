@@ -70,6 +70,12 @@ export default async function PlusPage() {
           tagline="Compte Strava, synchronisation, profil, thème — tout se règle ici."
           note="Compte & préférences"
         />
+        <HubDoor
+          href="/lexique"
+          title="Lexique"
+          tagline="CTL, VDOT, seuils, efficience : chaque terme de l'app traduit en langage courant."
+          note="Les termes, simplement"
+        />
         <TourDoor />
       </div>
 
