@@ -2,11 +2,15 @@
 
 Application d'analyse d'entraînement **multi-utilisateur**. Import automatique depuis Strava,
 statistiques de course à pied, **plan d'entraînement séance par séance** qui se
-recale chaque semaine sur ce que tu as réellement couru, une **section analyse**
-qui applique aux données les modèles utilisés en sport de haut niveau (PMC de
-Banister, vitesse critique, exposant d'endurance personnel), des **cartes de
-parcours** sans aucun service de tuiles, un **carnet de musculation** pensé pour
-le coureur, et une **rétrospective** annuelle imprimable.
+recale chaque semaine sur ce que tu as réellement couru (avec **conformité**
+semaine par semaine), une **section analyse** qui applique aux données les modèles
+utilisés en sport de haut niveau (PMC de Banister, vitesse critique, exposant
+d'endurance personnel, **seuils LT1/LT2 personnalisés**, **découplage aérobie**),
+des **cartes de parcours** sans aucun service de tuiles, un **carnet quotidien**
+(sommeil, récupération, score de préparation), une **bibliothèque de séances**
+calibrées sur le VDOT, un **plan de course** (GPX, profil, ravitaillement), un
+**carnet de musculation** pensé pour le coureur, et une **rétrospective**
+annuelle imprimable.
 
 Interface éditoriale, thème clair et sombre, aucune dépendance de composants UI.
 Déployée, chaque personne se connecte avec son compte Strava et ne voit que ses
