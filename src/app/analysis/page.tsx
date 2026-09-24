@@ -10,6 +10,7 @@ import {
 } from "@/components/charts/Lazy";
 import { ConsistencyHeatmap } from "@/components/analysis/ConsistencyHeatmap";
 import { Hint, PageHead, Section, SectionHead } from "@/components/ui/Layout";
+import { Sparkline } from "@/components/ui/Spark";
 import { Bar } from "@/components/ui/Metric";
 import {
   consistencyGrid,
@@ -26,13 +27,21 @@ import {
   ZONE_LABEL,
   ZONE_TONE,
 } from "@/lib/fitness-model";
-import { fmtDuration, fmtPace } from "@/lib/format";
+import {
+  classProgression,
+  detectIntervals,
+  INTERVAL_CLASS_LABEL,
+  intervalClass,
+  type IntervalClass,
+} from "@/lib/intervals";
+import { fmtDateShort, fmtDuration, fmtPace, fmtSigned } from "@/lib/format";
 import { athleteContext } from "@/lib/plan-store";
 import { criticalSpeed, durationCurve, RIEGEL_DEFAULT } from "@/lib/prediction";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
 import { getBestEfforts } from "@/lib/queries";
 import { trimLeadingEmpty } from "@/lib/stats";
+import { RUN_TYPES } from "@/lib/strava";
 import { STANDARD_DISTANCES } from "@/lib/records";
 import { activityMarks } from "@/lib/race-marks";
 
@@ -65,6 +74,36 @@ export default async function AnalysisPage() {
   ]);
 
   const { runs, records, profile, endurance, fitness } = ctx;
+
+  // ---------------------------------------------------------------- Intervalles
+  const intervalList = await prisma.activity
+    .findMany({
+      where: {
+        userId,
+        type: { in: [...RUN_TYPES] },
+        startDate: { gte: new Date(now.getTime() - 180 * 86400000) },
+      },
+      orderBy: { startDate: "desc" },
+      take: 80,
+      select: {
+        id: true,
+        name: true,
+        startDate: true,
+        splits: { orderBy: { index: "asc" }, select: { distance: true, movingTime: true } },
+      },
+    })
+    .then((list) =>
+      list
+        .map((a) => ({
+          id: a.id,
+          name: a.name,
+          date: a.startDate,
+          analysis: detectIntervals(
+            a.splits.map((s) => ({ distance: s.distance, seconds: s.movingTime }))
+          ),
+        }))
+        .filter((s) => s.analysis.detected)
+    );
 
   if (runs.length < 5) {
     return (
@@ -350,6 +389,92 @@ export default async function AnalysisPage() {
           </p>
         </Section>
       </div>
+
+      {/* ------------------------------------------------ Séances d'intervalles */}
+      {intervalList.length > 0 && (
+        <Section>
+          <SectionHead
+            title="Séances d'intervalles"
+            note="Fractions répétées repérées automatiquement — l'allure moyenne des mêmes séances raconte la progression"
+          />
+          <div className="space-y-8">
+            {(["court", "1000", "long"] as IntervalClass[])
+              .filter((cls) => intervalList.some((s) => s.analysis.summary && intervalClass(s.analysis.summary.repDistance) === cls))
+              .map((cls) => {
+                const prog = classProgression(intervalList, cls, 6);
+                const sessions = intervalList
+                  .filter((s) => s.analysis.summary && intervalClass(s.analysis.summary.repDistance) === cls)
+                  .sort((a, b) => b.date.getTime() - a.date.getTime())
+                  .slice(0, 4);
+                const gain = prog.length >= 2 ? prog[prog.length - 1].pace - prog[0].pace : null;
+                return (
+                  <div key={cls} className="border-t border-hair pt-5">
+                    <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+                      <div>
+                        <div className="eyebrow">{INTERVAL_CLASS_LABEL[cls]}</div>
+                        <div className="mt-1 flex items-baseline gap-3">
+                          {gain !== null ? (
+                            <span className={`text-xl font-semibold tracking-tight ${gain <= 0 ? "text-sage" : "text-ochre"}`}>
+                              {fmtSigned(gain, 1, " s/km")}
+                            </span>
+                          ) : (
+                            <span className="text-xl font-semibold tracking-tight text-ink3">—</span>
+                          )}
+                          <span className="text-micro text-ink3">sur les {prog.length} dernières séances</span>
+                        </div>
+                      </div>
+                      {prog.length >= 2 && (
+                        <Sparkline
+                          data={prog.map((p) => p.pace)}
+                          stroke="rgb(var(--clay))"
+                          width={120}
+                          height={28}
+                        />
+                      )}
+                    </div>
+                    <div className="mt-3 overflow-x-auto">
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>Date</th>
+                            <th>Séance</th>
+                            <th className="text-right">Fractions</th>
+                            <th className="text-right">Allure moyenne</th>
+                            <th className="text-right">Régularité</th>
+                            <th className="text-right">Fatigue</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sessions.map((s) => (
+                            <tr key={s.id}>
+                              <td className="text-ink3">{fmtDateShort(s.date)}</td>
+                              <td>
+                                <Link href={`/activities/${s.id}`} className="text-clay hover:underline">
+                                  {s.name}
+                                </Link>
+                              </td>
+                              <td className="text-right font-mono">
+                                {s.analysis.summary!.count} × {Math.round(s.analysis.summary!.repDistance)} m
+                              </td>
+                              <td className="text-right font-mono">{fmtPace(s.analysis.summary!.avgPace)}</td>
+                              <td className="text-right font-mono">± {s.analysis.summary!.cv} %</td>
+                              <td className="text-right font-mono">{fmtSigned(s.analysis.summary!.fatigue, 1, " %")}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+          <p className="mt-4 border-t border-hair pt-4 font-mono text-micro leading-relaxed tabular-nums text-ink3">
+            Repérage sur les kilomètres Strava : les distances sont arrondies, une fraction
+            de 800 m apparaît comme 1 000 m. La fatigue négative signale une fin de séance
+            plus rapide que le début.
+          </p>
+        </Section>
+      )}
 
       {/* ------------------------------------------------ Année / année */}
       <Section>

@@ -6,7 +6,8 @@ import { ActivityRoute, type RouteGeometry } from "@/components/route/ActivityRo
 import { ActivityJournal } from "@/components/route/ActivityJournal";
 import { RouteGlyph } from "@/components/route/RouteGlyph";
 import { KeyNav } from "@/components/KeyNav";
-import { fmtDateShort, fmtDuration, fmtPace, pacePerKm, speedToPace } from "@/lib/format";
+import { fmtDateShort, fmtDistance, fmtDuration, fmtPace, fmtSigned, pacePerKm, speedToPace } from "@/lib/format";
+import { detectIntervals } from "@/lib/intervals";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
 import { getSettings } from "@/lib/queries";
@@ -124,6 +125,14 @@ export default async function ActivityDetailPage({
 
   const load = trainingLoad(activity, { maxHr, restHr: settings.restHr });
   const vdot = isRun ? vdotFromPerformance(activity.distance, activity.movingTime) : 0;
+
+  // ------------------------------------------------------------ Intervalles
+  const interval =
+    isRun && activity.splits.length >= 4
+      ? detectIntervals(
+          activity.splits.map((s) => ({ distance: s.distance, seconds: s.movingTime }))
+        )
+      : null;
 
   // ------------------------------------------------------------ Même parcours
   const sig = routeSignature(activity.polyline);
@@ -358,6 +367,69 @@ export default async function ActivityDetailPage({
             </p>
           </Section>
         </div>
+
+        {/* ---------------------------------------------- Intervalles */}
+        {interval?.detected && interval.summary && (
+          <Section
+            title="Intervalles"
+            note="Fractions répétées repérées dans les kilomètres de la séance — distances arrondies au kilomètre le plus proche."
+          >
+            <div className="flex flex-wrap gap-8">
+              <Metric
+                label="fractions"
+                value={String(interval.summary.count)}
+                note={`≈ ${fmtDistance(interval.summary.repDistance)} par fraction`}
+              />
+              <Metric
+                label="allure moyenne"
+                value={fmtPace(interval.summary.avgPace)}
+                note={`${fmtPace(interval.summary.bestPace)} au mieux`}
+              />
+              <Metric
+                label="régularité"
+                value={`± ${interval.summary.cv} %`}
+                note={interval.summary.cv < 3 ? "très régulier" : interval.summary.cv < 6 ? "correct" : "dispersé"}
+              />
+              <Metric
+                label="fatigue"
+                value={fmtSigned(interval.summary.fatigue, 1, "%")}
+                note={interval.summary.fatigue > 4 ? "fin plus lente" : interval.summary.fatigue < -2 ? "fin plus rapide" : "tenu jusqu'au bout"}
+              />
+              {interval.summary.recoveryPace !== null && (
+                <Metric label="récupération" value={fmtPace(interval.summary.recoveryPace)} note="allure des trots" />
+              )}
+            </div>
+
+            <div className="mt-6 overflow-x-auto">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th className="text-right">Allure</th>
+                    <th className="text-right">Écart au meilleur</th>
+                    <th className="text-right">Temps</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {interval.reps.map((r, i) => (
+                    <tr key={r.splitIndex}>
+                      <td className="text-ink3">{i + 1}</td>
+                      <td className="text-right font-mono">{fmtPace(r.pace)}</td>
+                      <td className="text-right font-mono">
+                        {r.pace - interval.summary!.bestPace <= 0.5 ? (
+                          <span className="text-sage">meilleur</span>
+                        ) : (
+                          `+${Math.round(r.pace - interval.summary!.bestPace)} s`
+                        )}
+                      </td>
+                      <td className="text-right font-mono">{fmtDuration(r.seconds)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Section>
+        )}
 
         {/* ---------------------------------------------- Meilleurs efforts */}
         {activity.bestEfforts.length > 0 && (
