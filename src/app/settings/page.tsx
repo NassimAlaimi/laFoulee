@@ -1,4 +1,5 @@
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { PageHead, Section, SectionHead } from "@/components/ui/Layout";
 import { DisconnectButton } from "@/components/DisconnectButton";
 import { SyncButton } from "@/components/SyncButton";
@@ -9,6 +10,7 @@ import { isStravaConfigured } from "@/lib/strava";
 import { displayName, requireUser, requireUserId } from "@/lib/auth";
 import { AccountActions } from "@/components/AccountActions";
 import { CalendarSubscription } from "@/components/CalendarSubscription";
+import { LanguageSwitcher } from "@/components/settings/LanguageSwitcher";
 import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +20,7 @@ export default async function SettingsPage({
 }: {
   searchParams: Promise<{ connected?: string; error?: string; welcome?: string }>;
 }) {
+  const t = await getTranslations("settings");
   const params = await searchParams;
   const user = await requireUser();
   const userId = user.id;
@@ -263,6 +266,15 @@ export default async function SettingsPage({
             </button>
           </div>
         </form>
+      </Section>
+
+      {/* -------------------------------------------------- Langue */}
+      <Section>
+        <SectionHead
+          title={t("languageTitle")}
+          note={t("languageNote")}
+        />
+        <LanguageSwitcher />
       </Section>
 
       {/* -------------------------------------------------- Agenda */}

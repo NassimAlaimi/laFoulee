@@ -2,17 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { ThemeToggle } from "./Theme";
 import { AccountMenu, type AccountInfo } from "./AccountMenu";
 
 const NAV = [
-  { href: "/", label: "Aujourd'hui" },
-  { href: "/activities", label: "Activités" },
-  { href: "/training", label: "Entraînement" },
-  { href: "/analysis", label: "Analyse" },
-  { href: "/corps", label: "Corps" },
-  { href: "/plus", label: "Plus" },
-];
+  { href: "/", key: "today" },
+  { href: "/activities", key: "activities" },
+  { href: "/training", key: "training" },
+  { href: "/analysis", key: "analysis" },
+  { href: "/corps", key: "body" },
+  { href: "/plus", key: "more" },
+] as const;
 
 /** Chaque pôle éclaire aussi ses pages intérieures dans la barre. */
 const POLES: Record<string, string[]> = {
@@ -28,6 +29,7 @@ const POLES: Record<string, string[]> = {
  */
 export function TopNav({ user }: { user: AccountInfo | null }) {
   const pathname = usePathname();
+  const t = useTranslations("nav");
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/" || pathname.startsWith("/log");
     if (href === "/activities") return pathname.startsWith("/activities");
@@ -59,7 +61,7 @@ export function TopNav({ user }: { user: AccountInfo | null }) {
                   active ? "text-ink" : "text-ink2 hover:text-ink"
                 }`}
               >
-                {item.label}
+                {t(item.key)}
                 {active && (
                   <span className="absolute inset-x-2.5 -bottom-px h-px bg-clay" />
                 )}
@@ -73,8 +75,8 @@ export function TopNav({ user }: { user: AccountInfo | null }) {
             type="button"
             onClick={() => window.dispatchEvent(new Event("palette:open"))}
             className="btn-quiet gap-1.5 lg:border lg:border-hair lg:pr-1"
-            aria-label="Rechercher (Ctrl+K)"
-            title="Rechercher, naviguer, calculer · ⌘K"
+            aria-label={t("search")}
+            title={t("searchTitle")}
           >
             <SearchIcon />
             <kbd className="kbd hidden lg:inline-flex">⌘K</kbd>
@@ -83,8 +85,8 @@ export function TopNav({ user }: { user: AccountInfo | null }) {
           <Link
             href="/settings"
             className={`btn-quiet ${pathname.startsWith("/settings") ? "text-ink" : ""}`}
-            aria-label="Réglages"
-            title="Réglages"
+            aria-label={t("settings")}
+            title={t("settings")}
           >
             <GearIcon />
           </Link>
@@ -98,10 +100,10 @@ export function TopNav({ user }: { user: AccountInfo | null }) {
 }
 
 const MOBILE = [
-  { href: "/", label: "Aujourd'hui", icon: "M4 13h6V4H4zM14 20h6V11h-6zM4 20h6v-4H4zM14 7h6V4h-6z" },
-  { href: "/activities", label: "Activités", icon: "M3 17c3.5 0 4.5-10 8-10s4.5 10 8 10" },
-  { href: "/training", label: "Plan", icon: "M5 5h14v15H5zM5 10h14M9 3v4M15 3v4" },
-  { href: "/analysis", label: "Analyse", icon: "M3 17c4-6 7-6 9-3M5 7l3 3 4-4M15 12v6h6M3 21h18" },
+  { href: "/", key: "today", icon: "M4 13h6V4H4zM14 20h6V11h-6zM4 20h6v-4H4zM14 7h6V4h-6z" },
+  { href: "/activities", key: "activities", icon: "M3 17c3.5 0 4.5-10 8-10s4.5 10 8 10" },
+  { href: "/training", key: "plan", icon: "M5 5h14v15H5zM5 10h14M9 3v4M15 3v4" },
+  { href: "/analysis", key: "analysis", icon: "M3 17c4-6 7-6 9-3M5 7l3 3 4-4M15 12v6h6M3 21h18" },
 ];
 
 /**
@@ -109,23 +111,24 @@ const MOBILE = [
  * tout le reste passe par la palette (« Plus »).
  */
 function MobileTabs({ isActive }: { isActive: (href: string) => boolean }) {
+  const t = useTranslations("nav");
   return (
     <nav
       className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-hair bg-bg/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden"
-      aria-label="Navigation principale"
+      aria-label={t("mainNav")}
     >
-      {MOBILE.map((t) => {
-        const on = isActive(t.href);
+      {MOBILE.map((tab) => {
+        const on = isActive(tab.href);
         return (
           <Link
-            key={t.href}
-            href={t.href}
+            key={tab.href}
+            href={tab.href}
             className={`flex flex-col items-center gap-1 py-2.5 text-[10px] ${on ? "text-clay" : "text-ink2"}`}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <path d={t.icon} stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+              <path d={tab.icon} stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            {t.label}
+            {t(tab.key)}
           </Link>
         );
       })}
@@ -139,7 +142,7 @@ function MobileTabs({ isActive }: { isActive: (href: string) => boolean }) {
           <circle cx="12" cy="12" r="1.6" fill="currentColor" />
           <circle cx="19" cy="12" r="1.6" fill="currentColor" />
         </svg>
-        Plus
+        {t("more")}
       </button>
     </nav>
   );

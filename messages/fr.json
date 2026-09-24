@@ -1,0 +1,36 @@
+{
+  "common": {
+    "appTitle": "Foulée — analyse d'entraînement",
+    "appDescription": "Suivi et analyse de course à pied et de musculation",
+    "settings": "Réglages",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "close": "Fermer",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "loading": "Chargement…",
+    "error": "Une erreur est survenue",
+    "today": "Aujourd'hui",
+    "empty": "Rien ici pour le moment"
+  },
+  "nav": {
+    "today": "Aujourd'hui",
+    "activities": "Activités",
+    "training": "Entraînement",
+    "plan": "Plan",
+    "analysis": "Analyse",
+    "body": "Corps",
+    "more": "Plus",
+    "search": "Rechercher",
+    "searchTitle": "Rechercher, naviguer, calculer · ⌘K",
+    "mainNav": "Navigation principale",
+    "settings": "Réglages"
+  },
+  "settings": {
+    "language": "Langue",
+    "languageTitle": "Langue de l'interface",
+    "languageNote": "Le français reste la langue par défaut. Ton choix est enregistré sur ton profil et te suit sur tous tes appareils."
+  }
+}

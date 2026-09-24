@@ -1,0 +1,36 @@
+{
+  "common": {
+    "appTitle": "Foulée — training analysis",
+    "appDescription": "Running and strength training tracking and analysis",
+    "settings": "Settings",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "today": "Today",
+    "empty": "Nothing here yet"
+  },
+  "nav": {
+    "today": "Today",
+    "activities": "Activities",
+    "training": "Training",
+    "plan": "Plan",
+    "analysis": "Analysis",
+    "body": "Body",
+    "more": "More",
+    "search": "Search",
+    "searchTitle": "Search, navigate, calculate · ⌘K",
+    "mainNav": "Main navigation",
+    "settings": "Settings"
+  },
+  "settings": {
+    "language": "Language",
+    "languageTitle": "Interface language",
+    "languageNote": "French remains the default language. Your choice is saved to your profile and follows you across devices."
+  }
+}

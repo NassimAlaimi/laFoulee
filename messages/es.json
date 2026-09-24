@@ -1,0 +1,36 @@
+{
+  "common": {
+    "appTitle": "Foulée — análisis de entrenamiento",
+    "appDescription": "Seguimiento y análisis de carrera a pie y de fuerza",
+    "settings": "Ajustes",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "close": "Cerrar",
+    "back": "Volver",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "loading": "Cargando…",
+    "error": "Se ha producido un error",
+    "today": "Hoy",
+    "empty": "Nada por aquí todavía"
+  },
+  "nav": {
+    "today": "Hoy",
+    "activities": "Actividades",
+    "training": "Entrenamiento",
+    "plan": "Plan",
+    "analysis": "Análisis",
+    "body": "Cuerpo",
+    "more": "Más",
+    "search": "Buscar",
+    "searchTitle": "Buscar, navegar, calcular · ⌘K",
+    "mainNav": "Navegación principal",
+    "settings": "Ajustes"
+  },
+  "settings": {
+    "language": "Idioma",
+    "languageTitle": "Idioma de la interfaz",
+    "languageNote": "El francés sigue siendo el idioma por defecto. Tu elección se guarda en tu perfil y te acompaña en todos tus dispositivos."
+  }
+}
