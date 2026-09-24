@@ -35,10 +35,14 @@ export function GuidedTour() {
   const [active, setActive] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [anchor, setAnchor] = useState<Rect | null>(null);
-  const [vp, setVp] = useState({ width: 1200, height: 800 });
-  const [bubbleSize, setBubbleSize] = useState({ width: 360, height: 210 });
+  /** true pendant que la page défile vers la cible : projecteur masqué */
+  const [settling, setSettling] = useState(false);
   const [reduced, setReduced] = useState(false);
+  /** Position figée de la bulle — mise à jour UNIQUEMENT en même temps que
+   *  l'ancre, pour qu'anneau et bulle glissent ensemble, une seule fois. */
+  const [bubblePos, setBubblePos] = useState<BubblePos | null>(null);
   const bubbleRef = useRef<HTMLDivElement>(null);
+  const bubbleSizeRef = useRef({ width: 360, height: 210 });
 
   const step = TOUR_STEPS[stepIndex];
   const last = stepIndex === TOUR_STEPS.length - 1;
@@ -53,6 +57,8 @@ export function GuidedTour() {
     const onStart = () => {
       setStepIndex(0);
       setAnchor(null);
+      setBubblePos(null);
+      setSettling(false);
       setActive(true);
     };
     window.addEventListener("foulee:tour", onStart);
@@ -91,23 +97,29 @@ export function GuidedTour() {
 
   // ---------------------------------------------------------- Ancre et géométrie
   useEffect(() => {
-    const onVp = () => setVp({ width: window.innerWidth, height: window.innerHeight });
-    onVp();
-    window.addEventListener("resize", onVp);
-    return () => window.removeEventListener("resize", onVp);
-  }, []);
-
-  useEffect(() => {
     if (!active) {
       setAnchor(null);
+      setSettling(false);
       return;
     }
     // Carte finale : pas d'ancre, bulle centrée.
     if (!step.anchor) {
       setAnchor(null);
+      setSettling(false);
+      setBubblePos(
+        centeredBubble(
+          { width: window.innerWidth, height: window.innerHeight },
+          bubbleSizeRef.current.height
+        )
+      );
       return;
     }
     if (step.path && pathname !== step.path) return; // la page arrive
+
+    // Le temps que la page défile vers la cible, le projecteur s'efface :
+    // sans ça, l'anneau restait figé à l'ancienne position et encerclait le
+    // contenu qui défilait en dessous — l'effet « réajusté plusieurs fois ».
+    setSettling(true);
 
     let cancelled = false;
     let attempts = 0;
@@ -124,16 +136,23 @@ export function GuidedTour() {
       const measure = () => {
         if (cancelled) return;
         const r = el.getBoundingClientRect();
-        setAnchor({ top: r.top, left: r.left, width: r.width, height: r.height });
+        const rect = { top: r.top, left: r.left, width: r.width, height: r.height };
+        setAnchor(rect);
+        // Anneau et bulle partent ensemble, une seule fois.
+        setBubblePos(
+          bubblePosition(rect, bubbleSizeRef.current, {
+            width: window.innerWidth,
+            height: window.innerHeight,
+          })
+        );
+        setSettling(false); // le projecteur réapparaît, déjà à sa place
       };
       el.scrollIntoView({ block: "center", behavior: reduced ? "auto" : "smooth" });
       if (reduced) {
         measure();
         return;
       }
-      // UNE seule mesure, après immobilisation du défilement : le projecteur
-      // glisse d'un seul mouvement vers sa position finale. Mesurer pendant
-      // le scroll (ou re-mesurer à coups de timeouts) le faisait clignoter.
+      // UNE seule mesure, après immobilisation du défilement.
       let settled = false;
       const settle = () => {
         if (settled || cancelled) return;
@@ -163,20 +182,27 @@ export function GuidedTour() {
         document.querySelector<HTMLElement>("main h1");
       if (!el) return;
       const r = el.getBoundingClientRect();
-      setAnchor({ top: r.top, left: r.left, width: r.width, height: r.height });
+      const rect = { top: r.top, left: r.left, width: r.width, height: r.height };
+      setAnchor(rect);
+      setBubblePos(
+        bubblePosition(rect, bubbleSizeRef.current, {
+          width: window.innerWidth,
+          height: window.innerHeight,
+        })
+      );
     };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [active, stepIndex, pathname, step.anchor, step.path]);
 
-  // Taille réelle de la bulle — ne dépend que du contenu de l'étape : on ne
-  // la re-mesure pas à chaque mouvement du projecteur.
+  // Taille réelle de la bulle — lue depuis une ref, sans déclencher de
+  // rendu : la position de la bulle ne bouge qu'avec l'ancre.
   useLayoutEffect(() => {
     if (!active) return;
     const el = bubbleRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
-    if (r.width > 0) setBubbleSize({ width: r.width, height: r.height });
+    if (r.width > 0) bubbleSizeRef.current = { width: r.width, height: r.height };
   }, [active, stepIndex]);
 
   // ---------------------------------------------------------- Actions
@@ -184,9 +210,20 @@ export function GuidedTour() {
     window.localStorage.setItem(TOUR_STORAGE_KEY, "1");
     setActive(false);
     setAnchor(null);
+    setBubblePos(null);
   };
-  const next = () => (last ? finish() : setStepIndex(stepIndex + 1));
-  const prev = () => setStepIndex(Math.max(0, stepIndex - 1));
+  const next = () => {
+    if (last) {
+      finish();
+      return;
+    }
+    setSettling(true); // l'anneau s'efface dès le clic, pas au rendu suivant
+    setStepIndex(stepIndex + 1);
+  };
+  const prev = () => {
+    setSettling(true);
+    setStepIndex(Math.max(0, stepIndex - 1));
+  };
 
   useEffect(() => {
     if (!active) return;
@@ -202,9 +239,7 @@ export function GuidedTour() {
 
   if (!active) return null;
 
-  const pos: BubblePos | null = anchor
-    ? bubblePosition(anchor, bubbleSize, vp)
-    : centeredBubble(vp, bubbleSize.height);
+  const pos = bubblePos;
   const spot = anchor
     ? {
         left: anchor.left - PAD,
@@ -213,18 +248,18 @@ export function GuidedTour() {
         height: anchor.height + 2 * PAD,
       }
     : null;
-  // Pendant une navigation inter-pages, le projecteur s'efface : il ne
-  // doit jamais pointer un contenu en train d'apparaître.
+  // Pendant une navigation inter-pages ou le défilement vers la cible, le
+  // projecteur s'efface : il ne doit jamais encadrer du contenu en mouvement.
   const navigating = Boolean(step.path) && pathname !== step.path;
+  const projectorHidden = navigating || settling;
 
   return (
     <div className="fixed inset-0 z-[70]" role="dialog" aria-modal="true" aria-label="Visite guidée">
-      {/* Fond assombri avec la fenêtre du projecteur */}
-      <div
-        className="pointer-events-none fixed inset-0 transition-opacity duration-300"
-        style={{ opacity: navigating ? 0 : 1 }}
-        aria-hidden
-      >
+      {/* Fond assombri avec la fenêtre du projecteur — reste allumé en
+          permanence : éteindre/rallumer le fond à chaque étape faisait
+          clignoter tout l'écran. Seul l'anneau s'efface pendant les
+          transitions. */}
+      <div className="pointer-events-none fixed inset-0" aria-hidden>
         {spot ? (
           <>
             <div
@@ -238,12 +273,13 @@ export function GuidedTour() {
               }}
             />
             <div
-              className="tour-ring fixed rounded-[14px]"
+              className="tour-ring fixed rounded-[14px] transition-opacity duration-300"
               style={{
                 left: spot.left - 3,
                 top: spot.top - 3,
                 width: spot.width + 6,
                 height: spot.height + 6,
+                opacity: projectorHidden ? 0 : 1,
                 boxShadow:
                   "inset 0 0 0 1.5px rgb(var(--clay)), 0 0 0 4px rgb(var(--clay) / 0.14), 0 8px 40px rgb(0 0 0 / 0.35)",
               }}
