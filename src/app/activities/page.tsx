@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Empty, Hint, PageHead } from "@/components/ui/Layout";
 import { Metric, MetricBand } from "@/components/ui/Metric";
 import { MiniBars } from "@/components/ui/Spark";
@@ -25,30 +26,30 @@ type Filters = {
 };
 
 const VIEWS = [
-  { key: "list", label: "Liste" },
-  { key: "mosaic", label: "Mosaïque" },
-  { key: "map", label: "Carte" },
+  { key: "list", labelKey: "list" },
+  { key: "mosaic", labelKey: "mosaic" },
+  { key: "map", labelKey: "map" },
 ];
 
 const PERIODS = [
-  { key: "all", label: "Tout" },
-  { key: "30", label: "30 j" },
-  { key: "90", label: "90 j" },
-  { key: "365", label: "1 an" },
+  { key: "all", labelKey: "all" },
+  { key: "30", labelKey: "30" },
+  { key: "90", labelKey: "90" },
+  { key: "365", labelKey: "365" },
 ];
 
 const TYPES = [
-  { key: "all", label: "Toutes" },
-  { key: "race", label: "Courses" },
-  { key: "trail", label: "Trail" },
-  { key: "long", label: "≥ 15 km" },
+  { key: "all", labelKey: "all" },
+  { key: "race", labelKey: "race" },
+  { key: "trail", labelKey: "trail" },
+  { key: "long", labelKey: "long" },
 ];
 
 const SORTS = [
-  { key: "date", label: "Date" },
-  { key: "distance", label: "Distance" },
-  { key: "pace", label: "Allure" },
-  { key: "elevation", label: "D+" },
+  { key: "date", labelKey: "date" },
+  { key: "distance", labelKey: "distance" },
+  { key: "pace", labelKey: "pace" },
+  { key: "elevation", labelKey: "elevation" },
 ];
 
 export default async function ActivitiesPage({
@@ -56,6 +57,8 @@ export default async function ActivitiesPage({
 }: {
   searchParams: Promise<Filters>;
 }) {
+  const t = await getTranslations("activities");
+  const locale = await getLocale();
   const params = await searchParams;
   const userId = await requireUserId();
   const all = await getRuns(undefined, userId);
@@ -63,11 +66,11 @@ export default async function ActivitiesPage({
   if (all.length === 0) {
     return (
       <>
-        <PageHead title="Activités" />
+        <PageHead title={t("title")} />
         <Empty
-          title="Aucune activité"
-          body="Synchronise ton compte Strava pour importer tes courses."
-          action={<Link href="/settings" className="btn-solid">Réglages</Link>}
+          title={t("empty")}
+          body={t("emptyBody")}
+          action={<Link href="/settings" className="btn-solid">{t("settingsLink")}</Link>}
         />
       </>
     );
@@ -132,22 +135,22 @@ export default async function ActivitiesPage({
   return (
     <div className="space-y-6">
       <PageHead
-        title="Activités"
-        kicker={PERIODS.find((x) => x.key === period)?.label ?? "Tout"}
-        meta={`${stats.sessions} course${stats.sessions > 1 ? "s" : ""} · ${stats.km} km · ${stats.timeHours} h · ${stats.elevation} m D+`}
+        title={t("title")}
+        kicker={t(`periods.${PERIODS.find((x) => x.key === period)?.labelKey ?? "all"}`)}
+        meta={t("meta", { sessions: stats.sessions, km: stats.km, h: stats.timeHours, elev: stats.elevation })}
       />
 
       <MetricBand>
         <Metric
-          label="Distance totale"
+          label={t("totalDistance")}
           value={stats.km}
           unit="km"
           visual={<MiniBars data={weekly.map((w) => w.km)} />}
         />
-        <Metric label="Allure moyenne" value={fmtPace(stats.avgPace, "")} unit="/km" />
-        <Metric label="Plus longue" value={stats.longestRunKm} unit="km" />
+        <Metric label={t("avgPace")} value={fmtPace(stats.avgPace, "")} unit="/km" />
+        <Metric label={t("longest")} value={stats.longestRunKm} unit="km" />
         <Metric
-          label="Dénivelé"
+          label={t("elevation")}
           value={stats.elevation}
           unit="m"
           visual={<MiniBars data={weekly.map((w) => w.elevation)} />}
@@ -160,7 +163,7 @@ export default async function ActivitiesPage({
           <input
             name="q"
             defaultValue={params.q}
-            placeholder="Rechercher une séance…"
+            placeholder={t("searchPlaceholder")}
             className="field w-full sm:w-64"
           />
           {type !== "all" && <input type="hidden" name="type" value={type} />}
@@ -168,48 +171,48 @@ export default async function ActivitiesPage({
           {period !== "all" && <input type="hidden" name="period" value={period} />}
           {view !== "list" && <input type="hidden" name="view" value={view} />}
           <button className="btn-outline" type="submit">
-            Rechercher
+            {t("search")}
           </button>
           {params.q && (
             <Link href={qs({ q: undefined })} className="btn-quiet">
-              Effacer
+              {t("clear")}
             </Link>
           )}
         </form>
 
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-          <FilterGroup label="Période" options={PERIODS} active={period} href={(k) => qs({ period: k })} />
-          <FilterGroup label="Type" options={TYPES} active={type} href={(k) => qs({ type: k })} />
-          <FilterGroup label="Trier par" options={SORTS} active={sort} href={(k) => qs({ sort: k })} />
+          <FilterGroup label={t("filterPeriod")} ns="periods" options={PERIODS} active={period} href={(k) => qs({ period: k })} t={t} />
+          <FilterGroup label={t("filterType")} ns="types" options={TYPES} active={type} href={(k) => qs({ type: k })} t={t} />
+          <FilterGroup label={t("filterSort")} ns="sorts" options={SORTS} active={sort} href={(k) => qs({ sort: k })} t={t} />
           <div className="ml-auto">
-            <FilterGroup label="Vue" options={VIEWS} active={view} href={(k) => qs({ view: k, zone: undefined })} />
+            <FilterGroup label={t("filterView")} ns="views" options={VIEWS} active={view} href={(k) => qs({ view: k, zone: undefined })} t={t} />
           </div>
         </div>
       </section>
 
       {/* ---------------------------------------------------- Tableau */}
       {runs.length === 0 ? (
-        <Hint height={200}>Aucune activité ne correspond à ces filtres.</Hint>
+        <Hint height={200}>{t("noMatch")}</Hint>
       ) : view === "mosaic" ? (
-        <Mosaic runs={runs} poly={poly} />
+        <Mosaic runs={runs} poly={poly} locale={locale} t={t} />
       ) : view === "map" ? (
-        <MapView runs={runs} poly={poly} zone={Number(params.zone ?? 0) || 0} qs={(z) => qs({ zone: String(z) })} />
+        <MapView runs={runs} poly={poly} zone={Number(params.zone ?? 0) || 0} qs={(z) => qs({ zone: String(z) })} locale={locale} t={t} />
       ) : (
         <div className="mt-6">
           <div className="overflow-x-auto">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th className="w-10" aria-label="Tracé" />
-                  <th>Date</th>
-                  <th>Séance</th>
-                  <th className="text-right">Distance (km)</th>
-                  <th className="text-right">Temps</th>
-                  <th className="text-right">Allure</th>
-                  <th className="text-right">FC moy</th>
-                  <th className="text-right">FC max</th>
-                  <th className="text-right">D+ (m)</th>
-                  <th className="text-right">Cadence</th>
+                  <th className="w-10" aria-label={t("trace")} />
+                  <th>{t("date")}</th>
+                  <th>{t("session")}</th>
+                  <th className="text-right">{t("distanceKm")}</th>
+                  <th className="text-right">{t("time")}</th>
+                  <th className="text-right">{t("pace")}</th>
+                  <th className="text-right">{t("avgHr")}</th>
+                  <th className="text-right">{t("maxHr")}</th>
+                  <th className="text-right">{t("elevM")}</th>
+                  <th className="text-right">{t("cadence")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -219,17 +222,17 @@ export default async function ActivitiesPage({
                       <RouteGlyph polyline={poly.get(r.id)} size={30} strokeWidth={1.4} />
                     </td>
                     <td className="whitespace-nowrap text-ink2">
-                      {fmtDate(r.startDate)}
+                      {fmtDate(r.startDate, locale)}
                     </td>
                     <td>
                       <Link
                         href={`/activities/${r.id}`}
                         className="inline-flex max-w-[320px] items-center gap-2 truncate align-middle hover:text-clay"
                       >
-                        {r.isRace && <span className="tag shrink-0 border-clay/40 text-clay">course</span>}
+                        {r.isRace && <span className="tag shrink-0 border-clay/40 text-clay">{t("tagRace")}</span>}
                         <span className="truncate">{r.name}</span>
                         {r.type === "TrailRun" && (
-                          <span className="tag shrink-0">trail</span>
+                          <span className="tag shrink-0">{t("tagTrail")}</span>
                         )}
                       </Link>
                     </td>
@@ -267,14 +270,18 @@ export default async function ActivitiesPage({
 
 function FilterGroup({
   label,
+  ns,
   options,
   active,
   href,
+  t,
 }: {
   label: string;
-  options: Array<{ key: string; label: string }>;
+  ns: string;
+  options: Array<{ key: string; labelKey: string }>;
   active: string;
   href: (key: string) => string;
+  t: (key: string) => string;
 }) {
   return (
     <div className="flex items-center gap-2">
@@ -290,7 +297,7 @@ function FilterGroup({
                 : "border-transparent text-ink2 hover:text-ink"
             }`}
           >
-            {o.label}
+            {t(`${ns}.${o.labelKey}`)}
           </Link>
         ))}
       </div>
@@ -305,7 +312,17 @@ type Run = Awaited<ReturnType<typeof getRuns>>[number];
  * reconnaît d'un coup d'œil ses boucles habituelles, ses allers-retours et
  * les sorties qui sortent du lot.
  */
-function Mosaic({ runs, poly }: { runs: Run[]; poly: Map<string, string | null> }) {
+function Mosaic({
+  runs,
+  poly,
+  locale,
+  t,
+}: {
+  runs: Run[];
+  poly: Map<string, string | null>;
+  locale: string;
+  t: (key: string, params?: Record<string, string | number>) => string;
+}) {
   return (
     <div className="mt-8 grid grid-cols-3 overflow-hidden rounded-card border-l border-t border-hair sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
       {runs.map((r, i) => (
@@ -318,8 +335,8 @@ function Mosaic({ runs, poly }: { runs: Run[]; poly: Map<string, string | null> 
           title={r.name}
         >
           <div className="flex items-baseline justify-between text-[10px] text-ink3">
-            <span className="font-mono">{fmtDateShort(r.startDate)}</span>
-            {r.isRace && <span className="h-1.5 w-1.5 rounded-full bg-clay" aria-label="course" />}
+            <span className="font-mono">{fmtDateShort(r.startDate, locale)}</span>
+            {r.isRace && <span className="h-1.5 w-1.5 rounded-full bg-clay" aria-label={t("tagRace")} />}
           </div>
           <div className="flex flex-1 items-center justify-center py-1 text-ink2 transition-colors group-hover:text-clay">
             <RouteGlyph polyline={poly.get(r.id)} size={76} strokeWidth={1.5} dot={false} />
@@ -342,18 +359,22 @@ function MapView({
   poly,
   zone,
   qs,
+  locale,
+  t,
 }: {
   runs: Run[];
   poly: Map<string, string | null>;
   zone: number;
   qs: (zone: number) => string;
+  locale: string;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }) {
   const located = runs
     .map((r) => ({ ...r, polyline: poly.get(r.id) ?? null, start: startOf(poly.get(r.id)) }))
     .filter((r): r is typeof r & { start: [number, number] } => r.start !== null);
 
   if (!located.length) {
-    return <Hint height={240}>Aucune de ces activités n&apos;a de tracé GPS.</Hint>;
+    return <Hint height={240}>{t("noGps")}</Hint>;
   }
 
   const clusters = clusterByStart(located, 25);
@@ -364,7 +385,7 @@ function MapView({
     id: p.id,
     d: p.d,
     name: p.item.name,
-    date: fmtDate(p.item.startDate),
+    date: fmtDate(p.item.startDate, locale),
     km: p.item.distance / 1000,
     pace: fmtPace(pacePerKm(p.item.distance, p.item.movingTime)),
     race: p.item.isRace,
@@ -381,7 +402,7 @@ function MapView({
       {fav && <FavoriteRoute items={fav.items} polyline={fav.lead.polyline} />}
       {clusters.length > 1 && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-micro uppercase tracking-[0.08em] text-ink3">Secteur</span>
+          <span className="text-micro uppercase tracking-[0.08em] text-ink3">{t("sector")}</span>
           {clusters.map((c, i) => (
             <Link
               key={i}
@@ -390,7 +411,7 @@ function MapView({
                 c === active ? "border-clay/40 bg-clay/10 font-medium text-clay" : "border-hair text-ink2 hover:text-ink"
               }`}
             >
-              {i === 0 ? "Principal" : `Secteur ${i + 1}`}
+              {i === 0 ? t("main") : t("sectorN", { n: i + 1 })}
               <span className="ml-1.5 font-mono text-micro text-ink3">
                 {c.items.length}
               </span>
@@ -402,28 +423,25 @@ function MapView({
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
         <RouteOverlay paths={paths} w={W} h={H} />
         <div>
-          <div className="eyebrow">Sur ce secteur</div>
+          <div className="eyebrow">{t("onSector")}</div>
           <div className="mt-3 flex items-baseline gap-1.5">
             <span className="display text-d2">{Math.round(zoneKm)}</span>
             <span className="text-sm text-ink3">km</span>
           </div>
           <p className="mt-2 text-[0.8125rem] text-ink2">
-            {active.items.length} sorties · {groups.length} parcours récurrent{groups.length > 1 ? "s" : ""}
+            {t("runsCount", { n: active.items.length, r: groups.length, s: groups.length > 1 ? "s" : "" })}
           </p>
           <p className="mt-6 text-micro leading-relaxed text-ink3">
-            Chaque sortie est un trait fin et translucide : plus une rue est empruntée,
-            plus elle s&apos;illumine. Clique un tracé pour ouvrir la séance.
+            {t("mapHint")}
           </p>
         </div>
       </div>
 
       {groups.length > 0 && (
         <section className="border-t border-hair pt-5">
-          <h2 className="eyebrow">Tes parcours récurrents</h2>
+          <h2 className="eyebrow">{t("recurringTitle")}</h2>
           <p className="mt-1.5 max-w-2xl text-[0.8125rem] leading-relaxed text-ink2">
-            Sorties reconnues comme le même parcours (tracé à moins de 120 m en moyenne,
-            distance à ±12 %). Le record de chaque parcours est ton chrono de référence
-            pour mesurer tes progrès à conditions égales.
+            {t("recurringBody")}
           </p>
           <div className="mt-6 grid gap-x-10 gap-y-2 md:grid-cols-2">
             {groups.slice(0, 10).map((g) => {
@@ -441,14 +459,14 @@ function MapView({
                         {avgKm.toFixed(1)} km
                         <span className="ml-2 text-[0.8125rem] font-normal text-ink3">× {g.items.length}</span>
                       </span>
-                      <Link href={`/activities/${best.r.id}`} className="font-mono text-[0.8125rem] font-medium hover:text-clay" title="Meilleur passage">
+                      <Link href={`/activities/${best.r.id}`} className="font-mono text-[0.8125rem] font-medium hover:text-clay" title={t("bestTitle")}>
                         {fmtDuration(best.r.movingTime)}
                       </Link>
                     </div>
                     <div className="mt-0.5 flex items-baseline justify-between gap-3 text-micro text-ink3">
                       <span>
-                        dernier passage {fmtDateShort(last.r.startDate)}
-                        {last.r.id === best.r.id ? " · record" : ` · +${gap} s/km vs record`}
+                        {t("lastPass", { date: fmtDateShort(last.r.startDate, locale) })}
+                        {last.r.id === best.r.id ? ` · ${t("record")}` : t("vsRecord", { s: gap })}
                       </span>
                       <span className="font-mono">{fmtPace(best.pace)}</span>
                     </div>

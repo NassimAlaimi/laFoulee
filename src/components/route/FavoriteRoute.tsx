@@ -9,6 +9,7 @@ import {
   routeTimeline,
 } from "@/lib/favorite-route";
 import { fmtDate, fmtDateShort, fmtPace } from "@/lib/format";
+import { useLocale, useTranslations } from "next-intl";
 
 type Item = {
   id: string;
@@ -34,11 +35,13 @@ export function FavoriteRoute({
   items: Item[];
   polyline: string | null;
 }) {
-  const t = useChartTheme();
+  const theme = useChartTheme();
+  const tt = useTranslations("activity");
+  const locale = useLocale();
   const tl = routeTimeline(items);
   const s = favoriteRouteSummary(tl);
   const data = tl.map((o) => ({
-    label: fmtDateShort(o.date),
+    label: fmtDateShort(o.date, locale),
     avgPace: o.pace,
     avgHr: o.hr,
   }));
@@ -49,14 +52,14 @@ export function FavoriteRoute({
   if (s.trend == null) {
     narrative =
       s.spanDays < MIN_TREND_SPAN_DAYS
-        ? `${s.count} passages en ${s.spanDays} jour${s.spanDays > 1 ? "s" : ""} — trop récent pour lire une tendance annuelle.`
-        : "Pas assez de régularité pour lire une tendance.";
+        ? tt("favFew", { n: s.count, d: s.spanDays, s: s.spanDays > 1 ? "s" : "" })
+        : tt("favNotRegular");
   } else if (s.trend <= -2) {
-    narrative = `Tu gagnes ${fr(Math.abs(s.trend))} s/km par an sur ce parcours.`;
+    narrative = tt("favGaining", { x: fr(Math.abs(s.trend)) });
   } else if (s.trend >= 2) {
-    narrative = `Tu perds ${fr(s.trend)} s/km par an — un creux passager ?`;
+    narrative = tt("favLosing", { x: fr(s.trend) });
   } else {
-    narrative = "Allure remarquablement stable d'une sortie à l'autre.";
+    narrative = tt("favStable");
   }
 
   return (
@@ -68,16 +71,16 @@ export function FavoriteRoute({
           strokeWidth={1.5}
           className="shrink-0 text-ink2"
         />
-        <h2 className="eyebrow">Ton parcours fétiche</h2>
+        <h2 className="eyebrow">{tt("favoriteRoute")}</h2>
       </div>
 
       <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-center">
         <div>
           <div className="flex items-baseline gap-2.5">
             <span className="display text-d2">× {s.count}</span>
-            <span className="text-[0.9375rem] text-ink3">fois ce {fr(s.km)} km</span>
+            <span className="text-[0.9375rem] text-ink3">{tt("timesThisKm", { km: fr(s.km) })}</span>
           </div>
-          <p className="mt-1 text-sm text-ink3">depuis {fmtDate(s.first)}</p>
+          <p className="mt-1 text-sm text-ink3">{tt("since", { date: fmtDate(s.first, locale) })}</p>
 
           <p className="mt-4 max-w-md text-[0.9375rem] leading-relaxed text-ink2">
             {narrative}
@@ -85,10 +88,10 @@ export function FavoriteRoute({
 
           <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-[0.8125rem] text-ink2">
             <span>
-              Meilleur <span className="font-mono text-ink">{fmtPace(s.bestPace)}</span>
+              {tt("best")} <span className="font-mono text-ink">{fmtPace(s.bestPace)}</span>
             </span>
             <span>
-              Dernier <span className="font-mono text-ink">{fmtPace(s.recentPace)}</span>
+              {tt("last")} <span className="font-mono text-ink">{fmtPace(s.recentPace)}</span>
             </span>
           </div>
         </div>
@@ -98,8 +101,8 @@ export function FavoriteRoute({
           <div className="mt-1">
             <Legend
               items={[
-                { label: "Allure", color: t.clay },
-                ...(s.hr ? [{ label: "FC", color: t.slate, dashed: true }] : []),
+                { label: tt("pace"), color: theme.clay },
+                ...(s.hr ? [{ label: tt("avgHr"), color: theme.slate, dashed: true }] : []),
               ]}
             />
           </div>

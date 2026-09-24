@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { Section } from "@/components/ui/Layout";
 import { Metric, MetricBand, Row } from "@/components/ui/Metric";
@@ -29,7 +29,9 @@ export default async function ActivityDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const t = await getTranslations("common");
+  const t = await getTranslations("activity");
+  const tc = await getTranslations("common");
+  const locale = await getLocale();
   const { id } = await params;
   const userId = await requireUserId();
 
@@ -190,14 +192,14 @@ export default async function ActivityDetailPage({
           <h1 className="mt-2 text-[1.75rem] font-semibold tracking-[-0.02em]">{activity.name}</h1>
           <p className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-ink2">
             <span className="inline-block first-letter:uppercase">
-              {activity.startDate.toLocaleDateString("fr-FR", {
+              {activity.startDate.toLocaleDateString(locale, {
                 weekday: "long",
                 day: "numeric",
                 month: "long",
                 year: "numeric",
               })}{" "}
               ·{" "}
-              {activity.startDate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+              {activity.startDate.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}
             </span>
             <span className="tag">{activity.sportType ?? activity.type}</span>
             {activity.isRace && <span className="tag border-clay/40 text-clay">course</span>}
@@ -210,17 +212,17 @@ export default async function ActivityDetailPage({
           </p>
         </div>
         <nav className="flex items-center gap-1" aria-label="Séances voisines">
-          <NeighbourLink href={older ? `/activities/${older.id}` : null} label="Précédente" dir="←" hint={older ? fmtDateShort(older.startDate) : undefined} />
-          <NeighbourLink href={newer ? `/activities/${newer.id}` : null} label="Suivante" dir="→" hint={newer ? fmtDateShort(newer.startDate) : undefined} />
+          <NeighbourLink href={older ? `/activities/${older.id}` : null} label={t("previous")} dir="←" hint={older ? fmtDateShort(older.startDate, locale) : undefined} />
+          <NeighbourLink href={newer ? `/activities/${newer.id}` : null} label={t("next")} dir="→" hint={newer ? fmtDateShort(newer.startDate, locale) : undefined} />
         </nav>
       </div>
 
       <MetricBand>
-        <Metric label="Distance" value={(activity.distance / 1000).toFixed(2)} unit="km" size="d2" />
-        <Metric label="Temps" value={fmtDuration(activity.movingTime)} size="d2" />
-        <Metric label="Allure" value={fmtPace(pace, "")} unit="/km" size="d2" />
+        <Metric label={t("distance")} value={(activity.distance / 1000).toFixed(2)} unit="km" size="d2" />
+        <Metric label={t("time")} value={fmtDuration(activity.movingTime)} size="d2" />
+        <Metric label={t("pace")} value={fmtPace(pace, "")} unit="/km" size="d2" />
         <Metric
-          label={activity.averageHr ? "FC moyenne" : "Dénivelé"}
+          label={activity.averageHr ? t("avgHr") : t("elevation")}
           value={activity.averageHr ? Math.round(activity.averageHr) : Math.round(activity.totalElevation)}
           unit={activity.averageHr ? "bpm" : "m D+"}
           note={
@@ -235,7 +237,7 @@ export default async function ActivityDetailPage({
       <div className="mt-10 space-y-10">
         {/* ---------------------------------------------- Parcours */}
         {(geometry || splits.length > 0) && (
-          <Section title="Parcours">
+          <Section title={t("route")}>
             <ActivityRoute
               geometry={geometry}
               splits={splits}
@@ -254,7 +256,7 @@ export default async function ActivityDetailPage({
         {/* ---------------------------------------------- Prévu vs fait */}
         {planned && (
           <Section
-            title="Prévu · réalisé"
+            title={t("plannedVsDone")}
             note={`Séance « ${planned.title} » du plan ${planned.plan.name}, validée automatiquement par cette activité.`}
             action={
               <Link href={`/training/${planned.plan.id}`} className="btn-quiet">
@@ -264,23 +266,26 @@ export default async function ActivityDetailPage({
           >
             <div className="grid gap-x-10 sm:grid-cols-3">
               <PlanCompare
-                label="Distance"
+                label={t("distance")}
                 planned={planned.distanceKm > 0 ? `${round(planned.distanceKm, 1)} km` : "—"}
                 actual={`${round(activity.distance / 1000, 1)} km`}
                 delta={planned.distanceKm > 0 ? activity.distance / 1000 / planned.distanceKm - 1 : null}
+                t={t}
               />
               <PlanCompare
-                label="Durée"
+                label={t("duration")}
                 planned={planned.durationMin ? `${planned.durationMin} min` : "—"}
                 actual={`${Math.round(activity.movingTime / 60)} min`}
                 delta={planned.durationMin ? activity.movingTime / 60 / planned.durationMin - 1 : null}
+                t={t}
               />
               <PlanCompare
-                label="Allure"
-                planned={planned.paceTarget ? fmtPace(planned.paceTarget) : "libre"}
+                label={t("pace")}
+                planned={planned.paceTarget ? fmtPace(planned.paceTarget) : t("free")}
                 actual={fmtPace(pace)}
                 delta={planned.paceTarget ? planned.paceTarget / pace - 1 : null}
                 paceMode
+                t={t}
               />
             </div>
           </Section>
@@ -289,8 +294,8 @@ export default async function ActivityDetailPage({
         {/* ---------------------------------------------- Contexte */}
         {(routeHistory.length > 1 || comparable.length > 2) && (
           <Section
-            title="En contexte"
-            note="Cette séance comparée à tes autres passages sur le même parcours, et à tes sorties de distance voisine."
+            title={t("context")}
+            note={t("contextNote")}
           >
             <div className="grid gap-10 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
               {routeHistory.length > 1 ? (
@@ -298,7 +303,7 @@ export default async function ActivityDetailPage({
                   <div className="mb-3 flex items-baseline justify-between">
                     <span className="eyebrow">Sur ce parcours · {routeHistory.length} passages</span>
                     <span className="text-micro text-ink3">
-                      {routeRank === 1 ? "ton meilleur passage" : `${routeRank}ᵉ plus rapide`}
+                      {routeRank === 1 ? t("bestPass") : t("rankPass", { rank: routeRank })}
                     </span>
                   </div>
                   <RouteHistory rows={routeHistory} current={activity.id} />
@@ -329,50 +334,50 @@ export default async function ActivityDetailPage({
 
         {/* ---------------------------------------------- Données + analyse */}
         <div className="grid gap-10 lg:grid-cols-2">
-          <Section title="Données de séance">
-            <Row label="Temps écoulé" value={fmtDuration(activity.elapsedTime)} />
-            <Row label="Temps à l'arrêt" value={fmtDuration(activity.elapsedTime - activity.movingTime)} />
-            <Row label="Vitesse max" value={activity.maxSpeed ? fmtPace(speedToPace(activity.maxSpeed)) : "—"} />
-            <Row label="FC max" value={activity.maxHr ? `${Math.round(activity.maxHr)} bpm` : "—"} />
-            <Row label="Cadence" value={activity.averageCadence ? `${Math.round(activity.averageCadence)} pas/min` : "—"} />
-            <Row label="Dénivelé" value={`${Math.round(activity.totalElevation)} m`} />
-            <Row label="Calories" value={activity.calories ? `${Math.round(activity.calories)} kcal` : "—"} />
+          <Section title={t("sessionData")}>
+            <Row label={t("elapsed")} value={fmtDuration(activity.elapsedTime)} />
+            <Row label={t("stopped")} value={fmtDuration(activity.elapsedTime - activity.movingTime)} />
+            <Row label={t("maxSpeed")} value={activity.maxSpeed ? fmtPace(speedToPace(activity.maxSpeed)) : "—"} />
+            <Row label={t("maxHr")} value={activity.maxHr ? `${Math.round(activity.maxHr)} bpm` : "—"} />
+            <Row label={t("cadence")} value={activity.averageCadence ? t("stepsPerMin", { n: Math.round(activity.averageCadence) }) : "—"} />
+            <Row label={t("elevation")} value={`${Math.round(activity.totalElevation)} m`} />
+            <Row label={t("calories")} value={activity.calories ? `${Math.round(activity.calories)} kcal` : "—"} />
           </Section>
 
-          <Section title="Analyse">
-            <Row label="Charge d'entraînement" value={Math.round(load)} note={activity.averageHr ? "TRIMP" : "équiv. km"} />
+          <Section title={t("analysis")}>
+            <Row label={t("load")} value={Math.round(load)} note={activity.averageHr ? t("trimp") : t("equivKm")} />
             {isRun && (
-              <Row label="VDOT de la séance" value={vdot > 0 ? vdot.toFixed(1) : "—"} note={activity.isRace ? "course" : "sortie"} />
+              <Row label={t("sessionVdot")} value={vdot > 0 ? vdot.toFixed(1) : "—"} note={activity.isRace ? t("race") : t("run")} />
             )}
             <Row
-              label="Régularité"
+              label={t("consistency")}
               value={stdDev > 0 ? `± ${Math.round(stdDev)} s/km` : "—"}
               tone={stdDev === 0 ? "default" : stdDev < 10 ? "sage" : stdDev < 25 ? "ochre" : "rust"}
-              note={stdDev === 0 ? undefined : stdDev < 10 ? "très régulier" : stdDev < 25 ? "correct" : "irrégulier"}
+              note={stdDev === 0 ? undefined : stdDev < 10 ? t("veryRegular") : stdDev < 25 ? t("ok") : t("irregular")}
             />
             <Row
-              label="Découpage"
+              label={t("split")}
               value={
                 splitDelta === null
                   ? "—"
                   : Math.abs(splitDelta) < 3
-                    ? "égal"
+                    ? t("even")
                     : `${splitDelta > 0 ? "+" : "−"}${Math.abs(splitDelta)} s/km`
               }
               tone={splitDelta === null ? "default" : splitDelta < -2 ? "sage" : splitDelta > 15 ? "ochre" : "default"}
               note={
-                splitDelta === null ? undefined : splitDelta < -2 ? "négatif · fini plus vite" : splitDelta > 2 ? "positif · fini plus lent" : undefined
+                splitDelta === null ? undefined : splitDelta < -2 ? t("negativeSplit") : splitDelta > 2 ? t("positiveSplit") : undefined
               }
             />
             {!decoupling && (
               <Row
-                label="Découplage cardiaque"
+                label={t("hrDrift")}
                 value={drift !== null ? `${drift > 0 ? "+" : ""}${drift} %` : "—"}
                 tone={drift === null ? "default" : drift < 5 ? "sage" : drift < 10 ? "ochre" : "rust"}
-                note={drift === null ? undefined : drift < 5 ? "endurance solide" : drift < 10 ? "dérive modérée" : "forte dérive"}
+                note={drift === null ? undefined : drift < 5 ? t("solidEndurance") : drift < 10 ? t("moderateDrift") : t("strongDrift")}
               />
             )}
-            <Row label="Effort relatif Strava" value={activity.sufferScore ? Math.round(activity.sufferScore) : "—"} />
+            <Row label={t("stravaSuffer")} value={activity.sufferScore ? Math.round(activity.sufferScore) : "—"} />
             <p className="mt-3 text-micro leading-relaxed text-ink3">
               Le découplage compare l&apos;efficience (vitesse ÷ FC) de la seconde moitié à
               la première. Sous 5 %, la base aérobie tient la durée de la séance.
@@ -383,24 +388,24 @@ export default async function ActivityDetailPage({
         {/* ---------------------------------------------- Courbe cardiaque */}
         {hrStream && hrStream.hr.length > 4 && (
           <Section
-            title="Courbe cardiaque"
-            note="Échantillons de la synchro Strava — le fond coloré donne les zones de FC, le découplage compare les deux moitiés de la séance."
+            title={t("hrCurve")}
+            note={t("hrCurveNote")}
           >
             <HrCurveChart stream={hrStream} maxHr={maxHr} />
             {decoupling && (
               <div className="mt-5 grid gap-4 border-t border-hair pt-4 sm:grid-cols-4">
                 <Metric
-                  label="découplage aérobie"
+                  label={t("aerobicDecoupling")}
                   value={fmtSigned(decoupling.drift, 1, " %")}
-                  note={decoupling.drift < 5 ? "endurance solide" : decoupling.drift < 10 ? "dérive modérée" : "forte dérive"}
+                  note={decoupling.drift < 5 ? t("solidEndurance") : decoupling.drift < 10 ? t("moderateDrift") : t("strongDrift")}
                 />
                 <Metric
-                  label="efficience (EF)"
+                  label={t("efficiency")}
                   value={decoupling.efficiency}
-                  note="m/min par battement"
+                  note={t("mPerBeat")}
                 />
-                <Metric label="FC moyenne" value={`${decoupling.avgHr} bpm`} note={`sur ${Math.round(decoupling.samples / 60)} min stables`} />
-                <Metric label="vitesse stable" value={fmtPace(Math.round((1000 / decoupling.avgSpeed) * 10) / 10)} />
+                <Metric label={t("avgHr")} value={`${decoupling.avgHr} bpm`} note={t("stableMins", { n: Math.round(decoupling.samples / 60) })} />
+                <Metric label={t("stableSpeed")} value={fmtPace(Math.round((1000 / decoupling.avgSpeed) * 10) / 10)} />
               </div>
             )}
           </Section>
@@ -409,32 +414,32 @@ export default async function ActivityDetailPage({
         {/* ---------------------------------------------- Intervalles */}
         {interval?.detected && interval.summary && (
           <Section
-            title="Intervalles"
-            note="Fractions répétées repérées dans les kilomètres de la séance — distances arrondies au kilomètre le plus proche."
+            title={t("intervals")}
+            note={t("intervalsNote")}
           >
             <div className="flex flex-wrap gap-8">
               <Metric
-                label="fractions"
+                label={t("reps")}
                 value={String(interval.summary.count)}
                 note={`≈ ${fmtDistance(interval.summary.repDistance)} par fraction`}
               />
               <Metric
-                label="allure moyenne"
+                label={t("avgIntervalPace")}
                 value={fmtPace(interval.summary.avgPace)}
                 note={`${fmtPace(interval.summary.bestPace)} au mieux`}
               />
               <Metric
-                label="régularité"
+                label={t("consistency")}
                 value={`± ${interval.summary.cv} %`}
-                note={interval.summary.cv < 3 ? "très régulier" : interval.summary.cv < 6 ? "correct" : "dispersé"}
+                note={interval.summary.cv < 3 ? t("veryRegular") : interval.summary.cv < 6 ? t("ok") : t("dispersed")}
               />
               <Metric
-                label="fatigue"
+                label={t("fatigue")}
                 value={fmtSigned(interval.summary.fatigue, 1, "%")}
-                note={interval.summary.fatigue > 4 ? "fin plus lente" : interval.summary.fatigue < -2 ? "fin plus rapide" : "tenu jusqu'au bout"}
+                note={interval.summary.fatigue > 4 ? t("slowFinish") : interval.summary.fatigue < -2 ? t("fastFinish") : t("heldThrough")}
               />
               {interval.summary.recoveryPace !== null && (
-                <Metric label="récupération" value={fmtPace(interval.summary.recoveryPace)} note="allure des trots" />
+                <Metric label={t("recovery")} value={fmtPace(interval.summary.recoveryPace)} note={t("jogPace")} />
               )}
             </div>
 
@@ -471,12 +476,12 @@ export default async function ActivityDetailPage({
 
         {/* ---------------------------------------------- Meilleurs efforts */}
         {activity.bestEfforts.length > 0 && (
-          <Section title="Meilleurs efforts de cette séance">
+          <Section title={t("bestEfforts")}>
             <div className="overflow-x-auto">
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Segment</th>
+                    <th>{t("segment")}</th>
                     <th className="text-right">Temps</th>
                     <th className="text-right">Allure</th>
                     <th className="text-right">VDOT</th>
@@ -509,8 +514,8 @@ export default async function ActivityDetailPage({
 
         {/* ---------------------------------------------- Carnet */}
         <Section
-          title="Carnet"
-          note="Ce que ta montre ne mesure pas. Enregistré au fil de la saisie."
+          title={t("journal")}
+          note={t("journalNote")}
         >
           <ActivityJournal
             id={activity.id}
@@ -523,15 +528,15 @@ export default async function ActivityDetailPage({
           />
           {activity.notes && (
             <div className="mt-6 border-l-2 border-hairStrong pl-4">
-              <div className="eyebrow mb-1.5">Description Strava</div>
+              <div className="eyebrow mb-1.5">Strava</div>
               <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink2">{activity.notes}</p>
             </div>
           )}
         </Section>
 
         <p className="text-center text-micro text-ink3">
-          <kbd className="kbd">←</kbd> <kbd className="kbd">→</kbd> séance précédente / suivante ·{" "}
-          <kbd className="kbd">Échap</kbd> retour à la liste
+          <kbd className="kbd">←</kbd> <kbd className="kbd">→</kbd> {t("kbdPrevNext")} ·{" "}
+          <kbd className="kbd">Échap</kbd> {t("kbdBack")}
         </p>
       </div>
     </div>
@@ -574,12 +579,14 @@ function PlanCompare({
   actual,
   delta,
   paceMode = false,
+  t,
 }: {
   label: string;
   planned: string;
   actual: string;
   delta: number | null;
   paceMode?: boolean;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }) {
   // Pour l'allure, delta > 0 = plus rapide que prévu
   const pct = delta === null ? null : Math.round(delta * 100);
@@ -596,9 +603,9 @@ function PlanCompare({
       {pct !== null && (
         <div className={`mt-1 text-micro font-medium ${tone}`}>
           {Math.abs(pct) <= 2
-            ? "conforme"
+            ? t("conforme")
             : paceMode
-              ? `${Math.abs(pct)} % ${pct > 0 ? "plus rapide" : "plus lent"} que prévu`
+              ? t("vsPlanned", { pct: Math.abs(pct), dir: pct > 0 ? t("faster") : t("slower") })
               : `${pct > 0 ? "+" : "−"}${Math.abs(pct)} % vs prévu`}
         </div>
       )}

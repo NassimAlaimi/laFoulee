@@ -1,27 +1,20 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 
 const FEELINGS = [
-  { v: 1, label: "Très dur" },
-  { v: 2, label: "Dur" },
-  { v: 3, label: "Correct" },
-  { v: 4, label: "Bien" },
-  { v: 5, label: "Excellent" },
+  { v: 1, labelKey: "feeling1" },
+  { v: 2, labelKey: "feeling2" },
+  { v: 3, labelKey: "feeling3" },
+  { v: 4, labelKey: "feeling4" },
+  { v: 5, labelKey: "feeling5" },
 ];
 
 const RPE_HINT: Record<number, string> = {
-  1: "très facile",
-  2: "facile",
-  3: "facile",
-  4: "modéré",
-  5: "modéré",
-  6: "soutenu",
-  7: "difficile",
-  8: "très difficile",
-  9: "quasi maximal",
-  10: "maximal",
+  1: "rpe1", 2: "rpe2", 3: "rpe3", 4: "rpe4", 5: "rpe5",
+  6: "rpe6", 7: "rpe7", 8: "rpe8", 9: "rpe9", 10: "rpe10",
 };
 
 /**
@@ -41,6 +34,7 @@ export function ActivityJournal({
   };
 }) {
   const router = useRouter();
+  const t = useTranslations("activity");
   const [state, setState] = useState(initial);
   const [saved, setSaved] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [hoverRpe, setHoverRpe] = useState<number | null>(null);
@@ -66,9 +60,9 @@ export function ActivityJournal({
       <div className="space-y-6">
         <div>
           <div className="mb-2.5 flex items-baseline justify-between">
-            <span className="field-label mb-0">Effort perçu</span>
+            <span className="field-label mb-0">{t("perceivedEffort")}</span>
             <span className="text-micro text-ink3">
-              {rpeShown ? `${rpeShown}/10 · ${RPE_HINT[rpeShown]}` : "non renseigné"}
+              {rpeShown ? `${rpeShown}/10 · ${t(RPE_HINT[rpeShown])}` : t("notSet")}
             </span>
           </div>
           <div className="flex gap-1" onMouseLeave={() => setHoverRpe(null)}>
@@ -87,7 +81,7 @@ export function ActivityJournal({
                     borderColor: on ? `rgb(var(${tone}))` : "rgb(var(--hair))",
                     color: on ? "#fff" : "rgb(var(--ink-3))",
                   }}
-                  aria-label={`Effort ${v} sur 10`}
+                  aria-label={t("rpeAria", { v })}
                   aria-pressed={state.perceivedExertion === v}
                 >
                   {v}
@@ -98,7 +92,7 @@ export function ActivityJournal({
         </div>
 
         <div>
-          <span className="field-label">Sensations</span>
+          <span className="field-label">{t("sensations")}</span>
           <div className="flex flex-wrap gap-1">
             {FEELINGS.map((f) => (
               <button
@@ -112,7 +106,7 @@ export function ActivityJournal({
                 }`}
                 aria-pressed={state.feeling === f.v}
               >
-                {f.label}
+                {t(f.labelKey)}
               </button>
             ))}
           </div>
@@ -120,9 +114,9 @@ export function ActivityJournal({
 
         <label className="flex cursor-pointer items-center justify-between gap-4 border-t border-hair pt-4">
           <span>
-            <span className="block text-[0.8125rem] font-medium">C&apos;était une course</span>
+            <span className="block text-[0.8125rem] font-medium">{t("wasRace")}</span>
             <span className="block text-micro text-ink3">
-              Compte comme performance de référence dans les records et le VDOT
+              {t("wasRaceHint")}
             </span>
           </span>
           <Toggle checked={state.isRace} onChange={(v) => save({ isRace: v })} />
@@ -132,7 +126,7 @@ export function ActivityJournal({
       <div>
         <div className="mb-1.5 flex items-baseline justify-between">
           <label htmlFor="private-note" className="field-label mb-0">
-            Note personnelle
+            {t("privateNote")}
           </label>
           <span
             className={`text-micro transition-opacity ${saved === "idle" ? "opacity-0" : "opacity-100"} ${
@@ -140,7 +134,7 @@ export function ActivityJournal({
             }`}
             aria-live="polite"
           >
-            {saved === "saving" ? "Enregistrement…" : saved === "saved" ? "Enregistré" : saved === "error" ? "Échec" : "·"}
+            {saved === "saving" ? t("saving") : saved === "saved" ? t("saved") : saved === "error" ? t("saveFailed") : "·"}
           </span>
         </div>
         <textarea
@@ -153,7 +147,7 @@ export function ActivityJournal({
             }
           }}
           rows={7}
-          placeholder="Météo, parcours, douleurs, ce que tu retiens… Visible de toi seul, jamais envoyé à Strava."
+          placeholder={t("notePlaceholder")}
           className="field resize-y leading-relaxed"
         />
       </div>
