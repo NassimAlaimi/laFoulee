@@ -19,12 +19,14 @@ propres données.
 ### Organisation en sept pôles
 
 La barre de navigation regroupe les pages en sept univers : **Aujourd'hui**
-(résumé + carnet du jour), **Activités**, **Entraînement** (plan, bibliothèque
-de séances), **Courses** (objectifs et plans de course, records, prédictions &
-calculs), **Analyse** (forme & charge, modèles & seuils, séances passées),
-**Corps** (musculation, matériel) et **Plus** (rétrospective, lexique,
-réglages). Dès qu'on entre dans un pôle, une **sous-barre** liste toutes ses
-pages (source unique : `lib/poles.ts`) — plus de fonctionnalité cachée.
+(résumé + carnet du jour), **Activités** (liste, **atelier de parcours**,
+**import de fichiers**), **Entraînement** (plan, bibliothèque de séances,
+**séances personnalisées**), **Courses** (objectifs, **saison multi-objectifs**,
+plans de course, records, prédictions & calculs), **Analyse** (forme & charge,
+modèles & seuils, séances passées), **Corps** (musculation, matériel) et
+**Plus** (rétrospective, lexique, réglages). Dès qu'on entre dans un pôle, une
+**sous-barre** liste toutes ses pages (source unique : `lib/poles.ts`) — plus
+de fonctionnalité cachée.
 
 Sur l'accueil, un **rappel contextuel** (`lib/nudges.ts`) suggère une seule
 chose utile au bon moment : préparer le plan de course à moins de 8 semaines,
@@ -386,7 +388,14 @@ l'utilisateur sur tous ses appareils) et ne change jamais les URLs.
 |---|---|
 | **Résumé** | La saison en une phrase, séance du jour en grand (frise, repères semaine / course / fraîcheur), bande nuit de l'état de forme, rappel contextuel, observations, calendrier d'une année (séances prévues en pointillés), charge, volume, forme aérobie, répartition de l'intensité |
 | **Activités** | Liste filtrable avec vignettes de tracé, vues **Mosaïque** et **Carte** (chaleur + parcours récurrents), fiche détaillée par séance |
-| **Entraînement** | Plan séance par séance, point hebdo, réadaptation, trajectoire de volume |
+| **Entraînement** | Plan séance par séance (avec le « pourquoi » de chaque séance), point hebdo, réadaptation, trajectoire de volume, **saisons multi-objectifs** (courses A/B/C, blocs, affûtage) |
+| **Séances personnalisées** | Saisie rapide en texte (`20' EF + 3×(6×400 @VMA r=1'30)`), cibles relatives, profil et charge en direct, planification et export `.fit` vers la montre |
+| **Atelier de parcours** | Dessiner sur son propre réseau (les rues déjà courues, sans tuiles) : boucles générées, lignes droites pour le fractionné, points d'intérêt, export GPX |
+| **Import de fichiers** | FIT, GPX, TCX et export complet Garmin (.zip) — décodeur FIT maison, fusion avec Strava sans doublon, carnet complété (sommeil, FC de repos, VFC) |
+| **Plan de course** | Du GPX à la ligne d'arrivée : tronçons, allures à effort constant (GAP + facteur de pente personnel + chaleur), scénarios A/B/C avec signal de bascule, nutrition calée sur le temps, bracelet, débrief |
+| **Conseil du jour** | Un seul conseil priorisé (douleur, surcharge, course proche, affûtage, carnet, forme) |
+| **Agent** | Le brief de la semaine (bilan, semaine à venir, objectif, conseil), calculé par règles, rédigé par un LLM (DeepSeek) si configuré — agrégats uniquement, jamais de tracé |
+| **Backyard ultra** | Calculateur boucle par boucle (course/marche, repos, sommeil emprunté) et volume en heures |
 | **Analyse** | PMC (condition/fatigue/fraîcheur), potentiel vs réaliste, courbe allure-durée, vitesse critique, polarisation, comparatif annuel, régularité, barres passées |
 | **Performance** | Records, niveau de forme VDOT, prédictions potentiel/réaliste, allures d'entraînement |
 | **Calculateur** | Outil interactif : performance → VDOT, VMA, chronos équivalents, allures |
@@ -722,7 +731,12 @@ pnpm test
 ## Roadmap
 
 La feuille de route détaillée (15 chantiers, décisions prises) est dans
-[`docs/ROADMAP.md`](docs/ROADMAP.md).
+[`docs/ROADMAP.md`](docs/ROADMAP.md). **Phases 0 à 3 réalisées** : zones
+uniques au temps passé, forme aérobie, calendrier, navigation à 7 pôles,
+séances personnalisées, import de fichiers, atelier de parcours, plan de
+course + nutrition, saison multi-objectifs, conseils, agent (LLM), machine
+learning, backyard, éditions de l'accueil.
+
 
 **Plus tard**
 - Export des séances vers la montre (Garmin / Coros)
