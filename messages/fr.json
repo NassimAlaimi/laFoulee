@@ -662,7 +662,11 @@
       "aerobicRange": "Marge",
       "aerobicSoon": "La courbe se construit semaine après semaine ({n} point(s) pour l'instant) — elle gagnera en finesse à mesure que les footings avec cardio s'accumulent.",
       "briefTitle": "Brief de la semaine",
-      "briefNote": "Bilan, semaine à venir, objectif, conseil — préparé pour toi, à régénérer quand tu veux."
+      "briefNote": "Bilan, semaine à venir, objectif, conseil — préparé pour toi, à régénérer quand tu veux.",
+      "aerobicAt": "allure à {hr} bpm — aujourd'hui",
+      "aerobicRef": "FC de référence · {hr} bpm",
+      "paceTrendTitle": "Allure moyenne sur 12 mois",
+      "paceTrendNote": "L'allure moyenne de tes sorties, mois par mois, toutes séances confondues."
     },
     "hero": {
       "night": "Bonne nuit",

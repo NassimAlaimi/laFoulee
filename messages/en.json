@@ -662,7 +662,11 @@
       "aerobicRange": "Margin",
       "aerobicSoon": "The curve builds week after week ({n} point(s) so far) — it will sharpen as easy runs with heart rate accumulate.",
       "briefTitle": "Weekly brief",
-      "briefNote": "Recap, week ahead, goal, advice — prepared for you, regenerated whenever you want."
+      "briefNote": "Recap, week ahead, goal, advice — prepared for you, regenerated whenever you want.",
+      "aerobicAt": "pace at {hr} bpm — today",
+      "aerobicRef": "reference HR · {hr} bpm",
+      "paceTrendTitle": "Average pace over 12 months",
+      "paceTrendNote": "Your average pace, month by month, all sessions combined."
     },
     "hero": {
       "night": "Good night",

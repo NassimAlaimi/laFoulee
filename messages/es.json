@@ -662,7 +662,11 @@
       "aerobicRange": "Margen",
       "aerobicSoon": "La curva se construye semana a semana ({n} punto(s) por ahora) — ganará precisión a medida que se acumulen los rodajes con pulso.",
       "briefTitle": "Resumen de la semana",
-      "briefNote": "Balance, semana siguiente, objetivo, consejo — preparado para ti, para regenerar cuando quieras."
+      "briefNote": "Balance, semana siguiente, objetivo, consejo — preparado para ti, para regenerar cuando quieras.",
+      "aerobicAt": "ritmo a {hr} ppm — hoy",
+      "aerobicRef": "FC de referencia · {hr} ppm",
+      "paceTrendTitle": "Ritmo medio en 12 meses",
+      "paceTrendNote": "El ritmo medio de tus salidas, mes a mes, todas las sesiones juntas."
     },
     "hero": {
       "night": "Buenas noches",
