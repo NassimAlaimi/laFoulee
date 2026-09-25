@@ -17,7 +17,7 @@ import {
   ElevationChart,
   FormChart,
   LoadChart,
-  PaceHrScatter,
+  AerobicPaceChart,
   PaceProgressionChart,
   VolumeChart,
 } from "@/components/charts/Lazy";
@@ -35,7 +35,9 @@ import {
 } from "@/lib/fitness-model";
 import { prisma } from "@/lib/prisma";
 import { ZoneSplit } from "@/components/analysis/ZoneSplit";
-import { loadDetailedRuns, loadZoneContext } from "@/lib/zones-store";
+import { loadAerobicSplits, loadDetailedRuns, loadZoneContext } from "@/lib/zones-store";
+import { aerobicPaceSeries, aerobicSummary } from "@/lib/aerobic-pace";
+import { aerobicDecoupling } from "@/lib/cardio";
 import {
   compareRow,
   isEasyComparable,
@@ -56,7 +58,6 @@ import {
   daysBetween,
   estimateMaxHr,
   monthlyProgression,
-  paceHrScatter,
   trimLeadingEmpty,
   periodStats,
   weeklyVolume,
@@ -182,7 +183,6 @@ export default async function SummaryPage() {
     tsbFuture: p.projected ? p.tsb : null,
   }));
   const progression = trimLeadingEmpty(monthlyProgression(runs, 12), (m) => m.sessions === 0);
-  const scatter = paceHrScatter(within(28));
 
   const records = personalRecords(efforts, runs);
   const profile = fitnessProfile(records, 365, now);
@@ -194,6 +194,26 @@ export default async function SummaryPage() {
   const last28 = detailed.filter((r) => daysBetween(r.startDate, now) <= 28);
   const dist28 = zoneDistribution(last28, zoneCtx.model);
   const zoneWeeks = weeklyZones(detailed, zoneCtx.model, 8, now);
+
+  // Allure à FC fixe (12 mois) et dérive cardiaque des sorties longues (8 sem.).
+  const aerobicSeries = aerobicPaceSeries(
+    await loadAerobicSplits(userId, new Date(now.getTime() - 400 * 86400000)),
+    { lthr: zoneCtx.model.lthr, weeks: 52, now }
+  );
+  const aerobic = aerobicSummary(aerobicSeries, now);
+  const aerobicRows = aerobicSeries.points.map((p) => ({
+    label: fmtDateShort(p.date, locale),
+    pace: p.pace,
+    band: [p.paceFast, p.paceSlow] as [number, number],
+  }));
+  const drifts = detailed
+    .filter((r) => r.movingTime >= 3600 && r.stream)
+    .map((r) => aerobicDecoupling(r.stream!))
+    .filter((d): d is NonNullable<typeof d> => d !== null)
+    .map((d) => d.drift)
+    .sort((a, b) => a - b);
+  const drift = drifts.length >= 2 ? drifts[Math.floor(drifts.length / 2)] : null;
+  const driftCount = drifts.length;
   const mainZones = dist28.hr.some((x) => x > 0) ? dist28.hr : dist28.pace;
   const intensity28 = mainZones.some((x) => x > 0)
     ? {
@@ -434,28 +454,75 @@ export default async function SummaryPage() {
           </div>
         </Section>
 
-        <Section title={t("ui.paceAndHr")}>
-          <div className="grid gap-10 lg:grid-cols-2">
+        <Section title={t("ui.aerobicTitle")} note={t("ui.aerobicNote")}>
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
             <div>
-              <div className="eyebrow mb-3">{t("ui.prog12")}</div>
-              {progression.filter((p) => p.avgPace).length >= 2 ? (
-                <PaceProgressionChart data={progression} />
+              {aerobic ? (
+                <>
+                  <p className="text-[clamp(1.35rem,2.6vw,1.9rem)] font-semibold leading-tight tracking-[-0.02em]">
+                    {t("ui.aerobicLine", { hr: aerobic.refHr })}{" "}
+                    <span className="num whitespace-nowrap text-clay">{fmtPace(aerobic.now.pace)}</span>
+                    {aerobic.then && (
+                      <span className="text-ink2">
+                        {", "}
+                        {t("ui.aerobicThen", {
+                          pace: fmtPace(aerobic.then.pace),
+                          months: Math.max(2, Math.round((now.getTime() - aerobic.then.date.getTime()) / (30.4 * 86400000))),
+                        })}
+                      </span>
+                    )}
+                    .
+                  </p>
+                  <p className="mt-4 text-[0.9375rem] leading-relaxed text-ink2">
+                    {aerobic.delta === null
+                      ? t("ui.aerobicNoHistory")
+                      : !aerobic.significant
+                        ? t("ui.aerobicNoise", { d: Math.abs(aerobic.delta) })
+                        : aerobic.delta < 0
+                          ? t("ui.aerobicBetter", { d: -aerobic.delta })
+                          : t("ui.aerobicWorse", { d: aerobic.delta })}
+                  </p>
+                </>
               ) : (
-                <Hint height={220}>{t("ui.need2Months")}</Hint>
+                <p className="text-[0.9375rem] leading-relaxed text-ink2">{t("ui.aerobicNeed")}</p>
               )}
+              {drift !== null && (
+                <div className="mt-6 border-t border-hair pt-3">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-[0.8125rem] text-ink2">{t("ui.driftLabel", { n: driftCount })}</span>
+                    <span className={`num text-[1.25rem] font-semibold ${drift < 5 ? "text-sage" : drift < 8 ? "text-ochre" : "text-rust"}`}>
+                      {drift.toFixed(1)} %
+                    </span>
+                  </div>
+                  <p className="mt-1 text-micro text-ink3">{t(drift < 5 ? "ui.driftGood" : "ui.driftHigh")}</p>
+                </div>
+              )}
+              <details className="mt-6 text-[0.8125rem] text-ink2">
+                <summary className="cursor-pointer text-ink3 hover:text-ink">{t("ui.aerobicHowTitle")}</summary>
+                <p className="mt-2 leading-relaxed">{t("ui.aerobicHow")}</p>
+                <Link href="/lexique" className="mt-2 inline-block text-micro text-clay hover:underline">
+                  {t("ui.aerobicLexicon")}
+                </Link>
+              </details>
             </div>
-            <div>
-              <div className="eyebrow mb-3">
-                {t("ui.efficiency28")}
-                <span className="ml-2 font-normal normal-case tracking-normal text-ink3">
-                  {t("ui.scatterHint")}
-                </span>
-              </div>
-              {scatter.length >= 3 ? (
-                <PaceHrScatter data={scatter} />
+            <div className="min-w-0">
+              {aerobicRows.length >= 3 ? (
+                <AerobicPaceChart
+                  data={aerobicRows}
+                  refHr={aerobicSeries.refHr ?? 0}
+                  labels={{ pace: t("ui.aerobicPaceLabel"), range: t("ui.aerobicRange") }}
+                />
               ) : (
-                <Hint height={220}>{t("ui.need3Hr")}</Hint>
+                <Hint height={230}>{aerobic ? t("ui.aerobicSoon") : t("ui.aerobicNeed")}</Hint>
               )}
+              <div className="mt-8">
+                <div className="eyebrow mb-3">{t("ui.prog12")}</div>
+                {progression.filter((p) => p.avgPace).length >= 2 ? (
+                  <PaceProgressionChart data={progression} />
+                ) : (
+                  <Hint height={220}>{t("ui.need2Months")}</Hint>
+                )}
+              </div>
             </div>
           </div>
         </Section>

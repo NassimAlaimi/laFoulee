@@ -78,3 +78,8 @@ export const PotentialGapChart = dynamic(
   () => import("./AnalysisCharts").then((m) => m.PotentialGapChart),
   { ssr: false, loading: () => <Sk h={200} /> }
 );
+
+export const AerobicPaceChart = dynamic(
+  () => import("./PaceChart").then((m) => m.AerobicPaceChart),
+  { ssr: false, loading: () => <Sk h={230} /> }
+);

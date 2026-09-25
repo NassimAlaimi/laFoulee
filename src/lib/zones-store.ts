@@ -111,3 +111,29 @@ export async function loadDetailedRuns(
     stream: "hrStream" in a && a.hrStream?.series ? decodeStream(a.hrStream.series as string) : null,
   }));
 }
+
+/** Km-splits des courses depuis `since`, pour l'allure à FC fixe (lib/aerobic-pace). */
+export async function loadAerobicSplits(userId: string, since: Date) {
+  const list = await prisma.split.findMany({
+    where: { activity: { userId, type: { in: [...RUN_TYPES] }, startDate: { gte: since } }, averageHr: { not: null } },
+    select: {
+      index: true,
+      distance: true,
+      movingTime: true,
+      averageHr: true,
+      elevationDiff: true,
+      activity: { select: { id: true, startDate: true, type: true, isRace: true } },
+    },
+  });
+  return list.map((s) => ({
+    activityId: s.activity.id,
+    date: s.activity.startDate,
+    index: s.index,
+    distance: s.distance,
+    movingTime: s.movingTime,
+    averageHr: s.averageHr,
+    elevationDiff: s.elevationDiff,
+    type: s.activity.type,
+    isRace: s.activity.isRace,
+  }));
+}

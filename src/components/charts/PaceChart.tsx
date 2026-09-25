@@ -191,3 +191,52 @@ export function PaceHrScatter({
   );
 }
 
+
+/**
+ * Allure à FC fixe : la ligne (plus haut = plus rapide) et sa bande de
+ * confiance à 95 %. Les marques (courses) sont des filets verticaux.
+ */
+export function AerobicPaceChart({
+  data,
+  refHr,
+  labels,
+}: {
+  data: Array<{ label: string; pace: number; band: [number, number] }>;
+  refHr: number;
+  labels: { pace: string; range: string };
+}) {
+  const t = useChartTheme();
+  return (
+    <ResponsiveContainer width="100%" height={230}>
+      <ComposedChart data={data} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
+        <CartesianGrid stroke={t.grid} vertical={false} />
+        <XAxis dataKey="label" {...axisProps(t.axis)} dy={4} minTickGap={24} />
+        <YAxis
+          {...axisProps(t.axis)}
+          width={50}
+          reversed
+          domain={["dataMin - 10", "dataMax + 10"]}
+          tickFormatter={(v: number) => fmtPace(v, "")}
+        />
+        <Tooltip
+          cursor={{ stroke: t.grid }}
+          content={({ payload, label }) => {
+            const d = payload?.[0]?.payload;
+            if (!d) return null;
+            return (
+              <Tip
+                label={`${label} · ${refHr} bpm`}
+                rows={[
+                  { label: labels.pace, value: fmtPace(d.pace), color: t.clay },
+                  { label: labels.range, value: `${fmtPace(d.band[0], "")}–${fmtPace(d.band[1])}`, color: t.faint },
+                ]}
+              />
+            );
+          }}
+        />
+        <Area type="monotone" dataKey="band" stroke="none" fill={t.clay} fillOpacity={0.12} isAnimationActive={false} />
+        <Line type="monotone" dataKey="pace" stroke={t.clay} strokeWidth={2} dot={false} isAnimationActive={false} />
+      </ComposedChart>
+    </ResponsiveContainer>
+  );
+}
