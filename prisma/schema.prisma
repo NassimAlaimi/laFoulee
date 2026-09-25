@@ -50,6 +50,7 @@ model User {
   routePois        RoutePoi[]
   routeGraphs      RouteGraph[]
   agentBriefs      AgentBrief[]
+  osmCaches        OsmCache[]
 
   /// Jeton secret de l'abonnement agenda (.ics). Null = abonnement désactivé.
   /// Stocké en clair : il n'ouvre qu'une lecture du plan, et doit pouvoir
@@ -702,4 +703,13 @@ model AgentBrief {
   createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
+}
+
+/// Cache du fond de rues OpenStreetMap (lib/osm) autour du territoire.
+model OsmCache {
+  userId  String   @id
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// polylines encodées (JSON string[])
+  data    String
+  builtAt DateTime @default(now())
 }

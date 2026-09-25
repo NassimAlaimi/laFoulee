@@ -6,7 +6,8 @@ import { RouteWorkshop } from "@/components/route/RouteWorkshop";
 import { DeleteRouteButton } from "@/components/route/DeleteRouteButton";
 import { requireUserId } from "@/lib/auth";
 import { fmtPace } from "@/lib/format";
-import { getRouteGraph, listPois, listRoutes, networkView } from "@/lib/route-store";
+import { getRouteGraph, getOsmRoads, listPois, listRoutes, networkBbox, networkView, polylinePath } from "@/lib/route-store";
+import { bboxAround } from "@/lib/osm";
 import { straightSegments } from "@/lib/route-graph";
 import { encodePolyline } from "@/lib/polyline";
 
@@ -21,7 +22,21 @@ export default async function RoutesPage() {
   const [routes, pois] = await Promise.all([listRoutes(userId), listPois(userId)]);
   const totalKm = graph ? graph.edges.reduce((a, e) => a + e.meters * e.passes, 0) / 1000 : 0;
 
-  const view = graph ? networkView(graph) : null;
+  // Fond OSM : les rues autour du territoire (borné), en cache 24 h.
+  let osm: string[] | null = null;
+  let view = graph ? networkView(graph) : null;
+  if (graph) {
+    const b = networkBbox(graph);
+    const centerLat = (b.minLat + b.maxLat) / 2;
+    const centerLon = (b.minLon + b.maxLon) / 2;
+    const spanKm = Math.max((b.maxLat - b.minLat) * 111.32, (b.maxLon - b.minLon) * 111.32 * Math.cos((centerLat * Math.PI) / 180)) + 2;
+    const osmBbox = bboxAround(centerLat, centerLon, spanKm);
+    const roads = await getOsmRoads(userId, osmBbox);
+    if (roads && roads.length) {
+      osm = roads.map((r) => polylinePath(r, osmBbox)).filter((d) => d);
+      view = networkView(graph, osmBbox);
+    }
+  }
   const straights = graph ? straightSegments(graph, 400).slice(0, 12) : [];
   const start = graph ? mostUsedStartPoint(graph) : null;
 
@@ -34,6 +49,7 @@ export default async function RoutesPage() {
           <NetworkMap
             view={{
               ...view,
+              osm: osm ?? [],
               pois: pois.map((p) => ({ id: p.id, kind: p.kind, x: xOf(view, p.lng), y: yOf(view, p.lat), note: p.note })),
             }}
             kinds={(["fountain", "toilet", "car", "bakery", "lit", "danger", "track"] as const).map((k) => [k, t(`poi_${k}`)])}

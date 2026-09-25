@@ -1985,7 +1985,7 @@
     "metaSome": "{km} km de calles ya corridas, {roads} tramos — tu territorio.",
     "metaNone": "Aún no hay trazos: sincroniza Strava o importa archivos para dibujar tu red.",
     "territory": "Tu territorio",
-    "territoryNote": "Cada trazo es una calle que ya has corrido; cuanto más marcado, más la usas. Haz clic para colocar puntos de interés.",
+    "territoryNote": "Cada trazo terracota es una calle ya corrida; cuanto más marcado, más la usas. El fondo gris (OpenStreetMap) muestra las calles de alrededor, para explorar más allá. Haz clic para colocar puntos de interés.",
     "emptyGraph": "Aún no hay red: necesitas salidas con trazo GPS (Strava o importación).",
     "build": "Componer una vuelta",
     "buildNote": "Una distancia, un deslizador hábito ↔ descubrimiento, y la red propone tres vueltas. La salida por defecto es tu punto de partida más frecuente.",
@@ -2020,7 +2020,8 @@
     "poi_bakery": "Panadería",
     "poi_lit": "Zona iluminada",
     "poi_danger": "Peligroso",
-    "poi_track": "Pista de atletismo"
+    "poi_track": "Pista de atletismo",
+    "streets": "Calles (OSM)"
   },
   "coach": {
     "why": {

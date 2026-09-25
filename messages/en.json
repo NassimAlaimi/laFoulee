@@ -1985,7 +1985,7 @@
     "metaSome": "{km} km of already-run streets, {roads} segments — your territory.",
     "metaNone": "No track yet: sync Strava or import files to draw your network.",
     "territory": "Your territory",
-    "territoryNote": "Each stroke is a street you've run; the bolder, the more often you use it. Click to drop points of interest.",
+    "territoryNote": "Each clay stroke is a street you've run; the bolder, the more often you use it. The grey background (OpenStreetMap) shows surrounding streets, to explore further. Click to drop points of interest.",
     "emptyGraph": "No network yet: you need runs with GPS tracks (Strava or import).",
     "build": "Compose a loop",
     "buildNote": "A distance, a habit ↔ discovery slider, and the network proposes three loops. The default start is your most frequent starting point.",
@@ -2020,7 +2020,8 @@
     "poi_bakery": "Bakery",
     "poi_lit": "Lit area",
     "poi_danger": "Dangerous",
-    "poi_track": "Track"
+    "poi_track": "Track",
+    "streets": "Streets (OSM)"
   },
   "coach": {
     "why": {

@@ -1985,7 +1985,7 @@
     "metaSome": "{km} km de rues déjà courues, {roads} tronçons — ton territoire.",
     "metaNone": "Aucun tracé pour l'instant : synchronise Strava ou importe des fichiers pour dessiner ton réseau.",
     "territory": "Ton territoire",
-    "territoryNote": "Chaque trait est une rue déjà courue ; plus il est marqué, plus tu l'empruntes souvent. Clique pour poser des points d'intérêt.",
+    "territoryNote": "Chaque trait terre cuite est une rue déjà courue ; plus il est marqué, plus tu l'empruntes. Le fond gris (OpenStreetMap) montre les rues environnantes, pour explorer au-delà. Clique pour poser des points d'intérêt.",
     "emptyGraph": "Pas encore de réseau : il faut des sorties avec tracé GPS (Strava ou import).",
     "build": "Composer une boucle",
     "buildNote": "Une distance, un curseur habitude ↔ découverte, et le réseau propose trois boucles. Le départ par défaut est ton point de départ le plus fréquent.",
@@ -2020,7 +2020,8 @@
     "poi_bakery": "Boulangerie",
     "poi_lit": "Zone éclairée",
     "poi_danger": "Dangereux",
-    "poi_track": "Piste d'athlétisme"
+    "poi_track": "Piste d'athlétisme",
+    "streets": "Rues (OSM)"
   },
   "coach": {
     "why": {

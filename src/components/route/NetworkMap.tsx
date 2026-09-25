@@ -8,6 +8,7 @@ type View = {
   viewBox: readonly [number, number];
   bbox: { minLat: number; maxLat: number; minLon: number; maxLon: number };
   edges: Array<{ x1: number; y1: number; x2: number; y2: number; passes: number }>;
+  osm: string[];
   pois: Array<{ id: string; kind: string; x: number; y: number; note: string | null }>;
 };
 
@@ -29,6 +30,7 @@ export function NetworkMap({ view, kinds }: { view: View; kinds: Array<[string, 
   const t = useTranslations("routes");
   const router = useRouter();
   const [mode, setMode] = useState<"view" | "add">("view");
+  const [showStreets, setShowStreets] = useState(true);
   const [kind, setKind] = useState("fountain");
   const [pending, setPending] = useState<{ x: number; y: number } | null>(null);
   const maxPasses = Math.max(1, ...view.edges.map((e) => e.passes));
@@ -59,6 +61,16 @@ export function NetworkMap({ view, kinds }: { view: View; kinds: Array<[string, 
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center gap-2">
+        {view.osm.length > 0 && (
+          <button
+            type="button"
+            className={`btn-quiet btn-sm ${showStreets ? "text-clay" : "text-ink3"}`}
+            aria-pressed={showStreets}
+            onClick={() => setShowStreets(!showStreets)}
+          >
+            {t("streets")}
+          </button>
+        )}
         {mode === "view" ? (
           <button type="button" className="btn-outline btn-sm" onClick={() => setMode("add")}>
             + {t("addPoi")}
@@ -81,6 +93,10 @@ export function NetworkMap({ view, kinds }: { view: View; kinds: Array<[string, 
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} className={`w-full rounded-[14px] border border-hair bg-night ${mode === "add" ? "cursor-crosshair" : ""}`} role="img" aria-label={t("mapAria")} onClick={click}>
         <rect width={W} height={H} fill="transparent" />
+        {showStreets &&
+          view.osm.map((d, i) => (
+            <path key={`o${i}`} d={d} fill="none" stroke="rgb(var(--ink) / 0.14)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+          ))}
         {view.edges.map((e, i) => {
           const o = 0.12 + 0.55 * Math.sqrt(e.passes / maxPasses);
           return <line key={i} x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} stroke={`rgb(var(--clay) / ${o.toFixed(2)})`} strokeWidth="2" strokeLinecap="round" />;

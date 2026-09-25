@@ -6,6 +6,7 @@
 import { prisma } from "./prisma";
 import { decodePolyline } from "./polyline";
 import { buildGraph, deserializeGraph, findLoops, serializeGraph, type RouteGraph, type LoopOptions } from "./route-graph";
+import { fetchOverpassRoads } from "./osm";
 import { sameRoute } from "./polyline";
 
 const DAY = 86400000;
@@ -61,6 +62,26 @@ export async function saveRoute(userId: string, input: { name: string; polyline:
   });
 }
 
+/** Fond de rues OpenStreetMap autour de la zone, en cache 24 h. */
+export async function getOsmRoads(userId: string, bbox: ViewBbox, now = new Date()): Promise<string[] | null> {
+  const cached = await prisma.osmCache.findUnique({ where: { userId } });
+  if (cached && now.getTime() - cached.builtAt.getTime() < 24 * 86400000) {
+    try {
+      return JSON.parse(cached.data) as string[];
+    } catch {
+      /* cache illisible : on refait la requête */
+    }
+  }
+  const roads = await fetchOverpassRoads(bbox);
+  if (roads === null) return cached ? (JSON.parse(cached.data) as string[]) : null;
+  await prisma.osmCache.upsert({
+    where: { userId },
+    create: { userId, data: JSON.stringify(roads), builtAt: now },
+    update: { data: JSON.stringify(roads), builtAt: now },
+  });
+  return roads;
+}
+
 /** Parcours enregistrés + combien de fois courus (rapprochement par tracé). */
 export async function listRoutes(userId: string) {
   const [routes, acts] = await Promise.all([
@@ -107,31 +128,52 @@ export function polylineToGpx(name: string, polyline: string): string {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Foulée">\n <trk><name>${name.replace(/[<>&]/g, "")}</name><trkseg>\n${body}\n </trkseg></trk>\n</gpx>\n`;
 }
 
-/** Projection du réseau dans une boîte de dessin (équirectangulaire locale). */
-export function networkView(graph: RouteGraph) {
-  const nodes = [...graph.nodes.values()];
+export type ViewBbox = { minLat: number; maxLat: number; minLon: number; maxLon: number };
+
+/** Bbox du réseau personnel. */
+export function networkBbox(graph: RouteGraph): ViewBbox {
   let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
-  for (const n of nodes) {
+  for (const n of graph.nodes.values()) {
     minLat = Math.min(minLat, n.lat); maxLat = Math.max(maxLat, n.lat);
     minLon = Math.min(minLon, n.lon); maxLon = Math.max(maxLon, n.lon);
   }
+  return { minLat, maxLat, minLon, maxLon };
+}
+
+function viewFor(bbox: ViewBbox) {
   const W = 1000;
   const pad = 30;
-  const spanLat = Math.max(0.0001, maxLat - minLat);
-  const spanLon = Math.max(0.0001, maxLon - minLon);
+  const spanLat = Math.max(0.0001, bbox.maxLat - bbox.minLat);
+  const spanLon = Math.max(0.0001, bbox.maxLon - bbox.minLon);
   const scale = (W - 2 * pad) / Math.max(spanLon, spanLat * 1.4);
-  const x = (lon: number) => pad + (lon - minLon) * scale;
-  const y = (lat: number) => pad + (maxLat - lat) * scale;
-  const H = Math.round((maxLat - minLat) * scale + 2 * pad);
+  const x = (lon: number) => pad + (lon - bbox.minLon) * scale;
+  const y = (lat: number) => pad + (bbox.maxLat - lat) * scale;
+  const H = Math.round((bbox.maxLat - bbox.minLat) * scale + 2 * pad);
+  return { W, H, scale, x, y, bbox };
+}
+
+/** Projection du réseau dans une boîte de dessin (équirectangulaire locale). */
+export function networkView(graph: RouteGraph, bboxOverride?: ViewBbox) {
+  const bbox = bboxOverride ?? networkBbox(graph);
+  const v = viewFor(bbox);
+  const nodes = [...graph.nodes.values()];
   return {
-    viewBox: [W, H] as const,
-    bbox: { minLat, maxLat, minLon, maxLon },
-    scale,
-    nodes: nodes.map((n) => ({ id: n.id, x: Math.round(x(n.lon)), y: Math.round(y(n.lat)) })),
+    viewBox: [v.W, v.H] as const,
+    bbox: v.bbox,
+    scale: v.scale,
+    nodes: nodes.map((n) => ({ id: n.id, x: Math.round(v.x(n.lon)), y: Math.round(v.y(n.lat)) })),
     edges: graph.edges.map((e) => {
       const a = graph.nodes.get(e.a)!;
       const b = graph.nodes.get(e.b)!;
-      return { x1: Math.round(x(a.lon)), y1: Math.round(y(a.lat)), x2: Math.round(x(b.lon)), y2: Math.round(y(b.lat)), passes: e.passes, id: e.id };
+      return { x1: Math.round(v.x(a.lon)), y1: Math.round(v.y(a.lat)), x2: Math.round(v.x(b.lon)), y2: Math.round(v.y(b.lat)), passes: e.passes, id: e.id };
     }),
   };
+}
+
+/** Polyline → chemin SVG « d » dans la boîte. */
+export function polylinePath(polyline: string, bbox: ViewBbox): string {
+  const v = viewFor(bbox);
+  const pts = decodePolyline(polyline);
+  if (pts.length < 2) return "";
+  return pts.map((p, i) => `${i ? "L" : "M"}${v.x(p[1]).toFixed(1)},${v.y(p[0]).toFixed(1)}`).join("");
 }
