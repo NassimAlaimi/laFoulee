@@ -83,10 +83,19 @@ Ouvrir le web, garder Minecraft, **fermer 3000** (sinon le HTTPS ne sert à rien
 l'app reste joignable en clair sur :3000) :
 
 ```bash
+sudo ufw allow 22/tcp           # SSH — INDISPENSABLE, sinon tu te coupes l'accès
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
-sudo ufw allow 25565/tcp     # Minecraft (inchangé)
-sudo ufw delete allow 3000/tcp   # si 3000 était ouvert
+sudo ufw allow 25565/tcp        # Minecraft (inchangé)
+sudo ufw delete allow 3000/tcp  # si 3000 était ouvert
+```
+
+> ⚠️ **Avant** `sudo ufw enable`, vérifie que SSH est bien autorisé :
+> `sudo ufw status verbose` — tu dois voir `22/tcp ALLOW` (ou `OpenSSH ALLOW`).
+> Si ton SSH est sur un port non standard, autorise ce port à la place du 22.
+> Sans cette règle, activer le firewall bloque tes connexions SSH.
+
+```bash
 sudo ufw enable
 ```
 
