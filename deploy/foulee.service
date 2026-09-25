@@ -1,0 +1,31 @@
+# Service systemd pour La Foulée.
+# À copier dans /etc/systemd/system/foulee.service, puis :
+#   sudo systemctl daemon-reload && sudo systemctl enable --now foulee
+#
+# Point important : HOSTNAME=127.0.0.1 fait que l'app n'écoute QUE sur
+# localhost. Seul le reverse proxy Caddy (80/443) l'atteint ; le port 3000
+# n'est donc jamais exposé en clair sur Internet.
+
+[Unit]
+Description=La Foulée (Next.js)
+After=network.target
+
+[Service]
+User=foulee
+Group=foulee
+WorkingDirectory=/opt/foulee
+
+# L'app n'écoute que sur 127.0.0.1 (sinon next start écoute sur 0.0.0.0).
+Environment=HOSTNAME=127.0.0.1
+Environment=PORT=3000
+Environment=NODE_ENV=production
+
+# Adapte le chemin si besoin : `which pnpm` sur le serveur
+# (si node/pnpm sont installés via nvm, utilise le chemin absolu du binaire).
+ExecStart=/usr/bin/pnpm start
+
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

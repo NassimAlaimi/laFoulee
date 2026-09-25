@@ -1,0 +1,11 @@
+# Reverse proxy HTTPS pour La Foulée.
+# À copier dans /etc/caddy/Caddyfile, puis : sudo systemctl reload caddy
+#
+# - Caddy écoute sur 80/443 et obtient le certificat Let's Encrypt tout seul.
+# - L'app (service systemd « foulee ») reste sur 127.0.0.1:3000.
+# - Le serveur Minecraft (25565/tcp) n'est PAS concerné : il continue de
+#   tourner tel quel, Caddy ne le touche pas.
+
+dcimer.swagman.fr {
+    reverse_proxy 127.0.0.1:3000
+}
