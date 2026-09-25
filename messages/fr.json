@@ -2059,5 +2059,18 @@
       "fresh": "Forme au rendez-vous ({tsb}) : le moment idéal pour une belle séance.",
       "base": "Semaine posée : régularité avant tout, l'intensité viendra au bon moment."
     }
+  },
+  "season": {
+    "aria": "Frise de saison",
+    "phase": {
+      "base": "Base",
+      "build": "Développement",
+      "peak": "Spécifique",
+      "taper": "Affûtage",
+      "race": "Course",
+      "recovery": "Récupération",
+      "maintain": "Maintien"
+    },
+    "conflict": "Deux courses A sont trop proches pour deux blocs complets : la seconde est en maintien."
   }
 }

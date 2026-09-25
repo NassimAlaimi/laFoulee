@@ -2059,5 +2059,18 @@
       "fresh": "Form is here ({tsb}): the perfect time for a strong session.",
       "base": "A steady week: consistency first, intensity will come at the right time."
     }
+  },
+  "season": {
+    "aria": "Season timeline",
+    "phase": {
+      "base": "Base",
+      "build": "Build",
+      "peak": "Specific",
+      "taper": "Taper",
+      "race": "Race",
+      "recovery": "Recovery",
+      "maintain": "Maintain"
+    },
+    "conflict": "Two A races are too close for two full blocks: the second stays in maintenance."
   }
 }

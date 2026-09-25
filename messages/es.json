@@ -2059,5 +2059,18 @@
       "fresh": "Forma presente ({tsb}): el momento ideal para una buena sesión.",
       "base": "Semana tranquila: constancia ante todo, la intensidad llegará a su momento."
     }
+  },
+  "season": {
+    "aria": "Línea de tiempo de la temporada",
+    "phase": {
+      "base": "Base",
+      "build": "Desarrollo",
+      "peak": "Específico",
+      "taper": "Afinado",
+      "race": "Carrera",
+      "recovery": "Recuperación",
+      "maintain": "Mantenimiento"
+    },
+    "conflict": "Dos carreras A están demasiado cerca para dos bloques completos: la segunda queda en mantenimiento."
   }
 }

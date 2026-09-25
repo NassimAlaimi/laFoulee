@@ -11,6 +11,7 @@ import { requireUserId } from "@/lib/auth";
 import { STANDARD_DISTANCES } from "@/lib/records";
 import { raceReadiness, readinessFacts } from "@/lib/goal";
 import { goalProgress, type GoalKind } from "@/lib/goal-progress";
+import { SeasonTimeline } from "@/components/goals/SeasonTimeline";
 import { athleteContext } from "@/lib/plan-store";
 
 export const dynamic = "force-dynamic";
@@ -148,6 +149,15 @@ export default async function GoalsPage() {
         }
       />
       </div>
+
+      {upcoming.length >= 2 && (
+        <section className="rise">
+          <SeasonTimeline
+            races={upcoming.map((g) => ({ id: g.id, name: g.name, date: g.raceDate, distanceKm: g.distance / 1000, priority: g.priority as "A" | "B" | "C" }))}
+            startWeeklyKm={ctx.fitness.weeklyKm || 30}
+          />
+        </section>
+      )}
 
       {primary && (
         <NightBand className="!mt-0">
