@@ -46,6 +46,9 @@ model User {
   customWorkouts  CustomWorkout[]
   importBatches   ImportBatch[]
   nutritionProducts NutritionProduct[]
+  routes           Route[]
+  routePois        RoutePoi[]
+  routeGraphs      RouteGraph[]
 
   /// Jeton secret de l'abonnement agenda (.ics). Null = abonnement désactivé.
   /// Stocké en clair : il n'ouvre qu'une lecture du plan, et doit pouvoir
@@ -646,4 +649,42 @@ model ImportBatch {
   createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
+}
+
+/// Parcours d'entraînement dessiné (ou généré) dans l'atelier.
+model Route {
+  id            String   @id @default(cuid())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  name          String
+  /// polyline encodée (précision 5)
+  polyline      String
+  distance      Float
+  elevationGain Float    @default(0)
+  /// étiquettes : plat, vallonné, nuit, trail…
+  tags          String?
+  startLat      Float
+  startLng      Float
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// Point d'intérêt personnel sur le territoire (fontaine, toilettes…).
+model RoutePoi {
+  id     String @id @default(cuid())
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  kind   String // fountain | toilet | car | bakery | lit | danger | track
+  lat    Float
+  lng    Float
+  note   String?
+}
+
+/// Cache du graphe du réseau personnel (lib/route-graph).
+model RouteGraph {
+  userId  String   @id
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  data    String
+  builtAt DateTime @default(now())
 }

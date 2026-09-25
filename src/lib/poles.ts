@@ -22,6 +22,7 @@ export const POLES: Pole[] = [
     href: "/activities",
     pages: [
       { href: "/activities", key: "activities" },
+      { href: "/routes", key: "routes" },
       { href: "/import", key: "import" },
     ],
   },

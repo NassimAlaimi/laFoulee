@@ -108,7 +108,8 @@
       "recap": "Resumen del periodo",
       "lexique": "Glosario",
       "settings": "Ajustes",
-      "import": "Importar archivos"
+      "import": "Importar archivos",
+      "routes": "Recorridos"
     }
   },
   "settings": {
@@ -1971,5 +1972,48 @@
       "bar": "Barrita",
       "compote": "Compota"
     }
+  },
+  "routes": {
+    "kicker": "Actividades",
+    "title": "Taller de recorridos",
+    "metaSome": "{km} km de calles ya corridas, {roads} tramos — tu territorio.",
+    "metaNone": "Aún no hay trazos: sincroniza Strava o importa archivos para dibujar tu red.",
+    "territory": "Tu territorio",
+    "territoryNote": "Cada trazo es una calle que ya has corrido; cuanto más marcado, más la usas. Haz clic para colocar puntos de interés.",
+    "emptyGraph": "Aún no hay red: necesitas salidas con trazo GPS (Strava o importación).",
+    "build": "Componer una vuelta",
+    "buildNote": "Una distancia, un deslizador hábito ↔ descubrimiento, y la red propone tres vueltas. La salida por defecto es tu punto de partida más frecuente.",
+    "distance": "Distancia",
+    "flavor": "Hábito ↔ descubrimiento",
+    "discovery": "descubrimiento",
+    "habit": "hábito",
+    "mix": "equilibrado",
+    "generate": "Proponer vueltas",
+    "generating": "Buscando…",
+    "noLoop": "Ninguna vuelta de esa distancia: prueba otra longitud.",
+    "novelty": "{p} % nuevo",
+    "saveRoute": "Guardar",
+    "saved": "Guardado ✓",
+    "loopName": "Vuelta",
+    "straights": "Rectas para las series",
+    "straightsNote": "Porciones casi rectas de la red, detectadas solas — para tus 400 m y tus rectas.",
+    "straightKm": "km de recta",
+    "savedRoutes": "Recorridos guardados",
+    "savedNote": "Se emparejan solos con tus salidas (veces corrido, récord).",
+    "noRoutes": "Ningún recorrido guardado — compón una vuelta o dibuja abajo.",
+    "timesRun": "corrido {n} veces",
+    "delete": "Eliminar",
+    "confirmDelete": "¿Eliminar este recorrido?",
+    "addPoi": "Colocar un punto de interés",
+    "clickMap": "Haz clic en el mapa para colocar el punto",
+    "done": "Listo",
+    "mapAria": "Red de calles corridas",
+    "poi_fountain": "Fuente",
+    "poi_toilet": "Aseos",
+    "poi_car": "Coche",
+    "poi_bakery": "Panadería",
+    "poi_lit": "Zona iluminada",
+    "poi_danger": "Peligroso",
+    "poi_track": "Pista de atletismo"
   }
 }

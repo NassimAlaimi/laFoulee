@@ -108,7 +108,8 @@
       "recap": "Rétrospective",
       "lexique": "Lexique",
       "settings": "Réglages",
-      "import": "Importer des fichiers"
+      "import": "Importer des fichiers",
+      "routes": "Parcours"
     }
   },
   "settings": {
@@ -1971,5 +1972,48 @@
       "bar": "Barre",
       "compote": "Compote"
     }
+  },
+  "routes": {
+    "kicker": "Activités",
+    "title": "Atelier de parcours",
+    "metaSome": "{km} km de rues déjà courues, {roads} tronçons — ton territoire.",
+    "metaNone": "Aucun tracé pour l'instant : synchronise Strava ou importe des fichiers pour dessiner ton réseau.",
+    "territory": "Ton territoire",
+    "territoryNote": "Chaque trait est une rue déjà courue ; plus il est marqué, plus tu l'empruntes souvent. Clique pour poser des points d'intérêt.",
+    "emptyGraph": "Pas encore de réseau : il faut des sorties avec tracé GPS (Strava ou import).",
+    "build": "Composer une boucle",
+    "buildNote": "Une distance, un curseur habitude ↔ découverte, et le réseau propose trois boucles. Le départ par défaut est ton point de départ le plus fréquent.",
+    "distance": "Distance",
+    "flavor": "Habitude ↔ découverte",
+    "discovery": "découverte",
+    "habit": "habitude",
+    "mix": "équilibré",
+    "generate": "Proposer des boucles",
+    "generating": "Je cherche…",
+    "noLoop": "Aucune boucle de cette distance trouvée : essaie une autre longueur.",
+    "novelty": "{p} % de nouveau",
+    "saveRoute": "Enregistrer",
+    "saved": "Enregistré ✓",
+    "loopName": "Boucle",
+    "straights": "Lignes droites pour le fractionné",
+    "straightsNote": "Des portions quasi rectilignes du réseau, repérées automatiquement — pour tes 400 m et tes lignes droites.",
+    "straightKm": "km de ligne droite",
+    "savedRoutes": "Parcours enregistrés",
+    "savedNote": "Ils se rapprochent automatiquement de tes sorties (nombre de passages, record).",
+    "noRoutes": "Aucun parcours enregistré — compose une boucle ou dessine plus bas.",
+    "timesRun": "couru {n} fois",
+    "delete": "Supprimer",
+    "confirmDelete": "Supprimer ce parcours ?",
+    "addPoi": "Poser un point d'intérêt",
+    "clickMap": "Clique sur la carte pour poser le point",
+    "done": "Terminé",
+    "mapAria": "Réseau des rues courues",
+    "poi_fountain": "Fontaine",
+    "poi_toilet": "Toilettes",
+    "poi_car": "Voiture",
+    "poi_bakery": "Boulangerie",
+    "poi_lit": "Zone éclairée",
+    "poi_danger": "Dangereux",
+    "poi_track": "Piste d'athlétisme"
   }
 }

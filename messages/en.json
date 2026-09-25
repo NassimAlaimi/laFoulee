@@ -108,7 +108,8 @@
       "recap": "Recap",
       "lexique": "Glossary",
       "settings": "Settings",
-      "import": "Import files"
+      "import": "Import files",
+      "routes": "Routes"
     }
   },
   "settings": {
@@ -1971,5 +1972,48 @@
       "bar": "Bar",
       "compote": "Purée"
     }
+  },
+  "routes": {
+    "kicker": "Activities",
+    "title": "Route workshop",
+    "metaSome": "{km} km of already-run streets, {roads} segments — your territory.",
+    "metaNone": "No track yet: sync Strava or import files to draw your network.",
+    "territory": "Your territory",
+    "territoryNote": "Each stroke is a street you've run; the bolder, the more often you use it. Click to drop points of interest.",
+    "emptyGraph": "No network yet: you need runs with GPS tracks (Strava or import).",
+    "build": "Compose a loop",
+    "buildNote": "A distance, a habit ↔ discovery slider, and the network proposes three loops. The default start is your most frequent starting point.",
+    "distance": "Distance",
+    "flavor": "Habit ↔ discovery",
+    "discovery": "discovery",
+    "habit": "habit",
+    "mix": "balanced",
+    "generate": "Propose loops",
+    "generating": "Searching…",
+    "noLoop": "No loop of this distance found: try another length.",
+    "novelty": "{p}% new",
+    "saveRoute": "Save",
+    "saved": "Saved ✓",
+    "loopName": "Loop",
+    "straights": "Straight lines for intervals",
+    "straightsNote": "Nearly straight portions of the network, spotted automatically — for your 400 m reps and strides.",
+    "straightKm": "km of straight line",
+    "savedRoutes": "Saved routes",
+    "savedNote": "They auto-match your runs (times run, record).",
+    "noRoutes": "No saved route — compose a loop or draw below.",
+    "timesRun": "run {n} times",
+    "delete": "Delete",
+    "confirmDelete": "Delete this route?",
+    "addPoi": "Drop a point of interest",
+    "clickMap": "Click the map to drop the point",
+    "done": "Done",
+    "mapAria": "Network of run streets",
+    "poi_fountain": "Fountain",
+    "poi_toilet": "Toilet",
+    "poi_car": "Car",
+    "poi_bakery": "Bakery",
+    "poi_lit": "Lit area",
+    "poi_danger": "Dangerous",
+    "poi_track": "Track"
   }
 }
