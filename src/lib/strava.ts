@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import { decryptIfNeeded, encryptSecret, secretKeyFromEnv } from "./crypto";
 
 const STRAVA_API = "https://www.strava.com/api/v3";
 const STRAVA_OAUTH = "https://www.strava.com/oauth";
@@ -93,9 +94,10 @@ export async function getValidAccessToken(userId: string): Promise<string> {
     throw new Error("Aucun compte Strava connecté. Va sur /settings pour te connecter.");
   }
 
+  const key = secretKeyFromEnv();
   const now = Math.floor(Date.now() / 1000);
   // Marge de 2 minutes avant expiration
-  if (account.expiresAt > now + 120) return account.accessToken;
+  if (account.expiresAt > now + 120) return decryptIfNeeded(account.accessToken, key);
 
   const { clientId, clientSecret } = stravaConfig();
   const res = await fetch(`${STRAVA_OAUTH}/token`, {
@@ -105,7 +107,7 @@ export async function getValidAccessToken(userId: string): Promise<string> {
       client_id: clientId,
       client_secret: clientSecret,
       grant_type: "refresh_token",
-      refresh_token: account.refreshToken,
+      refresh_token: decryptIfNeeded(account.refreshToken, key),
     }),
     cache: "no-store",
   });
@@ -118,8 +120,8 @@ export async function getValidAccessToken(userId: string): Promise<string> {
   await prisma.stravaAccount.update({
     where: { id: account.id },
     data: {
-      accessToken: data.access_token,
-      refreshToken: data.refresh_token,
+      accessToken: encryptSecret(data.access_token, key),
+      refreshToken: encryptSecret(data.refresh_token, key),
       expiresAt: data.expires_at,
     },
   });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { exchangeCodeForToken } from "@/lib/strava";
+import { encryptSecret, secretKeyFromEnv } from "@/lib/crypto";
 import {
   canRegister,
   createSession,
@@ -90,8 +91,8 @@ export async function GET(req: NextRequest) {
       city: athlete.city ?? null,
       country: athlete.country ?? null,
       weightKg: athlete.weight ?? null,
-      accessToken: token.access_token,
-      refreshToken: token.refresh_token,
+      accessToken: encryptSecret(token.access_token, secretKeyFromEnv()),
+      refreshToken: encryptSecret(token.refresh_token, secretKeyFromEnv()),
       expiresAt: token.expires_at,
       scope,
     };

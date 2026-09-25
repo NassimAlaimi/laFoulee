@@ -50,6 +50,7 @@ profil athlète affiche sa complétude dans les réglages.
 pnpm install
 cp .env.example .env              # puis remplir les identifiants Strava
 openssl rand -hex 32              # → à coller dans AUTH_SECRET
+openssl rand -hex 32              # → à coller dans TOKEN_SECRET (chiffrement des tokens)
 pnpm db:push                      # crée la base
 pnpm dev                          # → http://localhost:3000
 ```
@@ -68,6 +69,9 @@ est créé automatiquement ; le tout premier compte de l'instance est administra
    ```
 4. Redémarre `pnpm dev`, va sur `/settings` → **Se connecter avec Strava**
 5. Clique **Synchroniser Strava** (la première fois : *Réimporter tout l'historique*)
+
+Les tokens Strava (`accessToken` / `refreshToken`) sont **chiffrés au repos**
+(AES-256-GCM) avec `TOKEN_SECRET` : jamais en clair dans la base.
 
 > ⚠️ Strava limite à **100 requêtes / 15 min** et 1000 / jour. La synchro normale
 > est incrémentale et ne reprend que les nouvelles activités.
