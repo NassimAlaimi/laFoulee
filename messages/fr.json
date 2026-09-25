@@ -660,7 +660,9 @@
       "aerobicLexicon": "Voir « efficience » dans le lexique →",
       "aerobicPaceLabel": "Allure à FC fixe",
       "aerobicRange": "Marge",
-      "aerobicSoon": "La courbe se dessinera au fil des semaines, dès que la mesure sera assez précise."
+      "aerobicSoon": "La courbe se dessinera au fil des semaines, dès que la mesure sera assez précise.",
+      "briefTitle": "Brief de la semaine",
+      "briefNote": "Bilan, semaine à venir, objectif, conseil — préparé pour toi, à régénérer quand tu veux."
     },
     "hero": {
       "night": "Bonne nuit",
@@ -2072,5 +2074,13 @@
       "maintain": "Maintien"
     },
     "conflict": "Deux courses A sont trop proches pour deux blocs complets : la seconde est en maintien."
+  },
+  "brief": {
+    "note": "L'agent ne reçoit que des agrégats (km, forme, charge) : jamais tes tracés ni tes notes.",
+    "generate": "Générer mon brief",
+    "regenerate": "Régénérer",
+    "empty": "Aucun brief pour l'instant.",
+    "viaLlm": "rédigé par l'agent (LLM)",
+    "viaRules": "calculé par les règles de l'app"
   }
 }

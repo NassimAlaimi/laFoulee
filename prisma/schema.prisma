@@ -49,6 +49,7 @@ model User {
   routes           Route[]
   routePois        RoutePoi[]
   routeGraphs      RouteGraph[]
+  agentBriefs      AgentBrief[]
 
   /// Jeton secret de l'abonnement agenda (.ics). Null = abonnement désactivé.
   /// Stocké en clair : il n'ouvre qu'une lecture du plan, et doit pouvoir
@@ -687,4 +688,18 @@ model RouteGraph {
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   data    String
   builtAt DateTime @default(now())
+}
+
+/// Brief préparé par l'agent (bilan de semaine, semaine à venir, objectif).
+/// Contenu généré et persisté : il reste dans la langue de création.
+model AgentBrief {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  content   String
+  /// true si un LLM a rédigé, false si le brief déterministe (règles)
+  usedLlm   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }

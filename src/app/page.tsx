@@ -36,6 +36,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { ZoneSplit } from "@/components/analysis/ZoneSplit";
 import { NudgeLine } from "@/components/home/NudgeLine";
+import { BriefCard } from "@/components/home/BriefCard";
 import { pickNudges } from "@/lib/nudges";
 import { adviceOfTheDay } from "@/lib/coach";
 import { RUN_TYPES } from "@/lib/strava";
@@ -85,7 +86,7 @@ export default async function SummaryPage() {
 
   const user = await requireUser();
   const userId = user.id;
-  const [runs, efforts, settings, account, todayLog, goalCount, logDays] = await Promise.all([
+  const [runs, efforts, settings, account, todayLog, goalCount, logDays, lastBrief] = await Promise.all([
     getRuns(undefined, userId),
     getBestEfforts(userId),
     getSettings(userId),
@@ -95,6 +96,7 @@ export default async function SummaryPage() {
     }),
     prisma.raceGoal.count({ where: { userId } }),
     prisma.dailyLog.count({ where: { userId } }),
+    prisma.agentBrief.findFirst({ where: { userId }, orderBy: { createdAt: "desc" } }),
   ]);
   const gettingStarted = (
     <GettingStarted
@@ -657,6 +659,16 @@ export default async function SummaryPage() {
               ))}
             </div>
           </div>
+        </Section>
+
+        <Section title={t("ui.briefTitle")} note={t("ui.briefNote")}>
+          <BriefCard
+            latest={
+              lastBrief
+                ? { content: lastBrief.content, usedLlm: lastBrief.usedLlm, createdAt: lastBrief.createdAt.toISOString() }
+                : null
+            }
+          />
         </Section>
 
         <Section

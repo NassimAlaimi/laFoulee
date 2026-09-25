@@ -660,7 +660,9 @@
       "aerobicLexicon": "See “efficiency” in the glossary →",
       "aerobicPaceLabel": "Pace at fixed HR",
       "aerobicRange": "Margin",
-      "aerobicSoon": "The curve will build up week after week, as soon as the measure is precise enough."
+      "aerobicSoon": "The curve will build up week after week, as soon as the measure is precise enough.",
+      "briefTitle": "Weekly brief",
+      "briefNote": "Recap, week ahead, goal, advice — prepared for you, regenerated whenever you want."
     },
     "hero": {
       "night": "Good night",
@@ -2072,5 +2074,13 @@
       "maintain": "Maintain"
     },
     "conflict": "Two A races are too close for two full blocks: the second stays in maintenance."
+  },
+  "brief": {
+    "note": "The agent only receives aggregates (km, form, load): never your tracks or notes.",
+    "generate": "Generate my brief",
+    "regenerate": "Regenerate",
+    "empty": "No brief yet.",
+    "viaLlm": "written by the agent (LLM)",
+    "viaRules": "computed by the app's rules"
   }
 }

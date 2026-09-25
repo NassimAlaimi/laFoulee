@@ -660,7 +660,9 @@
       "aerobicLexicon": "Ver «eficiencia» en el glosario →",
       "aerobicPaceLabel": "Ritmo a FC fija",
       "aerobicRange": "Margen",
-      "aerobicSoon": "La curva se irá dibujando semana a semana, en cuanto la medida sea lo bastante precisa."
+      "aerobicSoon": "La curva se irá dibujando semana a semana, en cuanto la medida sea lo bastante precisa.",
+      "briefTitle": "Resumen de la semana",
+      "briefNote": "Balance, semana siguiente, objetivo, consejo — preparado para ti, para regenerar cuando quieras."
     },
     "hero": {
       "night": "Buenas noches",
@@ -2072,5 +2074,13 @@
       "maintain": "Mantenimiento"
     },
     "conflict": "Dos carreras A están demasiado cerca para dos bloques completos: la segunda queda en mantenimiento."
+  },
+  "brief": {
+    "note": "El agente solo recibe agregados (km, forma, carga): nunca tus recorridos ni tus notas.",
+    "generate": "Generar mi resumen",
+    "regenerate": "Regenerar",
+    "empty": "Aún no hay resumen.",
+    "viaLlm": "redactado por el agente (LLM)",
+    "viaRules": "calculado por las reglas de la app"
   }
 }
