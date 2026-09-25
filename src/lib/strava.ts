@@ -61,6 +61,15 @@ export type StravaAthlete = {
   weight?: number;
 };
 
+/**
+ * Détecte le quota d'athlètes connectés atteint : Strava renvoie alors
+ * `403 : Limit of connected athletes exceeded`. C'est le plafond de
+ * l'application (10 athlètes en Standard Tier hors review).
+ */
+function isAthleteLimit(body: string): boolean {
+  return /limit of connected athletes|connected athletes/i.test(body);
+}
+
 /** Échange le code d'autorisation contre des tokens. */
 export async function exchangeCodeForToken(
   code: string
@@ -80,7 +89,13 @@ export async function exchangeCodeForToken(
 
   if (!res.ok) {
     // Le corps de la réponse reste dans les logs serveur, jamais côté client.
-    console.error("[strava] échange du code", res.status, await res.text().catch(() => ""));
+    const body = await res.text().catch(() => "");
+    console.error("[strava] échange du code", res.status, body);
+    if (isAthleteLimit(body)) {
+      throw new UserFacingError(
+        "La limite d'athlètes connectés à cette application Strava est atteinte (10). Un compte doit se déconnecter pour libérer une place, ou utilise l'import de fichiers (FIT/GPX/TCX) sans Strava."
+      );
+    }
     throw new UpstreamError(res.status, "Strava a refusé la connexion. Réessaie.");
   }
   return res.json();
