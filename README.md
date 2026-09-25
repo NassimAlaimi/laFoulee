@@ -16,14 +16,21 @@ Interface éditoriale, thème clair et sombre, aucune dépendance de composants 
 Déployée, chaque personne se connecte avec son compte Strava et ne voit que ses
 propres données.
 
-### Organisation en six pôles
+### Organisation en sept pôles
 
-La barre de navigation regroupe les pages en six univers, chacun avec son
-bandeau interne : **Aujourd'hui** (résumé + carnet du jour), **Activités**,
-**Entraînement** (plan, conformité, bibliothèque de séances, objectifs et plan
-de course), **Analyse** (forme & charge, modèles & seuils, séances passées,
-performance, calculateur), **Corps** (musculation, matériel) et **Plus**
-(rétrospective, agenda, export, réglages).
+La barre de navigation regroupe les pages en sept univers : **Aujourd'hui**
+(résumé + carnet du jour), **Activités**, **Entraînement** (plan, bibliothèque
+de séances), **Courses** (objectifs et plans de course, records, prédictions &
+calculs), **Analyse** (forme & charge, modèles & seuils, séances passées),
+**Corps** (musculation, matériel) et **Plus** (rétrospective, lexique,
+réglages). Dès qu'on entre dans un pôle, une **sous-barre** liste toutes ses
+pages (source unique : `lib/poles.ts`) — plus de fonctionnalité cachée.
+
+Sur l'accueil, un **rappel contextuel** (`lib/nudges.ts`) suggère une seule
+chose utile au bon moment : préparer le plan de course à moins de 8 semaines,
+créer le plan d'une course lointaine, noter ses ressentis, remplacer des
+chaussures usées, lire la rétrospective en début de mois. On peut l'ignorer :
+il se tait jusqu'à ce que la situation change.
 
 Une **visite guidée** accueille la première connexion : un projecteur se
 promène sur les six pôles avec des bulles d'infos, se relance à tout moment
@@ -173,9 +180,21 @@ réimportations complètes simultanées.
 
 ### Allure & cardio
 - Progression allure + FC moyennes sur 12 mois (double axe, allure inversée)
-- Nuage **allure × FC** : visualise l'efficience (bas-gauche = mieux)
-- Répartition du temps par **zone FC** (Z1 récup → Z5 VO2max), FC max auto-estimée
-  (max observé, sinon Tanaka `208 − 0.7 × âge`)
+- **Forme aérobie — l'allure à FC fixe** : « à 155 bpm, tu cours à 5:22/km,
+  contre 5:41 il y a trois mois ». Régression vitesse ~ FC sur 6 semaines
+  glissantes, sur les seuls km plats des footings, avec marge d'erreur à 95 % ;
+  l'écart n'est déclaré que s'il sort de la marge (`lib/aerobic-pace.ts`).
+  À côté, la dérive cardiaque médiane des sorties longues.
+- **Répartition de l'intensité** au **temps réellement passé** dans chaque zone
+  (courbe à la seconde, sinon km-splits, sinon moyenne — la source est affichée),
+  en **cardio et en allure** côte à côte, lecture polarisée 80/20 en tête,
+  barres semaine par semaine, et un signal quand cœur et allure divergent.
+- **Un seul modèle de zones** (`lib/zones.ts`), ancré sur le seuil : zones
+  personnelles LT1/LT2 si mesurées, sinon FC de réserve (Karvonen) et allure
+  seuil du VDOT. FC max robuste (un pic isolé du capteur est écarté).
+- **Comparatif 28 jours** avec écarts signés et colorés selon le sens souhaité ;
+  l'allure comparée est celle des footings seulement, et rien n'est affiché sous
+  4 sorties par période.
 
 ### Records & prédictions — moteur VDOT
 - PB sur 13 distances (400 m → marathon), extraits des efforts chronométrés Strava
@@ -226,7 +245,7 @@ La page `/analysis` regroupe ce qui demande du recul plutôt qu'un coup d'œil :
 | **Potentiel vs réaliste** | Tableau distance par distance avec l'écart chiffré et le facteur qui coûte le plus |
 | **Courbe allure-durée** | Tes records face au modèle de ton exposant : les distances où tu surperformes et celles où il y a du temps à prendre |
 | **Vitesse critique** | Nuage distance × temps, droite de régression, CS et D′ |
-| **Polarisation** | Répartition facile / zone grise / intense mois par mois (règle des 80/20) et diagnostic de la zone grise |
+| **Polarisation** | Répartition facile / zone grise / intense mois par mois, au temps passé par km (même modèle de zones que l'accueil), et diagnostic 80/20 |
 | **Allure par intensité** | Évolution de l'allure à effort facile, modéré et intense — la baisse à intensité *facile* est le meilleur marqueur de progrès aérobie |
 | **Comparatif annuel** | Cumul kilométrique semaine par semaine, année contre année |
 | **Régularité** | Grille de 52 semaines, taux de semaines actives, série en cours et record de série |
@@ -365,7 +384,7 @@ l'utilisateur sur tous ses appareils) et ne change jamais les URLs.
 
 | Page | Contenu |
 |---|---|
-| **Résumé** | La saison en une phrase, séance du jour en grand (frise, repères semaine / course / fraîcheur), bande nuit de l'état de forme, observations, calendrier, charge, volume, allure, zones FC |
+| **Résumé** | La saison en une phrase, séance du jour en grand (frise, repères semaine / course / fraîcheur), bande nuit de l'état de forme, rappel contextuel, observations, calendrier d'une année (séances prévues en pointillés), charge, volume, forme aérobie, répartition de l'intensité |
 | **Activités** | Liste filtrable avec vignettes de tracé, vues **Mosaïque** et **Carte** (chaleur + parcours récurrents), fiche détaillée par séance |
 | **Entraînement** | Plan séance par séance, point hebdo, réadaptation, trajectoire de volume |
 | **Analyse** | PMC (condition/fatigue/fraîcheur), potentiel vs réaliste, courbe allure-durée, vitesse critique, polarisation, comparatif annuel, régularité, barres passées |
@@ -672,8 +691,8 @@ pnpm test
 - Toutes les données sont stockées en **unités SI** (mètres, secondes, m/s) ;
   le formatage se fait à l'affichage via `lib/format.ts`
 - Les tokens Strava sont **rafraîchis automatiquement** (marge de 2 min avant expiration)
-- Le calcul des zones FC impute la séance entière à la zone de sa FC moyenne
-  (approximation — les streams Strava seconde par seconde donneraient l'exact)
+- Les zones se comptent au temps passé : courbe à la seconde quand elle existe
+  (pauses de montre > 30 s ignorées), sinon km-splits, sinon moyenne de séance
 - L'**ACWR reste masqué tant que 28 jours d'historique ne sont pas disponibles** :
   sans cela la charge chronique est artificiellement basse et le ratio explose
   (valeurs à 3-4 sans aucun sens). L'affichage est par ailleurs plafonné à 3, car
@@ -702,6 +721,9 @@ pnpm test
 
 ## Roadmap
 
+La feuille de route détaillée (15 chantiers, décisions prises) est dans
+[`docs/ROADMAP.md`](docs/ROADMAP.md).
+
 **Plus tard**
 - Export des séances vers la montre (Garmin / Coros)
 - Muscu : programmation de blocs de force, lien charge muscu ↔ fatigue course
@@ -709,4 +731,3 @@ pnpm test
 - Page d'administration (liste des comptes, quota Strava consommé)
 - Streams Strava pour la vitesse critique (efforts de 2 à 30 min extraits des
   courbes de puissance-vitesse plutôt que des seuls records officiels)
-- Streams Strava (zones FC exactes, analyse des splits, dérive cardiaque)
