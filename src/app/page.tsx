@@ -37,6 +37,7 @@ import { prisma } from "@/lib/prisma";
 import { ZoneSplit } from "@/components/analysis/ZoneSplit";
 import { NudgeLine } from "@/components/home/NudgeLine";
 import { pickNudges } from "@/lib/nudges";
+import { adviceOfTheDay } from "@/lib/coach";
 import { RUN_TYPES } from "@/lib/strava";
 import { loadAerobicSplits, loadDetailedRuns, loadZoneContext } from "@/lib/zones-store";
 import { aerobicPaceSeries, aerobicSummary } from "@/lib/aerobic-pace";
@@ -79,6 +80,7 @@ const ZONE_TONE: Record<string, string> = {
 export default async function SummaryPage() {
   const t = await getTranslations("home");
   const tc = await getTranslations("common");
+  const tcoach = await getTranslations("coach");
   const locale = await getLocale();
 
   const user = await requireUser();
@@ -163,7 +165,7 @@ export default async function SummaryPage() {
       status: "planned",
       plan: { userId, status: "active" },
     },
-    select: { date: true, distanceKm: true, durationMin: true, intensity: true, kind: true, title: true },
+    select: { date: true, distanceKm: true, durationMin: true, intensity: true, kind: true, title: true, phase: true },
   });
   const series = formSeries({
     activities: runs,
@@ -206,6 +208,17 @@ export default async function SummaryPage() {
     prisma.gear.findMany({ where: { userId, retired: false }, select: { name: true, stravaDistance: true, retireAtKm: true } }),
     prisma.dailyLog.count({ where: { userId, date: { gte: new Date(now.getTime() - 7 * 86400000) } } }),
   ]);
+  const advice = adviceOfTheDay({
+    tsb: form?.tsb ?? null,
+    acwr: current.ratio,
+    logDays: log7,
+    feelingMissing: recentFeel.filter((r) => r.feeling === null).length,
+    nextRace: nextRace
+      ? { days: Math.ceil((nextRace.raceDate.getTime() - now.getTime()) / 86400000), distanceKm: nextRace.distance / 1000, hasRacePlan: Boolean(nextRace.racePlan) }
+      : null,
+    phase: planned.find((s) => s.date.getTime() > now.getTime())?.phase ?? null,
+    pain: todayLog?.painLevel ?? 0,
+  });
   const nudges = pickNudges({
     now,
     nextRace: nextRace
@@ -368,6 +381,16 @@ export default async function SummaryPage() {
         }))}
         labels={{ dismiss: t("nudges.dismiss"), eyebrow: t("nudges.eyebrow") }}
       />
+      {advice && (
+        <div className={`rise -mt-4 mb-10 flex items-start gap-4 border-l-2 py-1 pl-4 ${
+          advice.tone === "good" ? "border-sage" : advice.tone === "warn" ? "border-ochre" : "border-rust"
+        }`}>
+          <div className="min-w-0 flex-1">
+            <div className="text-micro font-medium uppercase tracking-[0.14em] text-ink3">{t("coachLabel")}</div>
+            <p className="mt-1 max-w-2xl text-[0.9375rem] leading-snug">{tcoach(`advice.${advice.key}`, advice.params)}</p>
+          </div>
+        </div>
+      )}
 
       <TodayLog log={todayLog} />
 

@@ -716,7 +716,8 @@
         "text": "Nada en el diario desde hace una semana: sueño, fatiga y dolores afinan tus consejos.",
         "cta": "Rellenar el diario"
       }
-    }
+    },
+    "coachLabel": "Consejo del día"
   },
   "tour": {
     "steps": {
@@ -1334,7 +1335,8 @@
     "calRest": "descanso",
     "calSessions": "{n} sesiones",
     "calRace": "carrera",
-    "calPlanned": "previsto"
+    "calPlanned": "previsto",
+    "whyLabel": "Por qué"
   },
   "analysis": {
     "title": "Forma y carga",
@@ -2015,5 +2017,47 @@
     "poi_lit": "Zona iluminada",
     "poi_danger": "Peligroso",
     "poi_track": "Pista de atletismo"
+  },
+  "coach": {
+    "why": {
+      "rest": "Ningún esfuerzo: aquí se produce la adaptación.",
+      "recovery": "Muy lento, para soltar la fatiga sin añadir más.",
+      "easy": "Desarrolla tu base aeróbica, el cimiento de todo lo demás.",
+      "long": "Alarga el tiempo de pie: resistencia y confianza.",
+      "tempo": "Eleva el ritmo que puedes sostener sin pasarte.",
+      "threshold": "Retrasa el momento en que arden las piernas.",
+      "intervals": "Agranda tu motor: más oxígeno a alta intensidad.",
+      "hills": "Fuerza y economía de carrera, sin impacto extra.",
+      "fartlek": "Aprende a variar el ritmo por sensaciones, como en carrera.",
+      "strides": "Zancada y soltura a velocidad alta, sin fatiga.",
+      "race": "El objetivo en sí: aplicar lo construido.",
+      "strength": "Músculos y tendones más fuertes, corredor más duradero.",
+      "cross": "Estimula el cardio de otra forma, libra las piernas.",
+      "mobility": "Flexibilidad y amplitud, para absorber la carga."
+    },
+    "skip": {
+      "quality": "Sáltala solo si hace falta: es la que te hace progresar.",
+      "easy": "Poco costosa, la más fácil de mantener."
+    },
+    "place": {
+      "base": "Cimientos del bloque.",
+      "build": "El corazón de la preparación.",
+      "peak": "Pico de intensidad, antes del afinado.",
+      "deload": "Semana ligera: absorber y consolidar.",
+      "taper": "Afinado: bajar volumen, mantener el filo.",
+      "race": "La carrera."
+    },
+    "advice": {
+      "pain": "Algo duele: recuperación primero, no fuerces.",
+      "overreach": "Carga aguda alta ({acwr}): la próxima semana afloja en vez de añadir.",
+      "tired": "Frescura baja ({tsb}): prioriza el sueño y los rodajes.",
+      "raceWeek": "{days} días para tu carrera de {km} km: ya no se gana nada, llega fresco.",
+      "racePlan": "{days} días para tu carrera de {km} km y sin plan de carrera: ritmos, avituallamiento, pulsera.",
+      "taper": "Semana de afinado: menos volumen, intensidad mantenida, mucho sueño.",
+      "feeling": "{n} salidas sin sensación anotada: es lo que permite adaptar el plan.",
+      "log": "Rellena tu diario (sueño, fatiga, dolores): tus consejos serán más precisos.",
+      "fresh": "Forma presente ({tsb}): el momento ideal para una buena sesión.",
+      "base": "Semana tranquila: constancia ante todo, la intensidad llegará a su momento."
+    }
   }
 }

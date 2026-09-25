@@ -26,6 +26,7 @@ export type SessionView = {
   rpe: number | null;
   painLevel: number;
   activity: { id: string; name: string; distance: number; movingTime: number } | null;
+  why?: { key: string; params: Record<string, string | number> } | null;
 };
 
 const INTENSITY_COLOR = [
@@ -55,6 +56,7 @@ export function SessionCard({
 }) {
   const t = useTranslations("training");
   const tc = useTranslations("common");
+  const tcoach = useTranslations("coach");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -126,6 +128,13 @@ export function SessionCard({
           {!compact && session.tagline && (
             <p className="mt-1.5 text-[0.8125rem] leading-relaxed text-ink2">
               {session.tagline}
+            </p>
+          )}
+
+          {!compact && session.why && (
+            <p className="mt-1 max-w-prose text-[0.75rem] leading-snug text-ink3">
+              <span className="font-medium text-clay">{t("whyLabel")} </span>
+              {tcoach(session.why.key, session.why.params)}
             </p>
           )}
 

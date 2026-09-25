@@ -716,7 +716,8 @@
         "text": "Rien au carnet depuis une semaine : sommeil, fatigue et douleurs affinent tes conseils.",
         "cta": "Remplir le carnet"
       }
-    }
+    },
+    "coachLabel": "Conseil du jour"
   },
   "tour": {
     "steps": {
@@ -1334,7 +1335,8 @@
     "calRest": "repos",
     "calSessions": "{n} séances",
     "calRace": "course",
-    "calPlanned": "prévu"
+    "calPlanned": "prévu",
+    "whyLabel": "Pourquoi"
   },
   "analysis": {
     "title": "Forme & charge",
@@ -2015,5 +2017,47 @@
     "poi_lit": "Zone éclairée",
     "poi_danger": "Dangereux",
     "poi_track": "Piste d'athlétisme"
+  },
+  "coach": {
+    "why": {
+      "rest": "Aucun effort : c'est là que l'adaptation se produit.",
+      "recovery": "Très lent, pour évacuer la fatigue sans en ajouter.",
+      "easy": "Développe ta base aérobie, le socle de tout le reste.",
+      "long": "Allonge le temps passé debout : endurance et confiance.",
+      "tempo": "Élève l'allure que tu peux tenir longtemps sans basculer.",
+      "threshold": "Repousse le moment où tes jambes brûlent.",
+      "intervals": "Agrandit ta cylindrée : plus d'oxygène à haute intensité.",
+      "hills": "Force et économie de course, sans impact supplémentaire.",
+      "fartlek": "Apprends à varier l'allure au ressenti, comme en course.",
+      "strides": "Foulée et relâchement à vitesse élevée, sans fatigue.",
+      "race": "L'objectif lui-même : appliquer ce que tu as construit.",
+      "strength": "Muscles et tendons plus solides, coureur plus durable.",
+      "cross": "Stimule le cardio autrement, ménage les jambes.",
+      "mobility": "Souplesse et amplitude, pour encaisser la charge."
+    },
+    "skip": {
+      "quality": "À sauter seulement si nécessaire : c'est elle qui fait progresser.",
+      "easy": "Peu coûteuse, c'est la plus facile à conserver."
+    },
+    "place": {
+      "base": "Fondations du bloc.",
+      "build": "Le cœur de la préparation.",
+      "peak": "Pic d'intensité, avant l'affûtage.",
+      "deload": "Semaine allégée : absorber et consolider.",
+      "taper": "Affûtage : réduire le volume, garder le tranchant.",
+      "race": "La course."
+    },
+    "advice": {
+      "pain": "Une douleur te gêne : priorité à la récupération, ne force pas dessus.",
+      "overreach": "Charge aiguë élevée ({acwr}) : la semaine prochaine, allège plutôt qu'ajouter.",
+      "tired": "Fraîcheur basse ({tsb}) : privilégie le sommeil et les sorties faciles.",
+      "raceWeek": "{days} jours avant ta course de {km} km : on ne rattrape plus rien, on arrive frais.",
+      "racePlan": "{days} jours avant ta course de {km} km et pas de plan de course : allures, ravito, bracelet.",
+      "taper": "Semaine d'affûtage : volume en baisse, intensité conservée, beaucoup de sommeil.",
+      "feeling": "{n} sorties sans ressenti noté : c'est ce qui permet d'adapter le plan.",
+      "log": "Remplis ton carnet (sommeil, fatigue, douleurs) : tes conseils seront plus justes.",
+      "fresh": "Forme au rendez-vous ({tsb}) : le moment idéal pour une belle séance.",
+      "base": "Semaine posée : régularité avant tout, l'intensité viendra au bon moment."
+    }
   }
 }

@@ -716,7 +716,8 @@
         "text": "Nothing in your log for a week: sleep, fatigue and pain sharpen your advice.",
         "cta": "Fill in the log"
       }
-    }
+    },
+    "coachLabel": "Today's tip"
   },
   "tour": {
     "steps": {
@@ -1334,7 +1335,8 @@
     "calRest": "rest",
     "calSessions": "{n} sessions",
     "calRace": "race",
-    "calPlanned": "planned"
+    "calPlanned": "planned",
+    "whyLabel": "Why this"
   },
   "analysis": {
     "title": "Fitness & load",
@@ -2015,5 +2017,47 @@
     "poi_lit": "Lit area",
     "poi_danger": "Dangerous",
     "poi_track": "Track"
+  },
+  "coach": {
+    "why": {
+      "rest": "No effort: this is where adaptation happens.",
+      "recovery": "Very slow, to flush fatigue without adding any.",
+      "easy": "Builds your aerobic base, the foundation of everything else.",
+      "long": "Extends time on feet: endurance and confidence.",
+      "tempo": "Raises the pace you can hold for long without tipping over.",
+      "threshold": "Pushes back the moment your legs burn.",
+      "intervals": "Grows your engine: more oxygen at high intensity.",
+      "hills": "Strength and running economy, without extra impact.",
+      "fartlek": "Learn to vary pace by feel, like in a race.",
+      "strides": "Form and relaxation at speed, without fatigue.",
+      "race": "The goal itself: apply what you've built.",
+      "strength": "Stronger muscles and tendons, a more durable runner.",
+      "cross": "Stimulates the cardio differently, spares the legs.",
+      "mobility": "Flexibility and range, to absorb the load."
+    },
+    "skip": {
+      "quality": "Skip only if necessary: this is what makes you progress.",
+      "easy": "Low cost, the easiest one to keep."
+    },
+    "place": {
+      "base": "Block foundations.",
+      "build": "The core of the preparation.",
+      "peak": "Intensity peak, before tapering.",
+      "deload": "Light week: absorb and consolidate.",
+      "taper": "Taper: cut volume, keep the edge.",
+      "race": "Race day."
+    },
+    "advice": {
+      "pain": "Something hurts: recovery first, don't push through it.",
+      "overreach": "Acute load is high ({acwr}): ease off next week rather than add.",
+      "tired": "Low freshness ({tsb}): favour sleep and easy runs.",
+      "raceWeek": "{days} days before your {km} km race: nothing more to gain, arrive fresh.",
+      "racePlan": "{days} days before your {km} km race and no race plan: pacing, fuelling, pace band.",
+      "taper": "Taper week: volume down, intensity kept, lots of sleep.",
+      "feeling": "{n} runs without a logged feeling: that's what lets the plan adapt.",
+      "log": "Fill in your log (sleep, fatigue, pain): your advice will be sharper.",
+      "fresh": "Form is here ({tsb}): the perfect time for a strong session.",
+      "base": "A steady week: consistency first, intensity will come at the right time."
+    }
   }
 }

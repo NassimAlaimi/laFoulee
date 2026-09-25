@@ -8,6 +8,7 @@ import { PlanBuilder, VolumeCurve } from "@/components/training/PlanBuilder";
 import { SessionCard, type SessionView } from "@/components/training/SessionCard";
 import { WeekBoard } from "@/components/training/WeekBoard";
 import { fmtDateShort } from "@/lib/format";
+import { sessionWhy } from "@/lib/coach";
 import {
   actualKmForWeek,
   athleteContext,
@@ -416,6 +417,7 @@ async function loadWeek(planId: string, monday: Date): Promise<SessionView[]> {
     adaptReason: r.adaptReason,
     rpe: r.rpe,
     painLevel: r.painLevel,
+    why: (() => { const w = sessionWhy(r); return { key: w.whyKey, params: w.params }; })(),
     activity: r.activity
       ? {
           id: r.activity.id,
