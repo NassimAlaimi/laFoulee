@@ -17,7 +17,14 @@ export type Pole = { key: PoleKey; href: string; pages: PolePage[] };
 
 export const POLES: Pole[] = [
   { key: "today", href: "/", pages: [{ href: "/", key: "today" }, { href: "/log", key: "log" }] },
-  { key: "activities", href: "/activities", pages: [{ href: "/activities", key: "activities" }] },
+  {
+    key: "activities",
+    href: "/activities",
+    pages: [
+      { href: "/activities", key: "activities" },
+      { href: "/import", key: "import" },
+    ],
+  },
   {
     key: "training",
     href: "/training",

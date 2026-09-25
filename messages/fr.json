@@ -107,7 +107,8 @@
       "plus": "Vue d'ensemble",
       "recap": "Rétrospective",
       "lexique": "Lexique",
-      "settings": "Réglages"
+      "settings": "Réglages",
+      "import": "Importer des fichiers"
     }
   },
   "settings": {
@@ -1777,6 +1778,67 @@
     "noPlan": "Crée d'abord un plan d'entraînement",
     "scheduled": "Ajoutée au plan ✓",
     "scheduledReplaced": "Ajoutée au plan, à la place de la séance prévue ce jour-là ✓",
-    "scheduleError": "Impossible de l'ajouter au plan."
+    "scheduleError": "Impossible de l'ajouter au plan.",
+    "watch": "Montre (.fit)",
+    "watchTitle": "Télécharger pour la montre : copier dans GARMIN/NewFiles, ou importer dans Garmin Connect"
+  },
+  "import": {
+    "kicker": "Activités",
+    "title": "Importer",
+    "metaSome": "{n} sorties viennent de fichiers ; {pct} % de ton historique a une courbe cardio détaillée.",
+    "metaNone": "Aucune sortie importée pour l'instant ; {pct} % de ton historique a une courbe cardio détaillée — les fichiers de montre la complètent.",
+    "dropTitle": "Déposer des fichiers",
+    "dropNote": "FIT, GPX, TCX, ou l'export complet de ton compte en .zip. Une sortie déjà venue de Strava est complétée (courbe, km par km, tracé), jamais dupliquée ni écrasée.",
+    "drop": "Glisse tes fichiers ici",
+    "dropHint": "ou clique pour choisir — .fit, .gpx, .tcx, .zip (250 Mo max. par envoi)",
+    "sending": "Import de {n} fichier(s)…",
+    "wrongType": "Formats acceptés : .fit, .gpx, .tcx, .zip",
+    "tooLarge": "Envoi trop lourd (250 Mo max.) : découpe l'export en plusieurs fois.",
+    "failed": "L'import a échoué.",
+    "created": "nouvelles sorties",
+    "merged": "sorties complétées",
+    "skipped": "déjà connues",
+    "wellness": "jours de carnet",
+    "failedN": "fichiers illisibles",
+    "err": {
+      "format": "format non reconnu",
+      "zip": "archive illisible",
+      "short": "fichier FIT tronqué",
+      "header": "en-tête FIT invalide",
+      "signature": "ce n'est pas un fichier FIT",
+      "undefined-local": "fichier FIT corrompu",
+      "other": "illisible"
+    },
+    "history": "Derniers imports",
+    "batchLine": "+{created} · {merged} complétées · {wellness} j. carnet · {failed} erreurs",
+    "howTitle": "Récupérer ses fichiers",
+    "howNote": "Pas besoin d'API ni de partenariat : toutes les montres savent exporter leurs sorties.",
+    "how": {
+      "garmin": {
+        "title": "Garmin — tout l'historique",
+        "body": "Garmin Connect (web) → compte → Paramètres de confidentialité → Gérer vos données → Exporter vos données. Tu reçois un lien vers un .zip : dépose-le tel quel. Sommeil, FC de repos et VFC complètent aussi ton carnet."
+      },
+      "garminOne": {
+        "title": "Garmin — une sortie",
+        "body": "Sur la page d'une activité dans Garmin Connect : ⚙ → Exporter l'original (fichier .fit, le plus complet) ou Exporter en GPX/TCX."
+      },
+      "coros": {
+        "title": "Coros",
+        "body": "App Coros → activité → ⋯ → Exporter les données → .fit. Ou depuis Training Hub : Activités → exporter."
+      },
+      "suunto": {
+        "title": "Suunto",
+        "body": "App Suunto → activité → ⋯ → Exporter → .fit (ou .gpx pour le seul tracé)."
+      },
+      "polar": {
+        "title": "Polar",
+        "body": "Polar Flow (web) → Agenda → séance → Exporter la séance → TCX ou GPX. L'export complet du compte est aussi accepté."
+      },
+      "apple": {
+        "title": "Apple Watch, Strava, autres",
+        "body": "Toute app qui exporte du GPX ou du TCX fonctionne. Depuis Strava : activité → ⋯ → Exporter le GPX (déjà synchronisé ici de toute façon)."
+      }
+    },
+    "privacy": "Les fichiers sont lus sur ce serveur puis jetés : seuls les chiffres de la sortie, sa courbe et son tracé sont gardés, dans ton compte uniquement."
   }
 }

@@ -16,7 +16,6 @@ export function TopNav({ user }: { user: AccountInfo | null }) {
   const t = useTranslations("nav");
   const here = locate(pathname);
   const isActive = (href: string) => {
-    if (href === "/activities") return pathname.startsWith("/activities");
     const pole = POLES.find((p) => p.href === href);
     return Boolean(pole && here?.pole.key === pole.key);
   };

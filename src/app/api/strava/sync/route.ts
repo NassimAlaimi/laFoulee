@@ -1,3 +1,4 @@
+import { sameActivity } from "@/lib/track-import";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { currentUserId } from "@/lib/auth";
@@ -91,10 +92,40 @@ export async function POST(req: NextRequest) {
         });
         updated++;
       } else {
-        await prisma.activity.create({
-          data: { ...data, userId, stravaId: BigInt(s.id) },
+        // Même sortie déjà importée depuis un fichier (FIT/GPX/TCX) ? On lui
+        // rattache l'identifiant Strava au lieu de créer un doublon. Les
+        // détails issus du fichier (courbe, splits) sont conservés ; le tracé
+        // fin du fichier l'emporte sur le tracé résumé de Strava.
+        const around = await prisma.activity.findMany({
+          where: {
+            userId,
+            stravaId: null,
+            startDate: {
+              gte: new Date(data.startDate.getTime() - 180_000),
+              lte: new Date(data.startDate.getTime() + 180_000),
+            },
+          },
+          select: { id: true, startDate: true, distance: true, polyline: true, raceLocked: true },
         });
-        imported++;
+        const twin = around.find((x) => sameActivity(x, data));
+        if (twin) {
+          const { isRace, polyline, ...rest } = data;
+          await prisma.activity.update({
+            where: { id: twin.id },
+            data: {
+              ...rest,
+              stravaId: BigInt(s.id),
+              ...(twin.polyline ? {} : { polyline }),
+              ...(twin.raceLocked ? {} : { isRace }),
+            },
+          });
+          updated++;
+        } else {
+          await prisma.activity.create({
+            data: { ...data, userId, stravaId: BigInt(s.id) },
+          });
+          imported++;
+        }
       }
     }
 

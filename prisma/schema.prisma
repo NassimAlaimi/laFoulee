@@ -44,6 +44,7 @@ model User {
   strengthGoals   StrengthGoal[]
   dailyLogs       DailyLog[]
   customWorkouts  CustomWorkout[]
+  importBatches   ImportBatch[]
 
   /// Jeton secret de l'abonnement agenda (.ics). Null = abonnement désactivé.
   /// Stocké en clair : il n'ouvre qu'une lecture du plan, et doit pouvoir
@@ -99,7 +100,7 @@ model Activity {
   /// Identifiant Strava — unique *par utilisateur*, deux comptes peuvent
   /// parfaitement avoir couru la même sortie de groupe.
   stravaId BigInt?
-  source   String  @default("strava") // strava | manual
+  source   String  @default("strava") // strava | manual | fit | gpx | tcx
 
   name      String
   type      String // Run, TrailRun, Ride, WeightTraining, Workout...
@@ -603,4 +604,24 @@ model CustomWorkout {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+/// Journal d'un import de fichiers (FIT/GPX/TCX, export Garmin).
+model ImportBatch {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  /// Noms des fichiers envoyés (tronqué)
+  files     String
+  created   Int      @default(0)
+  merged    Int      @default(0)
+  skipped   Int      @default(0)
+  failed    Int      @default(0)
+  /// Jours de carnet complétés (sommeil, FC de repos, VFC)
+  wellness  Int      @default(0)
+  /// Erreurs par fichier (JSON, 20 max)
+  errors    String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }

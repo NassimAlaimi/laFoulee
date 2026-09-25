@@ -107,7 +107,8 @@
       "plus": "Overview",
       "recap": "Recap",
       "lexique": "Glossary",
-      "settings": "Settings"
+      "settings": "Settings",
+      "import": "Import files"
     }
   },
   "settings": {
@@ -1777,6 +1778,67 @@
     "noPlan": "Create a training plan first",
     "scheduled": "Added to the plan ✓",
     "scheduledReplaced": "Added to the plan, replacing that day's session ✓",
-    "scheduleError": "Could not add it to the plan."
+    "scheduleError": "Could not add it to the plan.",
+    "watch": "Watch (.fit)",
+    "watchTitle": "Download for your watch: copy to GARMIN/NewFiles, or import into Garmin Connect"
+  },
+  "import": {
+    "kicker": "Activities",
+    "title": "Import",
+    "metaSome": "{n} runs come from files; {pct}% of your history has a detailed heart-rate curve.",
+    "metaNone": "No imported run yet; {pct}% of your history has a detailed heart-rate curve — watch files fill it in.",
+    "dropTitle": "Drop files",
+    "dropNote": "FIT, GPX, TCX, or your full account export as a .zip. A run already synced from Strava is completed (curve, km splits, track), never duplicated or overwritten.",
+    "drop": "Drop your files here",
+    "dropHint": "or click to choose — .fit, .gpx, .tcx, .zip (250 MB max per upload)",
+    "sending": "Importing {n} file(s)…",
+    "wrongType": "Accepted formats: .fit, .gpx, .tcx, .zip",
+    "tooLarge": "Upload too large (250 MB max): split the export.",
+    "failed": "The import failed.",
+    "created": "new runs",
+    "merged": "runs completed",
+    "skipped": "already known",
+    "wellness": "log days",
+    "failedN": "unreadable files",
+    "err": {
+      "format": "unknown format",
+      "zip": "unreadable archive",
+      "short": "truncated FIT file",
+      "header": "invalid FIT header",
+      "signature": "not a FIT file",
+      "undefined-local": "corrupted FIT file",
+      "other": "unreadable"
+    },
+    "history": "Recent imports",
+    "batchLine": "+{created} · {merged} completed · {wellness} log days · {failed} errors",
+    "howTitle": "Getting your files",
+    "howNote": "No API or partnership needed: every watch can export its runs.",
+    "how": {
+      "garmin": {
+        "title": "Garmin — full history",
+        "body": "Garmin Connect (web) → account → Privacy settings → Manage your data → Export your data. You get a link to a .zip: drop it as is. Sleep, resting HR and HRV also fill in your log."
+      },
+      "garminOne": {
+        "title": "Garmin — one run",
+        "body": "On an activity page in Garmin Connect: ⚙ → Export Original (.fit file, the most complete) or Export to GPX/TCX."
+      },
+      "coros": {
+        "title": "Coros",
+        "body": "Coros app → activity → ⋯ → Export data → .fit. Or from Training Hub: Activities → export."
+      },
+      "suunto": {
+        "title": "Suunto",
+        "body": "Suunto app → activity → ⋯ → Export → .fit (or .gpx for the track only)."
+      },
+      "polar": {
+        "title": "Polar",
+        "body": "Polar Flow (web) → Diary → session → Export session → TCX or GPX. The full account export is accepted too."
+      },
+      "apple": {
+        "title": "Apple Watch, Strava, others",
+        "body": "Any app that exports GPX or TCX works. From Strava: activity → ⋯ → Export GPX (already synced here anyway)."
+      }
+    },
+    "privacy": "Files are read on this server and then discarded: only the run's numbers, curve and track are kept, in your account only."
   }
 }

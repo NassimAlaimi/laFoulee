@@ -114,6 +114,9 @@ export function CustomWorkoutList({ rows, paces, hasPlan }: { rows: CustomRow[];
                   >
                     {t("schedule")}
                   </button>
+                  <a className="btn-quiet btn-sm" href={`/api/workouts/custom/${w.id}/fit`} title={t("watchTitle")} download>
+                    {t("watch")}
+                  </a>
                   <button type="button" className="btn-quiet btn-sm" onClick={() => setEditing(w.id)}>
                     {t("edit")}
                   </button>
