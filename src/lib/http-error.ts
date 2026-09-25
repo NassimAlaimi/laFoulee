@@ -35,6 +35,20 @@ export class UpstreamError extends UserFacingError {
 const GENERIC = "Une erreur est survenue. Réessaie dans un instant.";
 
 /**
+ * Quota Strava « athlètes connectés » atteint (403 « Limit of connected
+ * athletes exceeded »). Le message invite à libérer une place ou à importer
+ * des fichiers. Le callback OAuth la traite à part (éviction automatique).
+ */
+export class AthleteLimitError extends UserFacingError {
+  constructor() {
+    super(
+      "La limite d'athlètes connectés à cette application Strava est atteinte (10). Un compte doit se déconnecter pour libérer une place, ou utilise l'import de fichiers (FIT/GPX/TCX) sans Strava."
+    );
+    this.name = "AthleteLimitError";
+  }
+}
+
+/**
  * Message sûr à afficher pour l'utilisateur.
  * - `UserFacingError` (et ses sous-classes) → son message ;
  * - toute autre erreur → journalisée en détail côté serveur, remplacée par un

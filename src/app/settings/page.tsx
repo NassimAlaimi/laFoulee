@@ -6,7 +6,7 @@ import { SyncButton } from "@/components/SyncButton";
 import { fmtDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { getLastSync, getSettings, getStravaAccount } from "@/lib/queries";
-import { isStravaConfigured } from "@/lib/strava";
+import { deauthorize, isStravaConfigured } from "@/lib/strava";
 import { displayName, requireUser, requireUserId } from "@/lib/auth";
 import { AccountActions } from "@/components/AccountActions";
 import { CalendarSubscription } from "@/components/CalendarSubscription";
@@ -39,6 +39,18 @@ export default async function SettingsPage({
   ]);
   const configured = isStravaConfigured();
   const calendar = await prisma.user.findUnique({ where: { id: userId }, select: { calendarToken: true } });
+  // Connexions Strava de l'instance (réservé à l'admin pour gérer les 10 sièges).
+  const connections =
+    user.role === "admin"
+      ? await prisma.stravaAccount.findMany({
+          select: {
+            userId: true,
+            lastSyncAt: true,
+            user: { select: { firstname: true, lastname: true, role: true } },
+          },
+          orderBy: { lastSyncAt: "asc" },
+        })
+      : [];
   // L'URL publique est préférée ; à défaut, l'hôte de la requête (dev local)
   const h = await headers();
   const origin =
@@ -74,6 +86,28 @@ export default async function SettingsPage({
     revalidatePath("/records");
   }
 
+  async function freeStravaSeat(formData: FormData) {
+    "use server";
+    const targetId = formData.get("userId");
+    if (typeof targetId !== "string") return;
+    const actor = await requireUser();
+    if (actor.role !== "admin") return;
+    const victim = await prisma.user.findUnique({
+      where: { id: targetId },
+      select: { role: true },
+    });
+    if (!victim || victim.role === "admin") return; // jamais l'admin
+    const revoked = await deauthorize(targetId);
+    await prisma.stravaAccount.deleteMany({ where: { userId: targetId } });
+    if (revoked) {
+      await prisma.user.update({
+        where: { id: targetId },
+        data: { stravaEvictedAt: new Date() },
+      });
+    }
+    revalidatePath("/settings");
+  }
+
   return (
     <div className="max-w-4xl space-y-6">
       <PageHead
@@ -100,6 +134,13 @@ export default async function SettingsPage({
       {params.connected && (
         <div className="rounded-card border border-positive/35 bg-positive/8 px-4 py-3.5 text-sm text-sage">
           Compte Strava connecté. Lance une synchronisation pour importer tes activités.
+        </div>
+      )}
+      {user.stravaEvictedAt && !account && (
+        <div className="rounded-card border border-caution/30 bg-caution/8 px-4 py-3.5 text-sm text-amber-200">
+          Ta connexion Strava a été libérée car la limite de 10 athlètes connectés
+          est atteinte. Tes données restent intactes — tu peux importer des fichiers
+          (FIT/GPX/TCX) ou te reconnecter quand une place se libère.
         </div>
       )}
 
@@ -211,6 +252,48 @@ export default async function SettingsPage({
           </a>
         )}
       </Section>
+
+      {/* -------------------------------------------------- Admin : sièges Strava */}
+      {user.role === "admin" && (
+        <Section>
+          <SectionHead
+            title="Connexions Strava"
+            note={`${connections.length} / 10 sièges occupés — libère une place pour laisser entrer un nouveau membre`}
+          />
+          {connections.length === 0 ? (
+            <p className="text-sm text-ink3">Aucun compte Strava connecté pour le moment.</p>
+          ) : (
+            <ul className="divide-y divide-hair border-y border-hair">
+              {connections.map((c) => (
+                <li key={c.userId} className="flex items-center gap-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-medium">
+                      {c.user.firstname} {c.user.lastname}
+                      {c.userId === user.id && (
+                        <span className="ml-2 text-micro text-ink3">(toi)</span>
+                      )}
+                      {c.user.role === "admin" && (
+                        <span className="ml-2 text-micro text-clay">admin</span>
+                      )}
+                    </div>
+                    <div className="text-xs text-ink3">
+                      {c.lastSyncAt ? `Dernière synchro : ${fmtDate(c.lastSyncAt)}` : "Jamais synchronisé"}
+                    </div>
+                  </div>
+                  {c.user.role !== "admin" && (
+                    <form action={freeStravaSeat}>
+                      <input type="hidden" name="userId" value={c.userId} />
+                      <button type="submit" className="btn-outline btn-sm">
+                        Libérer la place
+                      </button>
+                    </form>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Section>
+      )}
 
       {/* -------------------------------------------------- Profil */}
       <Section>

@@ -50,6 +50,7 @@ export type SessionUser = {
   avatarUrl: string | null;
   role: string;
   language: string;
+  stravaEvictedAt: Date | null;
 };
 
 function hashToken(token: string): string {
@@ -132,6 +133,7 @@ export async function currentUser(): Promise<SessionUser | null> {
           avatarUrl: true,
           role: true,
           language: true,
+          stravaEvictedAt: true,
         },
       },
     },
@@ -219,6 +221,7 @@ export async function upsertUserFromStrava(athlete: {
         avatarUrl: true,
         role: true,
         language: true,
+        stravaEvictedAt: true,
       },
     });
     return { user, created: false };
@@ -245,6 +248,7 @@ export async function upsertUserFromStrava(athlete: {
       avatarUrl: true,
       role: true,
       language: true,
+      stravaEvictedAt: true,
     },
   });
   return { user, created: true };

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { exchangeCodeForToken } from "@/lib/strava";
+import { exchangeCodeForToken, evictLeastActiveStravaUser } from "@/lib/strava";
 import { encryptSecret, secretKeyFromEnv } from "@/lib/crypto";
-import { UserFacingError, toSafeMessage } from "@/lib/http-error";
+import { AthleteLimitError, UserFacingError, toSafeMessage } from "@/lib/http-error";
 import {
   canRegister,
   createSession,
@@ -52,7 +52,17 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const token = await exchangeCodeForToken(code);
+    // Si la limite d'athlètes connectés est atteinte, on libère un siège
+    // (le membre non-admin le moins actif) puis on retente une fois.
+    let token: Awaited<ReturnType<typeof exchangeCodeForToken>>;
+    try {
+      token = await exchangeCodeForToken(code);
+    } catch (e) {
+      if (!(e instanceof AthleteLimitError) || !(await evictLeastActiveStravaUser())) {
+        throw e;
+      }
+      token = await exchangeCodeForToken(code);
+    }
     const athlete = token.athlete;
     if (!athlete) throw new UserFacingError("Profil athlète absent de la réponse Strava");
 
@@ -102,6 +112,11 @@ export async function GET(req: NextRequest) {
       where: { userId: user.id },
       create: { ...data, userId: user.id },
       update: data,
+    });
+    // La connexion est rétablie : on efface l'éventuel marqueur d'éviction.
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { stravaEvictedAt: null },
     });
 
     if (!session) {

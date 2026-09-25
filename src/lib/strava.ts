@@ -1,6 +1,6 @@
 import { prisma } from "./prisma";
 import { decryptIfNeeded, encryptSecret, secretKeyFromEnv } from "./crypto";
-import { UpstreamError, UserFacingError } from "./http-error";
+import { AthleteLimitError, UpstreamError, UserFacingError } from "./http-error";
 
 const STRAVA_API = "https://www.strava.com/api/v3";
 const STRAVA_OAUTH = "https://www.strava.com/oauth";
@@ -92,9 +92,7 @@ export async function exchangeCodeForToken(
     const body = await res.text().catch(() => "");
     console.error("[strava] échange du code", res.status, body);
     if (isAthleteLimit(body)) {
-      throw new UserFacingError(
-        "La limite d'athlètes connectés à cette application Strava est atteinte (10). Un compte doit se déconnecter pour libérer une place, ou utilise l'import de fichiers (FIT/GPX/TCX) sans Strava."
-      );
+      throw new AthleteLimitError();
     }
     throw new UpstreamError(res.status, "Strava a refusé la connexion. Réessaie.");
   }
@@ -170,6 +168,58 @@ export async function deauthorize(userId: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/** Connexion Strava vue pour le choix du candidat à évincer. */
+export type StravaConnection = {
+  userId: string;
+  role: string;
+  lastSyncAt: Date | null;
+};
+
+/**
+ * Candidats à évincer, du moins récemment actif au plus actif, en excluant
+ * les administrateurs (jamais évincés). Pure : testable sans réseau ni DB.
+ */
+export function leastActiveCandidates(
+  connections: StravaConnection[]
+): string[] {
+  return connections
+    .filter((c) => c.role !== "admin")
+    .sort(
+      (a, b) =>
+        (a.lastSyncAt?.getTime() ?? 0) - (b.lastSyncAt?.getTime() ?? 0) ||
+        (a.userId < b.userId ? -1 : a.userId > b.userId ? 1 : 0)
+    )
+    .map((c) => c.userId);
+}
+
+/**
+ * Libère un siège Strava quand la limite d'athlètes connectés est atteinte :
+ * déconnecte le membre non-admin le moins récemment actif (révocation côté
+ * Strava, sinon le siège ne se libère pas), supprime ses tokens locaux et
+ * marque l'éviction pour qu'il en soit informé à son prochain passage.
+ *
+ * Renvoie `true` si un siège a réellement été libéré.
+ */
+export async function evictLeastActiveStravaUser(): Promise<boolean> {
+  const accounts = await prisma.stravaAccount.findMany({
+    select: { userId: true, lastSyncAt: true, user: { select: { role: true } } },
+  });
+  const candidates = leastActiveCandidates(
+    accounts.map((a) => ({ userId: a.userId, role: a.user.role, lastSyncAt: a.lastSyncAt }))
+  );
+  for (const userId of candidates) {
+    const revoked = await deauthorize(userId);
+    if (!revoked) continue; // token mort → ce candidat ne libérerait pas de siège
+    await prisma.stravaAccount.deleteMany({ where: { userId } });
+    await prisma.user.update({
+      where: { id: userId },
+      data: { stravaEvictedAt: new Date() },
+    });
+    return true;
+  }
+  return false;
 }
 
 async function stravaFetch<T>(path: string, token: string): Promise<T> {
