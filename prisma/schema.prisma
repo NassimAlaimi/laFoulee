@@ -43,6 +43,7 @@ model User {
   strengthWorkouts StrengthWorkout[]
   strengthGoals   StrengthGoal[]
   dailyLogs       DailyLog[]
+  customWorkouts  CustomWorkout[]
 
   /// Jeton secret de l'abonnement agenda (.ics). Null = abonnement désactivé.
   /// Stocké en clair : il n'ouvre qu'une lecture du plan, et doit pouvoir
@@ -577,4 +578,29 @@ model RacePlan {
   updatedAt   DateTime @updatedAt
 
   @@unique([goalId])
+}
+
+/// Séance personnalisée : saisie rapide en texte (lib/workout-dsl) ou
+/// construite bloc par bloc. Les cibles restent relatives (« @seuil ») et
+/// suivent la forme de l'utilisateur.
+model CustomWorkout {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  name      String
+  /// Texte canonique (toDsl) — la source lisible
+  dsl       String
+  /// WorkoutStep[] en JSON, validé à l'écriture
+  structure String
+  /// Type déduit (easy | long | tempo | threshold | intervals | fartlek)
+  kind      String   @default("easy")
+  notes     String?
+  favorite  Boolean  @default(false)
+  /// Nombre de fois planifiée / réalisée, pour l'historique
+  usedCount Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }

@@ -7,6 +7,11 @@ import { getBestEfforts, getRuns } from "@/lib/queries";
 import { fitnessProfile, personalRecords } from "@/lib/records";
 import { vdotLevel } from "@/lib/vdot";
 import { paceSet } from "@/lib/workouts";
+import { requireUserId } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { listCustom } from "@/lib/custom-workout-store";
+import { WorkoutComposer } from "@/components/workouts/WorkoutComposer";
+import { CustomWorkoutList } from "@/components/workouts/CustomWorkoutList";
 import {
   filterLibrary,
   librarySessions,
@@ -38,6 +43,12 @@ export default async function WorkoutsPage({
   const paces = paceSet(profile.vdot, fallbackAvgPace);
   const level = profile.vdot > 0 ? vdotLevel(profile.vdot) : null;
   const sessions = filterLibrary(librarySessions(paces), target);
+  const userId = await requireUserId();
+  const tw = await getTranslations("custom");
+  const [custom, activePlan] = await Promise.all([
+    listCustom(userId),
+    prisma.trainingPlan.findFirst({ where: { userId, status: "active" }, select: { id: true } }),
+  ]);
 
   return (
     <div className="space-y-12">
@@ -47,6 +58,21 @@ export default async function WorkoutsPage({
         meta={t("meta")}
         action={<PrintButton />}
       />
+
+      {/* ------------------------------------------------ Mes séances */}
+      <Section title={tw("title")} note={tw("note")}>
+        <div className="space-y-10">
+          <CustomWorkoutList
+            rows={custom.map((c) => ({ id: c.id, name: c.name, dsl: c.dsl, kind: c.kind, favorite: c.favorite, usedCount: c.usedCount, structure: c.structure }))}
+            paces={paces}
+            hasPlan={Boolean(activePlan)}
+          />
+          <div>
+            <h3 className="mb-4 text-[1rem] font-semibold">{tw("new")}</h3>
+            <WorkoutComposer paces={paces} />
+          </div>
+        </div>
+      </Section>
 
       {/* ------------------------------------------------ Allures de référence */}
       <section className="rise">
