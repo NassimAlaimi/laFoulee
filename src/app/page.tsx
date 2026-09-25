@@ -578,23 +578,14 @@ export default async function SummaryPage() {
                 <p className="max-w-md text-[0.9375rem] leading-relaxed text-ink2">{t("ui.aerobicNeed")}</p>
               )}
 
-              <div className="mt-10 flex flex-wrap items-start gap-x-10 gap-y-4 border-t border-hair pt-4">
-                {drift !== null && (
-                  <div>
-                    <span className={`num text-[1.6rem] font-semibold leading-none ${drift < 5 ? "text-sage" : drift < 8 ? "text-ochre" : "text-rust"}`}>
-                      {drift.toFixed(1)} %
-                    </span>
-                    <div className="mt-1 text-micro text-ink3">{t("ui.driftLabel", { n: driftCount })}</div>
-                  </div>
-                )}
-                <details className="max-w-xs text-[0.8125rem] text-ink2">
-                  <summary className="cursor-pointer text-ink3 hover:text-ink">{t("ui.aerobicHowTitle")}</summary>
-                  <p className="mt-2 leading-relaxed">{t("ui.aerobicHow")}</p>
-                  <Link href="/lexique" className="mt-2 inline-block text-micro text-clay hover:underline">
-                    {t("ui.aerobicLexicon")}
-                  </Link>
-                </details>
-              </div>
+              {drift !== null && (
+                <div className="mt-10 flex items-baseline gap-3 border-t border-hair pt-4">
+                  <span className={`num text-[1.6rem] font-semibold leading-none ${drift < 5 ? "text-sage" : drift < 8 ? "text-ochre" : "text-rust"}`}>
+                    {drift.toFixed(1)} %
+                  </span>
+                  <span className="text-micro text-ink3">{t("ui.driftLabel", { n: driftCount })}</span>
+                </div>
+              )}
             </div>
 
             {/* La courbe */}
@@ -616,6 +607,14 @@ export default async function SummaryPage() {
               )}
             </div>
           </div>
+
+          <details className="mt-8 max-w-xl border-t border-hair pt-4 text-[0.8125rem] text-ink2">
+            <summary className="cursor-pointer text-ink3 hover:text-ink">{t("ui.aerobicHowTitle")}</summary>
+            <p className="mt-2 leading-relaxed">{t("ui.aerobicHow")}</p>
+            <Link href="/lexique" className="mt-2 inline-block text-micro text-clay hover:underline">
+              {t("ui.aerobicLexicon")}
+            </Link>
+          </details>
         </Section>
 
         <Section title={t("ui.paceTrendTitle")} note={t("ui.paceTrendNote")}>
