@@ -603,14 +603,14 @@ export default async function SummaryPage() {
               </details>
             </div>
             <div className="min-w-0">
-              {aerobicRows.length >= 3 ? (
+              {aerobicRows.length >= 2 ? (
                 <AerobicPaceChart
                   data={aerobicRows}
                   refHr={aerobicSeries.refHr ?? 0}
                   labels={{ pace: t("ui.aerobicPaceLabel"), range: t("ui.aerobicRange") }}
                 />
               ) : (
-                <Hint height={230}>{aerobic ? t("ui.aerobicSoon") : t("ui.aerobicNeed")}</Hint>
+                <Hint height={230}>{aerobic ? t("ui.aerobicSoon", { n: aerobicSeries.points.length }) : t("ui.aerobicNeed")}</Hint>
               )}
               <div className="mt-8">
                 <div className="eyebrow mb-3">{t("ui.prog12")}</div>

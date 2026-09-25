@@ -660,7 +660,7 @@
       "aerobicLexicon": "See “efficiency” in the glossary →",
       "aerobicPaceLabel": "Pace at fixed HR",
       "aerobicRange": "Margin",
-      "aerobicSoon": "The curve will build up week after week, as soon as the measure is precise enough.",
+      "aerobicSoon": "The curve builds week after week ({n} point(s) so far) — it will sharpen as easy runs with heart rate accumulate.",
       "briefTitle": "Weekly brief",
       "briefNote": "Recap, week ahead, goal, advice — prepared for you, regenerated whenever you want."
     },

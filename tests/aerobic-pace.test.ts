@@ -56,11 +56,20 @@ describe("paceAtHr", () => {
 });
 
 describe("referenceHr", () => {
-  it("≈ 85 % de la FC seuil, arrondie à 5, dans la plage observée", () => {
+  it("≈ 85 % de la FC seuil quand c'est dans la zone facile réelle", () => {
     const clean = comparableSplits(runs(new Date(2026, 0, 1), 8, 3.0));
     assert.equal(referenceHr(clean, 170), 145);
-    // seuil absurde : ramené dans la plage
-    assert.ok(referenceHr(clean, 250)! <= 160);
+  });
+  it("seuil trop haut (coureur qui ne descend jamais) → quartile bas, jamais sous la plage", () => {
+    const clean = comparableSplits(runs(new Date(2026, 0, 1), 8, 3.0));
+    const q25 = [...clean].map((c) => c.hr).sort((a, b) => a - b)[Math.floor(clean.length * 0.25)];
+    const ref = referenceHr(clean, 250)!;
+    assert.equal(ref, Math.round(q25 / 5) * 5);
+    assert.ok(ref >= Math.min(...clean.map((c) => c.hr)));
+  });
+  it("trop peu de points → null", () => {
+    const clean = comparableSplits(runs(new Date(2026, 0, 1), 1, 3.0));
+    assert.equal(referenceHr(clean, 170), null);
   });
 });
 

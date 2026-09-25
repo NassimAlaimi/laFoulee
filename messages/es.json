@@ -660,7 +660,7 @@
       "aerobicLexicon": "Ver «eficiencia» en el glosario →",
       "aerobicPaceLabel": "Ritmo a FC fija",
       "aerobicRange": "Margen",
-      "aerobicSoon": "La curva se irá dibujando semana a semana, en cuanto la medida sea lo bastante precisa.",
+      "aerobicSoon": "La curva se construye semana a semana ({n} punto(s) por ahora) — ganará precisión a medida que se acumulen los rodajes con pulso.",
       "briefTitle": "Resumen de la semana",
       "briefNote": "Balance, semana siguiente, objetivo, consejo — preparado para ti, para regenerar cuando quieras."
     },

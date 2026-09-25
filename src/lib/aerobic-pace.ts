@@ -57,16 +57,24 @@ export function comparableSplits(splits: AerobicSplit[]): Clean[] {
   return out;
 }
 
-/** FC de référence : ~85 % de la FC seuil, arrondie à 5, bornée à la plage observée. */
+/**
+ * FC de référence : l'allure **facile réelle** de l'athlète, mesurée au
+ * quartile bas de ses FC de course — pas une valeur théorique sous sa plage.
+ * L'idée du « pace à FC fixe » est de lire l'allure *à l'intérieur* des
+ * données, jamais d'extrapoler (une extrapolation vers 155 bpm chez un
+ * coureur qui tourne à 172 bpm sort un 7'28"/km sans aucun sens).
+ */
 export function referenceHr(clean: Clean[], lthr: number | null): number | null {
-  if (clean.length === 0) return null;
+  if (clean.length < 20) return null;
   const hrs = clean.map((c) => c.hr).sort((a, b) => a - b);
   const q = (p: number) => hrs[Math.min(hrs.length - 1, Math.floor(p * hrs.length))];
-  const lo = q(0.15);
-  const hi = q(0.85);
-  const target = lthr ? 0.85 * lthr : q(0.5);
-  const clamped = Math.min(hi, Math.max(lo, target));
-  return Math.round(clamped / 5) * 5;
+  // Seuil aérobie théorique, s'il tombe dans le quart « facile » réel.
+  const theoretical = lthr ? 0.85 * lthr : null;
+  if (theoretical !== null && theoretical >= q(0.2) && theoretical <= q(0.6)) {
+    return Math.round(theoretical / 5) * 5;
+  }
+  // Sinon : le quartile bas de ses propres FC (sa zone facile observée).
+  return Math.round(q(0.25) / 5) * 5;
 }
 
 export type AerobicPoint = {
@@ -86,6 +94,13 @@ export function paceAtHr(clean: Clean[], hr: number): Omit<AerobicPoint, "date">
   if (clean.length < MIN_SPLITS || acts < MIN_ACTIVITIES) return null;
   const xs = clean.map((c) => c.hr);
   const ys = clean.map((c) => c.speed);
+  // Garde d'extrapolation : la FC de référence doit être au cœur des données
+  // de la fenêtre (assez de points proches), pas à l'extrémité.
+  const near = clean.filter((c) => Math.abs(c.hr - hr) <= 6).length;
+  const hrs = xs.slice().sort((a, b) => a - b);
+  const lo = hrs[0];
+  const hi = hrs[hrs.length - 1];
+  if (hr < lo + 2 || hr > hi - 2 || near < Math.max(8, clean.length * 0.12)) return null;
   const fit = linearFit(xs, ys);
   if (!Number.isFinite(fit.slope) || fit.slope <= 0 || fit.r2 < MIN_R2) return null;
   const n = xs.length;
