@@ -16,7 +16,6 @@ import {
   AcwrChart,
   ElevationChart,
   FormChart,
-  HrZoneBars,
   LoadChart,
   PaceHrScatter,
   PaceProgressionChart,
@@ -35,6 +34,18 @@ import {
   ZONE_TONE as FORM_TONE,
 } from "@/lib/fitness-model";
 import { prisma } from "@/lib/prisma";
+import { ZoneSplit } from "@/components/analysis/ZoneSplit";
+import { loadDetailedRuns, loadZoneContext } from "@/lib/zones-store";
+import {
+  compareRow,
+  isEasyComparable,
+  percents,
+  polarized,
+  polarVerdict,
+  weeklyZones,
+  zoneDistribution,
+  type CompareRow,
+} from "@/lib/zones";
 import { requireUser } from "@/lib/auth";
 import { vdotLevel } from "@/lib/vdot";
 import { activityMarks } from "@/lib/race-marks";
@@ -44,7 +55,6 @@ import {
   compareTrend,
   daysBetween,
   estimateMaxHr,
-  hrZones,
   monthlyProgression,
   paceHrScatter,
   trimLeadingEmpty,
@@ -174,11 +184,50 @@ export default async function SummaryPage() {
   const progression = trimLeadingEmpty(monthlyProgression(runs, 12), (m) => m.sessions === 0);
   const scatter = paceHrScatter(within(28));
 
-  const maxHr = settings.maxHr ?? estimateMaxHr(runs, settings.birthYear);
-  const zones = hrZones(within(28), maxHr);
-
   const records = personalRecords(efforts, runs);
   const profile = fitnessProfile(records, 365, now);
+
+  // Zones : un seul modèle (lib/zones), temps passé réel (courbe > splits > moyenne).
+  const zoneCtx = await loadZoneContext({ userId, now, records, vdot: profile.vdot, settings, runs });
+  const maxHr = zoneCtx.maxHr ?? estimateMaxHr(runs, settings.birthYear);
+  const detailed = await loadDetailedRuns(userId, new Date(now.getTime() - 8 * 7 * 86400000));
+  const last28 = detailed.filter((r) => daysBetween(r.startDate, now) <= 28);
+  const dist28 = zoneDistribution(last28, zoneCtx.model);
+  const zoneWeeks = weeklyZones(detailed, zoneCtx.model, 8, now);
+  const mainZones = dist28.hr.some((x) => x > 0) ? dist28.hr : dist28.pace;
+  const intensity28 = mainZones.some((x) => x > 0)
+    ? {
+        easyPct: percents(Object.values(polarized(mainZones)))[0],
+        verdict: polarVerdict(mainZones, dist28.sessions),
+      }
+    : null;
+
+  // Comparatif 28 j : écarts signés, allure sur les seules sorties faciles comparables.
+  const easyPace = (list: typeof runs) => {
+    const easy = list.filter((r) => isEasyComparable(r, zoneCtx.model));
+    const m = easy.reduce((a, r) => a + r.distance, 0);
+    const s = easy.reduce((a, r) => a + r.movingTime, 0);
+    return { pace: m > 0 ? Math.round((s / m) * 1000) : null, n: easy.length };
+  };
+  const easyNow = easyPace(within(28));
+  const easyWas = easyPace(between(28, 56));
+  const nSessions = { now: month.sessions, was: monthPrev.sessions };
+  const compareRows: CompareRow[] = [
+    compareRow("cVolume", month.km, monthPrev.km, "up", nSessions),
+    compareRow("sessions", month.sessions, monthPrev.sessions, "up", nSessions),
+    compareRow("cTime", month.timeHours, monthPrev.timeHours, "up", nSessions),
+    compareRow("cEasyPace", easyNow.pace, easyWas.pace, "down", { now: easyNow.n, was: easyWas.n }, 2),
+    compareRow("elevation", month.elevation, monthPrev.elevation, "neutral", nSessions),
+    compareRow("cLongest", month.longestRunKm, monthPrev.longestRunKm, "up", nSessions),
+  ];
+  const compareFmt: Record<string, (v: number) => string> = {
+    cVolume: (v) => `${v} km`,
+    sessions: (v) => String(v),
+    cTime: (v) => `${v} h`,
+    cEasyPace: (v) => fmtPace(v),
+    elevation: (v) => `${v} m`,
+    cLongest: (v) => `${v} km`,
+  };
   const level = vdotLevel(profile.vdot);
   const marks = activityMarks({ races: runs, records, now });
 
@@ -189,6 +238,7 @@ export default async function SummaryPage() {
     records,
     weeklyGoalKm: settings.weeklyKmGoal,
     maxHr,
+    intensity: intensity28,
     now,
   });
 
@@ -410,30 +460,36 @@ export default async function SummaryPage() {
           </div>
         </Section>
 
-        <Section title={t("ui.split")}>
-          <div className="grid gap-10 lg:grid-cols-3">
-            <div>
-              <div className="eyebrow mb-4">{t("ui.zones28")}</div>
-              {zones.some((z) => z.seconds > 0) ? (
-                <HrZoneBars zones={zones} />
-              ) : (
-                <Hint height={180}>{t("ui.noHr")}</Hint>
-              )}
-            </div>
+        <Section title={t("ui.intensityTitle")} note={t("ui.intensityNote")}>
+          <ZoneSplit
+            model={zoneCtx.model}
+            hr={dist28.hr}
+            pace={dist28.pace}
+            weeks={zoneWeeks}
+            coverage={dist28.coverage}
+            sessions={dist28.sessions}
+            maxHrSet={zoneCtx.maxHrSet}
+          />
+        </Section>
 
+        <Section title={t("ui.split")}>
+          <div className="grid gap-10 lg:grid-cols-2">
             <div>
               <div className="eyebrow mb-4">{t("ui.vsPrev")}</div>
-              <Compare label={t("ui.cVolume")} now={`${month.km} km`} was={`${monthPrev.km} km`} />
-              <Compare label={t("ui.sessions")} now={String(month.sessions)} was={String(monthPrev.sessions)} />
-              <Compare label={t("ui.cTime")} now={`${month.timeHours} h`} was={`${monthPrev.timeHours} h`} />
-              <Compare label={t("ui.cPace")} now={fmtPace(month.avgPace)} was={fmtPace(monthPrev.avgPace)} />
-              <Compare
-                label={t("ui.cAvgHr")}
-                now={month.avgHr ? `${month.avgHr} bpm` : "—"}
-                was={monthPrev.avgHr ? `${monthPrev.avgHr} bpm` : "—"}
-              />
-              <Compare label={t("ui.elevation")} now={`${month.elevation} m`} was={`${monthPrev.elevation} m`} />
-              <Compare label={t("ui.cLongest")} now={`${month.longestRunKm} km`} was={`${monthPrev.longestRunKm} km`} />
+              {compareRows.map((r) => (
+                <Compare
+                  key={r.key}
+                  label={t(`ui.${r.key}`)}
+                  now={r.now !== null ? compareFmt[r.key](r.now) : "—"}
+                  was={r.was !== null ? compareFmt[r.key](r.was) : "—"}
+                  delta={r.deltaPct}
+                  tone={r.tone}
+                  warn={r.key === "cVolume" && current.zone === "danger" && (r.deltaPct ?? 0) > 0}
+                />
+              ))}
+              {(month.sessions < 4 || monthPrev.sessions < 4) && (
+                <p className="mt-3 text-micro text-ink3">{t("ui.thinCompare")}</p>
+              )}
             </div>
 
             <div>
@@ -536,9 +592,24 @@ function NightFig({
   );
 }
 
-function Compare({ label, now, was }: { label: string; now: string; was: string }) {
+function Compare({
+  label,
+  now,
+  was,
+  delta,
+  tone,
+  warn,
+}: {
+  label: string;
+  now: string;
+  was: string;
+  delta: number | null;
+  tone: "good" | "bad" | "flat";
+  warn?: boolean;
+}) {
+  const color = warn ? "text-ochre" : tone === "good" ? "text-sage" : tone === "bad" ? "text-rust" : "text-ink3";
   return (
-    <div className="flex items-baseline justify-between border-b border-hair py-2 last:border-b-0">
+    <div className="flex items-baseline justify-between gap-3 border-b border-hair py-2 last:border-b-0">
       <span className="text-[0.8125rem] text-ink2">{label}</span>
       <span className="flex items-baseline gap-2">
         <span className="text-micro text-ink3">{was}</span>
@@ -546,6 +617,9 @@ function Compare({ label, now, was }: { label: string; now: string; was: string 
           →
         </span>
         <span className="text-[0.8125rem] font-medium">{now}</span>
+        <span className={`w-12 text-right font-mono text-micro tabular-nums ${color}`}>
+          {delta === null ? "" : `${delta > 0 ? "+" : ""}${delta} %`}
+        </span>
       </span>
     </div>
   );

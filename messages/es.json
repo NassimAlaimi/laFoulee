@@ -466,12 +466,14 @@
       "too-hard": {
         "title": "Demasiada intensidad, poco fácil",
         "detail": "El modelo polarizado recomienda cerca del 80 % del volumen en resistencia fundamental. Correr demasiado a menudo «medio duro» cansa sin desarrollar la base aeróbica.",
-        "evidence": "{pct} % de tus sesiones por debajo de {bpm} bpm (objetivo: 80 %)"
+        "evidence": "{pct} % de tus sesiones por debajo de {bpm} bpm (objetivo: 80 %)",
+        "evidenceTime": "{pct} % del tiempo en suave en 28 días (objetivo: 80 %)"
       },
       "no-intensity": {
         "title": "Ninguna sesión rápida",
         "detail": "Tu base aeróbica está bien trabajada, pero sin sesiones de umbral o VO2max la velocidad progresa poco. Una sesión intensa por semana basta.",
-        "evidence": "{pct} % de las sesiones solo en resistencia"
+        "evidence": "{pct} % de las sesiones solo en resistencia",
+        "evidenceTime": "{pct} % del tiempo en suave en 28 días"
       },
       "stale-reference": {
         "title": "Referencia de rendimiento antigua",
@@ -611,7 +613,11 @@
       "time": "Tiempo",
       "pace": "Ritmo",
       "hr": "FC",
-      "elev": "Desn"
+      "elev": "Desn",
+      "intensityTitle": "Distribución de la intensidad",
+      "intensityNote": "Últimos 28 días, según el tiempo realmente pasado en cada zona — no la FC media de la sesión.",
+      "cEasyPace": "Ritmo de rodajes",
+      "thinCompare": "Menos de 4 salidas en uno de los periodos: no se muestran las variaciones."
     },
     "hero": {
       "night": "Buenas noches",
@@ -1277,7 +1283,7 @@
     "recordLegend": "Récord",
     "recordNote": "récord personal",
     "intensitySplit": "Reparto de la intensidad",
-    "intensityNote": "Parte del volumen mensual por zona — el modelo polarizado apunta al 80 % fácil",
+    "intensityNote": "Parte del tiempo mensual por zona de ritmo — el modelo polarizado busca un 80 % suave",
     "easy": "Fácil",
     "greyZone": "Zona gris",
     "hard": "Intenso",
@@ -1342,7 +1348,10 @@
     "intervalTitle": "Sesiones de intervalos",
     "intervalNote": "Fracciones repetidas detectadas automáticamente — el ritmo medio de las mismas sesiones cuenta la progresión",
     "driftTitle": "Deriva y eficiencia",
-    "driftNote": "Tiradas largas: el desacoplamiento aeróbico dice si el corazón paga cada vez más, la EF si el motor se vuelve eficiente"
+    "driftNote": "Tiradas largas: el desacoplamiento aeróbico dice si el corazón paga cada vez más, la EF si el motor se vuelve eficiente",
+    "last90": "Últimos 90 días —",
+    "polarSource": "Según el tiempo por kilómetro, zonas de ritmo ({source}).",
+    "unknownLevel": "Nivel de forma desconocido — basta con un esfuerzo cronometrado."
   },
   "goals": {
     "title": "Objetivos",
@@ -1595,5 +1604,56 @@
   },
   "settingsPage": {
     "kick": "Tu cuenta"
+  },
+  "zones": {
+    "empty": "Aún no hay suficientes datos en el periodo.",
+    "easyShare": "del tiempo en suave",
+    "verdict": {
+      "balanced": "Bien polarizado: casi todo suave y la intensidad concentrada en pocas sesiones.",
+      "tooMuchMid": "Demasiada «zona gris»: los rodajes son demasiado rápidos o las sesiones duras no lo bastante duras. Baja el ritmo los días suaves.",
+      "tooHard": "Menos del 70 % en suave: la carga intensa es alta y la recuperación suele resentirse.",
+      "allEasy": "Casi todo suave: perfecto en fase de base; añade una sesión de calidad cuando quieras progresar.",
+      "thin": "Muestra demasiado pequeña para juzgar (menos de 4 salidas o 3 h): tómalo como una indicación."
+    },
+    "polar": {
+      "low": "Suave",
+      "mid": "Intermedio",
+      "high": "Intenso"
+    },
+    "polarHint": {
+      "low": "Z1-Z2 · bajo el umbral aeróbico",
+      "mid": "Z3-Z4 · tempo, umbral",
+      "high": "Z5 · por encima del umbral"
+    },
+    "weekly": "Últimas 8 semanas",
+    "byHr": "Pulso",
+    "byPace": "Ritmo",
+    "noHrData": "Sin datos de pulso en el periodo.",
+    "noPaceData": "Ritmo umbral desconocido: registra una carrera o una VAM.",
+    "name": {
+      "z1": "Z1 · Recuperación",
+      "z2": "Z2 · Resistencia",
+      "z3": "Z3 · Tempo",
+      "z4": "Z4 · Umbral",
+      "z5": "Z5 · VO2máx"
+    },
+    "source": {
+      "hr": {
+        "personal": "Zonas de pulso personales (umbral medido a {lthr} ppm)",
+        "reserve": "Zonas por FC de reserva (umbral estimado a {lthr} ppm)",
+        "vdot": "—",
+        "none": "Sin referencia de pulso"
+      },
+      "pace": {
+        "personal": "ritmo umbral medido {pace}",
+        "vdot": "ritmo umbral según el VDOT {pace}",
+        "reserve": "—",
+        "none": "sin ritmo umbral"
+      }
+    },
+    "coverage": "{sessions} salidas: {stream} leídas segundo a segundo, {splits} por kilómetro, {average} por la media, {noHr} sin pulso (contadas por ritmo).",
+    "maxHrEstimated": "FC máx. estimada a partir de tus sesiones: indícala en los ajustes para zonas más precisas.",
+    "discordHeart": "Tu corazón dice más duro que tu ritmo (+{n} puntos de intensidad): calor, fatiga, desnivel… o un umbral cardíaco que revisar.",
+    "discordPace": "Tu ritmo dice más duro que tu corazón (+{n} puntos): buen día, bajadas o un sensor de pulso que falla."
   }
 }

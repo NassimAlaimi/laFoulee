@@ -219,3 +219,14 @@ describe("buildInsights", () => {
     assert.equal(new Set(ids).size, ids.length);
   });
 });
+
+describe("buildInsights — intensité au temps passé", () => {
+  it("utilise la répartition fournie plutôt que la FC moyenne", async () => {
+    const { buildInsights } = await import("../src/lib/insights.ts");
+    const base = { runs: [], load: [], profile: { vdot: 0, vma: 0, source: null } as never, records: [], weeklyGoalKm: 40, maxHr: 190 };
+    const hard = buildInsights({ ...base, intensity: { easyPct: 55, verdict: "tooMuchMid" } });
+    assert.ok(hard.some((i) => i.id === "too-hard" && i.evidenceKey.endsWith("evidenceTime")));
+    const thin = buildInsights({ ...base, intensity: { easyPct: 40, verdict: "thin" } });
+    assert.ok(!thin.some((i) => i.id === "too-hard"));
+  });
+});

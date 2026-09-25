@@ -36,6 +36,11 @@ export type InsightInput = {
   records: PersonalRecord[];
   weeklyGoalKm: number;
   maxHr: number;
+  /**
+   * Répartition au temps passé (lib/zones), si disponible : elle remplace
+   * l'approximation « FC moyenne < 76 % FCmax » pour le verdict d'intensité.
+   */
+  intensity?: { easyPct: number; verdict: "balanced" | "tooMuchMid" | "tooHard" | "allEasy" | "thin" } | null;
   now?: Date;
 };
 
@@ -127,7 +132,28 @@ export function buildInsights(input: InsightInput): Insight[] {
 
   // ---------------------------------------------------------------- Intensité
   const withHr = last28.filter((r) => r.averageHr);
-  if (withHr.length >= 6) {
+  if (input.intensity) {
+    const { easyPct, verdict } = input.intensity;
+    if (verdict === "tooMuchMid" || verdict === "tooHard") {
+      out.push({
+        id: "too-hard",
+        tone: "warn",
+        titleKey: "insights.too-hard.title",
+        detailKey: "insights.too-hard.detail",
+        evidenceKey: "insights.too-hard.evidenceTime",
+        evidenceParams: { pct: easyPct },
+      });
+    } else if (verdict === "allEasy") {
+      out.push({
+        id: "no-intensity",
+        tone: "neutral",
+        titleKey: "insights.no-intensity.title",
+        detailKey: "insights.no-intensity.detail",
+        evidenceKey: "insights.no-intensity.evidenceTime",
+        evidenceParams: { pct: easyPct },
+      });
+    }
+  } else if (withHr.length >= 6) {
     const easyThreshold = input.maxHr * 0.76;
     const easy = withHr.filter((r) => (r.averageHr ?? 0) < easyThreshold);
     const easyShare = easy.length / withHr.length;

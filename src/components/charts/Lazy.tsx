@@ -43,10 +43,6 @@ export const PaceHrScatter = dynamic(
   { ssr: false, loading: () => <Sk h={220} /> }
 );
 
-export const HrZoneBars = dynamic(
-  () => import("./PaceChart").then((m) => m.HrZoneBars),
-  { ssr: false, loading: () => <Sk h={200} /> }
-);
 
 export const FormChart = dynamic(
   () => import("./FormChart").then((m) => m.FormChart),

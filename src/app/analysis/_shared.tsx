@@ -8,8 +8,6 @@ import { getBestEfforts, getSettings } from "@/lib/queries";
 import {
   consistencyGrid,
   paceByIntensity,
-  polarizationByMonth,
-  polarizationSummary,
   recordTimeline,
   yearCompare,
 } from "@/lib/analysis";
@@ -19,6 +17,8 @@ import { criticalSpeed, durationCurve } from "@/lib/prediction";
 import { estimateThresholds } from "@/lib/thresholds";
 import { aerobicDecoupling, decodeStream, efficiencyTrend } from "@/lib/cardio";
 import { trimLeadingEmpty } from "@/lib/stats";
+import { loadDetailedRuns, loadZoneContext } from "@/lib/zones-store";
+import { monthlyPolar, percents, polarized, polarVerdict, zoneDistribution } from "@/lib/zones";
 import { RUN_TYPES } from "@/lib/strava";
 import { STANDARD_DISTANCES } from "@/lib/records";
 import { activityMarks } from "@/lib/race-marks";
@@ -103,7 +103,7 @@ export async function NotEnough({ title }: { title: string }) {
   );
 }
 
-export async function loadForme(now: Date, userId: string) {
+export async function loadForme(now: Date, userId: string, locale = "fr") {
   const [ctx, efforts, futureSessions] = await Promise.all([
     athleteContext(now, userId),
     getBestEfforts(userId),
@@ -131,11 +131,30 @@ export async function loadForme(now: Date, userId: string) {
   }));
   const marks = activityMarks({ races: runs, records, now });
   const yoy = yearCompare(runs, { years: 3, now });
-  const polar = trimLeadingEmpty(
-    polarizationByMonth(runs, profile.vdot, { months: 8, now }),
-    (r) => r.km === 0
-  );
-  const polarSum = polarizationSummary(runs, profile.vdot, { days: 90, now });
+  // Répartition de l'intensité : même modèle que l'accueil (lib/zones), au
+  // temps passé par km-split, dimension allure (toutes les sorties en ont une).
+  const zoneCtx = await loadZoneContext({ userId, now, records, vdot: profile.vdot, settings: await getSettings(userId), runs });
+  const detailed = await loadDetailedRuns(userId, new Date(now.getFullYear(), now.getMonth() - 7, 1), { streams: false });
+  const polar = zoneCtx.model.pace
+    ? trimLeadingEmpty(
+        monthlyPolar(detailed, zoneCtx.model, 8, now, "pace").map((m) => ({
+          label: m.monthStart.toLocaleDateString(locale, { month: "short" }),
+          easy: m.easy,
+          moderate: m.moderate,
+          hard: m.hard,
+          km: m.hours,
+        })),
+        (r) => r.km === 0
+      )
+    : [];
+  const recent = detailed.filter((r) => now.getTime() - r.startDate.getTime() <= 90 * 86400000);
+  const dist90 = zoneDistribution(recent, zoneCtx.model);
+  const p90 = polarized(dist90.pace);
+  const [pEasy, pMid, pHard] = percents([p90.low, p90.mid, p90.high]);
+  const polarSum =
+    zoneCtx.model.pace && dist90.pace.some((x) => x > 0)
+      ? { easy: pEasy, moderate: pMid, hard: pHard, verdict: polarVerdict(dist90.pace, dist90.sessions), source: zoneCtx.model.paceSource }
+      : null;
   const paceZones = trimLeadingEmpty(
     paceByIntensity(runs, profile.vdot, { months: 12, now }),
     (r) => r.easy == null && r.quality == null

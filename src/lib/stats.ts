@@ -256,55 +256,6 @@ export const ACWR_LABELS: Record<LoadPoint["zone"], string> = {
 
 // ---------------------------------------------------------------- Zones FC
 
-export type HrZone = {
-  index: number;
-  name: string;
-  min: number;
-  max: number;
-  seconds: number;
-  percent: number;
-  color: string;
-};
-
-/** Zones classiques en % de FC max. */
-export function hrZones(
-  activities: ActivityLike[],
-  maxHr: number
-): HrZone[] {
-  const defs = [
-    { index: 1, name: "Z1 · Récup", lo: 0.5, hi: 0.6, color: "#64748b" },
-    { index: 2, name: "Z2 · Endurance", lo: 0.6, hi: 0.7, color: "#22c55e" },
-    { index: 3, name: "Z3 · Tempo", lo: 0.7, hi: 0.8, color: "#eab308" },
-    { index: 4, name: "Z4 · Seuil", lo: 0.8, hi: 0.9, color: "#f97316" },
-    { index: 5, name: "Z5 · VO2max", lo: 0.9, hi: 1.05, color: "#ef4444" },
-  ];
-
-  const zones: HrZone[] = defs.map((d) => ({
-    index: d.index,
-    name: d.name,
-    min: Math.round(d.lo * maxHr),
-    max: Math.round(d.hi * maxHr),
-    seconds: 0,
-    percent: 0,
-    color: d.color,
-  }));
-
-  // Approximation : la séance entière est imputée à la zone de sa FC moyenne.
-  for (const a of activities) {
-    if (!a.averageHr) continue;
-    const pct = a.averageHr / maxHr;
-    const idx = defs.findIndex((d) => pct >= d.lo && pct < d.hi);
-    const target = zones[idx >= 0 ? idx : pct >= 1 ? 4 : 0];
-    target.seconds += a.movingTime;
-  }
-
-  const total = zones.reduce((acc, z) => acc + z.seconds, 0);
-  for (const z of zones) {
-    z.percent = total > 0 ? round((z.seconds / total) * 100, 1) : 0;
-  }
-  return zones;
-}
-
 /** FC max estimée si non renseignée : max observé, sinon formule de Tanaka. */
 export function estimateMaxHr(
   activities: ActivityLike[],

@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import {
   Bar,
   BarChart,
@@ -257,6 +259,7 @@ export type PolarRow = {
  */
 export function PolarizationChart({ data }: { data: PolarRow[] }) {
   const t = useChartTheme();
+  const tz = useTranslations("zones");
 
   return (
     <ResponsiveContainer width="100%" height={230}>
@@ -274,9 +277,9 @@ export function PolarizationChart({ data }: { data: PolarRow[] }) {
               <Tip
                 label={label as string}
                 rows={[
-                  { label: "Facile", value: `${d.easy} %`, color: t.sage },
-                  { label: "Modéré", value: `${d.moderate} %`, color: t.ochre },
-                  { label: "Intense", value: `${d.hard} %`, color: t.clay },
+                  { label: tz("polar.low"), value: `${d.easy} %`, color: t.sage },
+                  { label: tz("polar.mid"), value: `${d.moderate} %`, color: t.ochre },
+                  { label: tz("polar.high"), value: `${d.hard} %`, color: t.clay },
                 ]}
               />
             );

@@ -1,5 +1,5 @@
 import { Bar } from "@/components/ui/Metric";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Section, SectionHead } from "@/components/ui/Layout";
 import { ConsistencyHeatmap } from "@/components/analysis/ConsistencyHeatmap";
 import { Legend, Stat } from "@/components/analysis/Bits";import {
@@ -22,9 +22,10 @@ export const dynamic = "force-dynamic";
 export default async function FormePage() {
   const t = await getTranslations("analysis");
   const tc = await getTranslations("common");
+  const tz = await getTranslations("zones");
   const now = new Date();
   const userId = await requireUserId();
-  const data = await loadForme(now, userId);
+  const data = await loadForme(now, userId, await getLocale());
   if (data.runs.length < 5) return <NotEnough title={t("title")} />;
 
   const { form, formRows, marks, yoy, polar, polarSum, paceZones, grid, timeline, fitness } = data;
@@ -109,20 +110,23 @@ export default async function FormePage() {
               )}
               {polarSum && (
                 <p
-                  className={`mt-3 font-mono text-micro tabular-nums ${
-                    polarSum.tone === "good"
+                  className={`mt-3 text-[0.8125rem] leading-relaxed ${
+                    polarSum.verdict === "balanced" || polarSum.verdict === "allEasy"
                       ? "text-sage"
-                      : polarSum.tone === "warn"
-                        ? "text-ochre"
-                        : "text-rust"
+                      : polarSum.verdict === "thin"
+                        ? "text-ink3"
+                        : "text-ochre"
                   }`}
                 >
-                  90 derniers jours : {polarSum.verdict}
+                  {t("last90")} {tz(`verdict.${polarSum.verdict}`)}
                 </p>
+              )}
+              {polarSum && (
+                <p className="mt-1 text-micro text-ink3">{t("polarSource", { source: tz(`source.pace.${polarSum.source}`, { pace: "" }).trim() })}</p>
               )}
             </>
           ) : (
-            <p className="py-6 text-sm text-ink3">Niveau de forme inconnu — un effort chronométré suffit.</p>
+            <p className="py-6 text-sm text-ink3">{t("unknownLevel")}</p>
           )}
         </Section>
 

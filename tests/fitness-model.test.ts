@@ -13,7 +13,6 @@ import {
 import {
   classifyIntensity,
   consistencyGrid,
-  polarizationSummary,
   recordTimeline,
   yearCompare,
 } from "../src/lib/analysis.ts";
@@ -178,26 +177,6 @@ describe("classifyIntensity", () => {
     assert.equal(classifyIntensity(340, paces), "easy");
     assert.equal(classifyIntensity(295, paces), "moderate");
     assert.equal(classifyIntensity(270, paces), "hard");
-  });
-});
-
-describe("polarizationSummary", () => {
-  it("détecte un entraînement majoritairement facile", () => {
-    // VDOT 50 → allure marathon ≈ 4'30/km ; on court à 6'00/km
-    const runs = Array.from({ length: 20 }, (_, i) =>
-      run(i * 3, 10, { averageSpeed: 1000 / 360 })
-    );
-    const s = polarizationSummary(runs, 50, { now: NOW })!;
-    assert.ok(s.easy > 90);
-    assert.ok(["Équilibré", "Polarisé"].includes(s.verdict) || s.verdict.includes("intensité"));
-  });
-
-  it("alerte quand la zone grise domine", () => {
-    const runs = Array.from({ length: 20 }, (_, i) =>
-      run(i * 3, 10, { averageSpeed: 1000 / 265 })
-    );
-    const s = polarizationSummary(runs, 50, { now: NOW })!;
-    assert.ok(s.moderate + s.hard > 60);
   });
 });
 

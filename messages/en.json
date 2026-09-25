@@ -466,12 +466,14 @@
       "too-hard": {
         "title": "Too much intensity, not enough easy",
         "detail": "The polarised model recommends about 80% of volume in base endurance. Running “moderately hard” too often tires you without building your aerobic base.",
-        "evidence": "{pct}% of your sessions under {bpm} bpm (target: 80%)"
+        "evidence": "{pct}% of your sessions under {bpm} bpm (target: 80%)",
+        "evidenceTime": "{pct}% of time easy over 28 days (target: 80%)"
       },
       "no-intensity": {
         "title": "No fast sessions",
         "detail": "Your aerobic base is well trained, but without threshold or VO2max sessions, speed progresses little. One intense session per week is enough.",
-        "evidence": "{pct}% of sessions in endurance only"
+        "evidence": "{pct}% of sessions in endurance only",
+        "evidenceTime": "{pct}% of time easy over 28 days"
       },
       "stale-reference": {
         "title": "Old performance reference",
@@ -611,7 +613,11 @@
       "time": "Time",
       "pace": "Pace",
       "hr": "HR",
-      "elev": "Elev"
+      "elev": "Elev",
+      "intensityTitle": "Intensity distribution",
+      "intensityNote": "Last 28 days, by time actually spent in each zone — not by the session's average HR.",
+      "cEasyPace": "Easy-run pace",
+      "thinCompare": "Fewer than 4 runs in one of the periods: changes are hidden."
     },
     "hero": {
       "night": "Good night",
@@ -1277,7 +1283,7 @@
     "recordLegend": "Record",
     "recordNote": "personal record",
     "intensitySplit": "Intensity distribution",
-    "intensityNote": "Monthly volume share by zone — the polarised model targets 80% easy",
+    "intensityNote": "Share of monthly time per pace zone — the polarised model aims for 80% easy",
     "easy": "Easy",
     "greyZone": "Grey zone",
     "hard": "Hard",
@@ -1342,7 +1348,10 @@
     "intervalTitle": "Interval sessions",
     "intervalNote": "Repeated fractions spotted automatically — the average pace of the same sessions tells the progression",
     "driftTitle": "Drift & efficiency",
-    "driftNote": "Long runs: aerobic decoupling tells if the heart pays more and more, EF if the engine gets efficient"
+    "driftNote": "Long runs: aerobic decoupling tells if the heart pays more and more, EF if the engine gets efficient",
+    "last90": "Last 90 days —",
+    "polarSource": "By time spent per kilometre, pace zones ({source}).",
+    "unknownLevel": "Fitness level unknown — one timed effort is enough."
   },
   "goals": {
     "title": "Goals",
@@ -1595,5 +1604,56 @@
   },
   "settingsPage": {
     "kick": "Your account"
+  },
+  "zones": {
+    "empty": "Not enough data for this period yet.",
+    "easyShare": "of the time easy",
+    "verdict": {
+      "balanced": "Well polarised: mostly easy, with intensity concentrated in a few sessions.",
+      "tooMuchMid": "Too much “grey zone”: easy runs are too fast or hard sessions not hard enough. Slow down on easy days.",
+      "tooHard": "Under 70% easy: the hard load is high, and recovery often suffers.",
+      "allEasy": "Almost all easy: ideal in a base phase — add a quality session when you want to progress.",
+      "thin": "Sample too thin to judge (under 4 runs or 3 h): read it as a hint."
+    },
+    "polar": {
+      "low": "Easy",
+      "mid": "Moderate",
+      "high": "Hard"
+    },
+    "polarHint": {
+      "low": "Z1-Z2 · below aerobic threshold",
+      "mid": "Z3-Z4 · tempo, threshold",
+      "high": "Z5 · above threshold"
+    },
+    "weekly": "Last 8 weeks",
+    "byHr": "Heart rate",
+    "byPace": "Pace",
+    "noHrData": "No heart-rate data for this period.",
+    "noPaceData": "Threshold pace unknown: log a race or a VMA.",
+    "name": {
+      "z1": "Z1 · Recovery",
+      "z2": "Z2 · Endurance",
+      "z3": "Z3 · Tempo",
+      "z4": "Z4 · Threshold",
+      "z5": "Z5 · VO2max"
+    },
+    "source": {
+      "hr": {
+        "personal": "Personal HR zones (threshold measured at {lthr} bpm)",
+        "reserve": "HR-reserve zones (threshold estimated at {lthr} bpm)",
+        "vdot": "—",
+        "none": "No heart-rate anchor"
+      },
+      "pace": {
+        "personal": "measured threshold pace {pace}",
+        "vdot": "threshold pace from VDOT {pace}",
+        "reserve": "—",
+        "none": "no threshold pace"
+      }
+    },
+    "coverage": "{sessions} runs: {stream} read second by second, {splits} per kilometre, {average} from the average, {noHr} without HR (counted by pace).",
+    "maxHrEstimated": "Max HR estimated from your sessions: set it in settings for more accurate zones.",
+    "discordHeart": "Your heart says harder than your pace (+{n} intensity points): heat, fatigue, hills… or a heart-rate threshold to revisit.",
+    "discordPace": "Your pace says harder than your heart (+{n} points): a good day, downhills, or a heart-rate sensor dropping out."
   }
 }

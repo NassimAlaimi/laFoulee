@@ -4,7 +4,6 @@ import {
   acwrSeries,
   acwrZone,
   compareTrend,
-  hrZones,
   periodStats,
   startOfWeek,
   trainingLoad,
@@ -187,35 +186,6 @@ describe("acwrSeries", () => {
     assert.equal(dernier.ready, true);
     assert.notEqual(dernier.zone, "insufficient");
     assert.ok(dernier.ratio > 0);
-  });
-});
-
-describe("hrZones", () => {
-  it("répartit 100 % du temps quand il y a du cardio", () => {
-    const zones = hrZones(
-      [
-        run({ averageHr: 120, movingTime: 1800 }),
-        run({ averageHr: 165, movingTime: 1800 }),
-      ],
-      190
-    );
-    const total = zones.reduce((a, z) => a + z.percent, 0);
-    assert.ok(Math.abs(total - 100) < 0.5, `total ${total} %`);
-  });
-
-  it("renvoie des zones vides sans données cardio", () => {
-    const zones = hrZones([run({ averageHr: null })], 190);
-    assert.equal(
-      zones.reduce((a, z) => a + z.seconds, 0),
-      0
-    );
-  });
-
-  it("ordonne les bornes de zones de façon croissante", () => {
-    const zones = hrZones([], 190);
-    for (let i = 1; i < zones.length; i++) {
-      assert.ok(zones[i].min >= zones[i - 1].min);
-    }
   });
 });
 

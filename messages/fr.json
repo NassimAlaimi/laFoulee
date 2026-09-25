@@ -466,12 +466,14 @@
       "too-hard": {
         "title": "Trop d'intensité, pas assez de facile",
         "detail": "Le modèle polarisé recommande environ 80 % du volume en endurance fondamentale. Courir trop souvent « moyennement dur » fatigue sans développer la base aérobie.",
-        "evidence": "{pct} % de tes séances sous {bpm} bpm (cible : 80 %)"
+        "evidence": "{pct} % de tes séances sous {bpm} bpm (cible : 80 %)",
+        "evidenceTime": "{pct} % du temps en facile sur 28 jours (cible : 80 %)"
       },
       "no-intensity": {
         "title": "Aucune séance rapide",
         "detail": "Ta base aérobie est bien travaillée, mais sans séance de seuil ou de VO2max, la vitesse progresse peu. Une séance intense par semaine suffit.",
-        "evidence": "{pct} % des séances en endurance seulement"
+        "evidence": "{pct} % des séances en endurance seulement",
+        "evidenceTime": "{pct} % du temps en facile sur 28 jours"
       },
       "stale-reference": {
         "title": "Référence de performance ancienne",
@@ -611,7 +613,11 @@
       "time": "Temps",
       "pace": "Allure",
       "hr": "FC",
-      "elev": "D+"
+      "elev": "D+",
+      "intensityTitle": "Répartition de l'intensité",
+      "intensityNote": "28 derniers jours, au temps réellement passé dans chaque zone — pas à la FC moyenne de la séance.",
+      "cEasyPace": "Allure des footings",
+      "thinCompare": "Moins de 4 sorties sur une des périodes : les écarts ne sont pas affichés."
     },
     "hero": {
       "night": "Bonne nuit",
@@ -1277,7 +1283,7 @@
     "recordLegend": "Record",
     "recordNote": "record personnel",
     "intensitySplit": "Répartition de l'intensité",
-    "intensityNote": "Part du volume mensuel par zone — le modèle polarisé vise 80 % en facile",
+    "intensityNote": "Part du temps mensuel par zone d'allure — le modèle polarisé vise 80 % en facile",
     "easy": "Facile",
     "greyZone": "Zone grise",
     "hard": "Intense",
@@ -1342,7 +1348,10 @@
     "intervalTitle": "Séances d'intervalles",
     "intervalNote": "Fractions répétées repérées automatiquement — l'allure moyenne des mêmes séances raconte la progression",
     "driftTitle": "Dérive & efficience",
-    "driftNote": "Sorties longues : le découplage aérobie dit si le cœur paie de plus en plus cher, l'EF si la machine devient économe"
+    "driftNote": "Sorties longues : le découplage aérobie dit si le cœur paie de plus en plus cher, l'EF si la machine devient économe",
+    "last90": "90 derniers jours —",
+    "polarSource": "Au temps passé par kilomètre, zones d'allure ({source}).",
+    "unknownLevel": "Niveau de forme inconnu — un effort chronométré suffit."
   },
   "goals": {
     "title": "Objectifs",
@@ -1595,5 +1604,56 @@
   },
   "settingsPage": {
     "kick": "Ton compte"
+  },
+  "zones": {
+    "empty": "Pas encore assez de données sur la période.",
+    "easyShare": "du temps en facile",
+    "verdict": {
+      "balanced": "Bien polarisé : l'essentiel en facile, l'intensité concentrée sur quelques séances.",
+      "tooMuchMid": "Trop de « zone grise » : les footings sont trop rapides ou les séances dures pas assez dures. Ralentis les jours faciles.",
+      "tooHard": "Moins de 70 % en facile : la charge intense est élevée, la récupération en pâtit souvent.",
+      "allEasy": "Presque tout en facile : parfait en phase de base, ajoute une séance de qualité quand tu veux progresser.",
+      "thin": "Échantillon trop mince pour juger (moins de 4 sorties ou de 3 h) : à lire comme une indication."
+    },
+    "polar": {
+      "low": "Facile",
+      "mid": "Intermédiaire",
+      "high": "Intense"
+    },
+    "polarHint": {
+      "low": "Z1-Z2 · sous le seuil aérobie",
+      "mid": "Z3-Z4 · tempo, seuil",
+      "high": "Z5 · au-dessus du seuil"
+    },
+    "weekly": "8 dernières semaines",
+    "byHr": "Cardio",
+    "byPace": "Allure",
+    "noHrData": "Aucune donnée cardio sur la période.",
+    "noPaceData": "Allure seuil inconnue : renseigne une course ou une VMA.",
+    "name": {
+      "z1": "Z1 · Récupération",
+      "z2": "Z2 · Endurance",
+      "z3": "Z3 · Tempo",
+      "z4": "Z4 · Seuil",
+      "z5": "Z5 · VO2max"
+    },
+    "source": {
+      "hr": {
+        "personal": "Zones cardio personnelles (seuil mesuré à {lthr} bpm)",
+        "reserve": "Zones cardio par la FC de réserve (seuil estimé à {lthr} bpm)",
+        "vdot": "—",
+        "none": "Pas de repère cardio"
+      },
+      "pace": {
+        "personal": "allure seuil mesurée {pace}",
+        "vdot": "allure seuil tirée du VDOT {pace}",
+        "reserve": "—",
+        "none": "pas d'allure seuil"
+      }
+    },
+    "coverage": "{sessions} sorties : {stream} lues à la seconde, {splits} au kilomètre, {average} à la moyenne, {noHr} sans cardio (comptées à l'allure).",
+    "maxHrEstimated": "FC max estimée depuis tes séances : renseigne-la dans les réglages pour des zones plus justes.",
+    "discordHeart": "Ton cœur dit plus dur que ton allure (+{n} points d'intensité) : chaleur, fatigue, dénivelé… ou un seuil cardio à réviser.",
+    "discordPace": "Ton allure dit plus dur que ton cœur (+{n} points) : bonne forme du jour, descentes, ou capteur cardio qui décroche."
   }
 }
