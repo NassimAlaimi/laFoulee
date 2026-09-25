@@ -19,6 +19,31 @@ const RacePlanSchema = z.object({
   targetSeconds: z.number().int().min(0).max(200000).nullable().optional(),
   fuelingKm: z.number().min(0).max(20).optional(),
   fuelingNote: z.string().max(300).nullable().optional(),
+  checkpoints: z
+    .array(
+      z.object({
+        km: z.number().min(0).max(1000),
+        kind: z.enum(["aid", "cutoff", "crew", "mark"]),
+        label: z.string().trim().max(40),
+        cutoff: z.number().int().min(0).max(1_000_000).nullable().optional(),
+      })
+    )
+    .max(40)
+    .optional(),
+  weather: z
+    .object({ tempC: z.number().min(-20).max(50).nullable(), dewC: z.number().min(-30).max(35).nullable() })
+    .nullable()
+    .optional(),
+  nutrition: z
+    .object({
+      mainId: z.string().max(40),
+      caffeineId: z.string().max(40).nullable(),
+      gutTrained: z.boolean(),
+      sweatRateLh: z.number().min(0.1).max(4).nullable(),
+      salty: z.boolean(),
+    })
+    .nullable()
+    .optional(),
 });
 
 export async function POST(req: Request) {
@@ -41,7 +66,11 @@ export async function POST(req: Request) {
   });
   if (!goal) return NextResponse.json({ ok: false, error: "Objectif introuvable" }, { status: 404 });
 
-  const data: Record<string, unknown> = { ...fields };
+  const { checkpoints, weather, nutrition, ...plain } = fields;
+  const data: Record<string, unknown> = { ...plain };
+  if (checkpoints !== undefined) data.checkpoints = JSON.stringify(checkpoints.sort((x, y) => x.km - y.km));
+  if (weather !== undefined) data.weather = weather ? JSON.stringify(weather) : null;
+  if (nutrition !== undefined) data.nutrition = nutrition ? JSON.stringify(nutrition) : null;
   if (gpx != null) {
     const points = parseGpx(gpx);
     if (points.length < 10) {

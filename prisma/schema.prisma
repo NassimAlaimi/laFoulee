@@ -45,6 +45,7 @@ model User {
   dailyLogs       DailyLog[]
   customWorkouts  CustomWorkout[]
   importBatches   ImportBatch[]
+  nutritionProducts NutritionProduct[]
 
   /// Jeton secret de l'abonnement agenda (.ics). Null = abonnement désactivé.
   /// Stocké en clair : il n'ouvre qu'une lecture du plan, et doit pouvoir
@@ -576,9 +577,30 @@ model RacePlan {
   /// Ravitaillement tous les X km (0 = désactivé)
   fuelingKm   Float  @default(5)
   fuelingNote String?
+  /// Points clés (JSON Checkpoint[] de lib/race-plan) : ravitos, barrières, assistance
+  checkpoints String?
+  /// Météo prévue saisie à la main (JSON { tempC, dewC })
+  weather     String?
+  /// Réglages nutrition (JSON : produit principal, caféine, sudation…)
+  nutrition   String?
   updatedAt   DateTime @updatedAt
 
   @@unique([goalId])
+}
+
+/// Produit de ravitaillement personnel (gel, boisson, barre…).
+model NutritionProduct {
+  id         String @id @default(cuid())
+  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  name       String
+  carbsG     Float
+  sodiumMg   Float  @default(0)
+  caffeineMg Float  @default(0)
+  fluidMl    Float  @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
 }
 
 /// Séance personnalisée : saisie rapide en texte (lib/workout-dsl) ou

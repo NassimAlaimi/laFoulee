@@ -19,65 +19,39 @@ export function parseClock(input: string): number | null {
   return null;
 }
 
+export function fmtClockInput(sec: number | null | undefined): string {
+  if (!sec) return "";
+  return `${Math.floor(sec / 3600)}:${String(Math.floor((sec % 3600) / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
+}
+
 /**
- * Formulaire du plan de course : import du GPX (une fois) puis réglages de
- * stratégie. En édition, le GPX n'est pas proposé — il se remplace en
- * supprimant le plan.
+ * Création du plan de course : le GPX du parcours (une fois), le chrono visé
+ * et la stratégie. Le reste (météo, points clés, nutrition) se règle ensuite.
  */
-export function RacePlanForm({
-  goalId,
-  existing,
-}: {
-  goalId: string;
-  existing?: {
-    targetSeconds: number | null;
-    strategy: string;
-    fuelingKm: number;
-    fuelingNote: string | null;
-  };
-}) {
+export function RacePlanForm({ goalId, targetSeconds }: { goalId: string; targetSeconds?: number | null }) {
   const router = useRouter();
   const t = useTranslations("racePlan");
   const [file, setFile] = useState<File | null>(null);
-  const [clock, setClock] = useState(
-    existing?.targetSeconds
-      ? `${Math.floor(existing.targetSeconds / 3600)}:${String(
-          Math.floor((existing.targetSeconds % 3600) / 60)
-        ).padStart(2, "0")}:${String(existing.targetSeconds % 60).padStart(2, "0")}`
-      : ""
-  );
-  const [strategy, setStrategy] = useState(existing?.strategy ?? "negative");
-  const [fuelingKm, setFuelingKm] = useState(String(existing?.fuelingKm ?? 5));
-  const [fuelingNote, setFuelingNote] = useState(existing?.fuelingNote ?? "");
+  const [clock, setClock] = useState(fmtClockInput(targetSeconds));
+  const [strategy, setStrategy] = useState("negative");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function submit() {
+    if (!file) {
+      setError(t("gpxMissing"));
+      return;
+    }
     setBusy(true);
     setError(null);
-    const body: Record<string, unknown> = {
-      goalId,
-      strategy,
-      fuelingKm: Number(fuelingKm) || 0,
-      fuelingNote: fuelingNote === "" ? null : fuelingNote,
-    };
-    const seconds = parseClock(clock);
-    body.targetSeconds = seconds;
-    if (file) {
-      body.gpx = await file.text();
-    }
     const res = await fetch("/api/race-plan", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ goalId, strategy, targetSeconds: parseClock(clock), gpx: await file.text() }),
     });
     setBusy(false);
-    if (res.ok) {
-      router.refresh();
-    } else {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error ?? t("saveError"));
-    }
+    if (res.ok) router.refresh();
+    else setError(t("gpxError"));
   }
 
   return (
@@ -88,108 +62,48 @@ export function RacePlanForm({
         submit();
       }}
     >
-      {!existing && (
-        <div>
-          <div className="mb-1.5 text-micro font-medium uppercase tracking-[0.12em] text-ink3">
-            Parcours (fichier GPX)
-          </div>
-          <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-hairStrong px-4 py-5 text-sm text-ink2 hover:border-clay">
-            <input
-              type="file"
-              accept=".gpx,.xml,application/gpx+xml"
-              className="sr-only"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            />
-            {file ? (
-              <span className="font-medium text-ink">{file.name}</span>
-            ) : (
-              <span>
-                Glisse ton fichier <span className="font-medium text-clay">.gpx</span> du
-                parcours — exporté de Strava, Garmin, Komoot…
-              </span>
-            )}
-          </label>
-        </div>
-      )}
-
       <div>
-        <div className="mb-1.5 text-micro font-medium uppercase tracking-[0.12em] text-ink3">
-          Chrono visé
-        </div>
-        <input
-          type="text"
-          inputMode="text"
-          value={clock}
-          onChange={(e) => setClock(e.target.value)}
-          placeholder="3:45:00"
-          className="field w-36"
-          aria-label={t("targetTime")}
-        />
+        <div className="eyebrow mb-1.5">{t("gpxLabel")}</div>
+        <label className="flex cursor-pointer items-center gap-3 border border-dashed border-hairStrong px-4 py-5 text-sm text-ink2 hover:border-clay">
+          <input type="file" accept=".gpx,.xml,application/gpx+xml" className="sr-only" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+          {file ? <span className="font-medium text-ink">{file.name}</span> : <span>{t("gpxHint")}</span>}
+        </label>
       </div>
-
-      <div>
-        <div className="mb-1.5 text-micro font-medium uppercase tracking-[0.12em] text-ink3">
-          Stratégie d'allure
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {(
-            [
-              ["negative", t("strategyNegative")],
-              ["even", t("strategyEven")],
-              ["positive", t("strategyPositive")],
-            ] as const
-          ).map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setStrategy(value)}
-              className={`btn-quiet ${strategy === value ? "bg-clay/10 text-clay" : ""}`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="flex flex-wrap gap-6">
+        <label>
+          <div className="eyebrow mb-1.5">{t("targetTime")}</div>
+          <input type="text" value={clock} onChange={(e) => setClock(e.target.value)} placeholder="3:45:00" className="field w-36" />
+        </label>
         <div>
-          <div className="mb-1.5 text-micro font-medium uppercase tracking-[0.12em] text-ink3">
-            Ravitaillement tous les…
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              step={0.5}
-              min={0}
-              max={20}
-              value={fuelingKm}
-              onChange={(e) => setFuelingKm(e.target.value)}
-              className="field w-20"
-              aria-label={t("fuelingEvery")}
-            />
-            <span className="text-sm text-ink3">km · 0 = désactivé</span>
-          </div>
-        </div>
-        <div>
-          <div className="mb-1.5 text-micro font-medium uppercase tracking-[0.12em] text-ink3">
-            Ce que tu prends
-          </div>
-          <input
-            type="text"
-            value={fuelingNote}
-            onChange={(e) => setFuelingNote(e.target.value)}
-            placeholder="gel toutes les 40 min, 500 ml/h…"
-            className="field w-full"
-          />
+          <div className="eyebrow mb-1.5">{t("strategy")}</div>
+          <StrategyPicker value={strategy} onChange={setStrategy} />
         </div>
       </div>
-
       <div className="flex items-center gap-3">
-        <button type="submit" className="btn-primary" disabled={busy}>
-          {busy ? "Calcul…" : existing ? "Mettre à jour" : "Construire le plan"}
+        <button type="submit" className="btn-solid" disabled={busy}>
+          {busy ? t("computing") : t("build")}
         </button>
         {error && <span className="text-sm text-rust">{error}</span>}
       </div>
     </form>
+  );
+}
+
+export function StrategyPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const t = useTranslations("racePlan");
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {(["negative", "even", "positive"] as const).map((v) => (
+        <button
+          key={v}
+          type="button"
+          onClick={() => onChange(v)}
+          aria-pressed={value === v}
+          className={`btn-quiet ${value === v ? "bg-clay/10 text-clay" : ""}`}
+        >
+          {t(`strategy_${v}`)}
+        </button>
+      ))}
+    </div>
   );
 }
