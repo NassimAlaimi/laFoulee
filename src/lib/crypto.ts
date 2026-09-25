@@ -16,6 +16,7 @@ import {
   createHash,
   randomBytes,
 } from "node:crypto";
+import { UserFacingError } from "./http-error";
 
 const PREFIX = "enc:v1:";
 
@@ -32,7 +33,7 @@ export function secretKeyFromEnv(
 ): Buffer {
   const raw = (env.TOKEN_SECRET ?? "").trim();
   if (!raw) {
-    throw new Error(
+    throw new UserFacingError(
       "TOKEN_SECRET manquant. Génère-le avec `openssl rand -hex 32` et ajoute-le à .env."
     );
   }

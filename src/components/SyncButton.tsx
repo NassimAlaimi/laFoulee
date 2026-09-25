@@ -22,6 +22,7 @@ export function SyncButton({
   async function sync() {
     setLoading(true);
     setResult(null);
+    let text = t("unknownError");
     try {
       const res = await fetch("/api/strava/sync", {
         method: "POST",
@@ -29,17 +30,18 @@ export function SyncButton({
         body: JSON.stringify({ full }),
       });
       const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.error ?? t("syncFail"));
-      setResult({
-        ok: true,
-        text: t("syncResult", { n: data.imported, m: data.updated }),
-      });
+      if (!res.ok || !data.ok) {
+        // Le serveur renvoie déjà un message sûr (jamais la cause réelle).
+        if (typeof data?.error === "string") text = data.error;
+        else text = t("syncFail");
+        setResult({ ok: false, text });
+        return;
+      }
+      setResult({ ok: true, text: t("syncResult", { n: data.imported, m: data.updated }) });
       startTransition(() => router.refresh());
-    } catch (e) {
-      setResult({
-        ok: false,
-        text: e instanceof Error ? e.message : t("unknownError"),
-      });
+    } catch {
+      // Erreur réseau : rien de précis à montrer.
+      setResult({ ok: false, text });
     } finally {
       setLoading(false);
     }

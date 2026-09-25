@@ -42,8 +42,10 @@ export const deepseekProvider: LlmProvider = {
       signal: AbortSignal.timeout(45_000),
     });
     if (!res.ok) {
+      // Le corps de la réponse LLM reste dans les logs serveur, jamais exposé.
       const body = await res.text().catch(() => "");
-      throw new Error(`llm:${res.status}:${body.slice(0, 200)}`);
+      console.error(`[llm] ${res.status}`, body.slice(0, 500));
+      throw new Error(`llm:${res.status}`);
     }
     const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
     return data.choices?.[0]?.message?.content ?? "";

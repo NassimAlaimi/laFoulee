@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import { decryptIfNeeded, encryptSecret, secretKeyFromEnv } from "./crypto";
+import { UpstreamError, UserFacingError } from "./http-error";
 
 const STRAVA_API = "https://www.strava.com/api/v3";
 const STRAVA_OAUTH = "https://www.strava.com/oauth";
@@ -15,7 +16,7 @@ export function stravaConfig() {
     "http://localhost:3000/api/strava/callback";
 
   if (!clientId || !clientSecret) {
-    throw new Error(
+    throw new UserFacingError(
       "STRAVA_CLIENT_ID / STRAVA_CLIENT_SECRET manquants. Renseigne-les dans .env (voir .env.example)."
     );
   }
@@ -78,7 +79,9 @@ export async function exchangeCodeForToken(
   });
 
   if (!res.ok) {
-    throw new Error(`Échange du code Strava échoué (${res.status}): ${await res.text()}`);
+    // Le corps de la réponse reste dans les logs serveur, jamais côté client.
+    console.error("[strava] échange du code", res.status, await res.text().catch(() => ""));
+    throw new UpstreamError(res.status, "Strava a refusé la connexion. Réessaie.");
   }
   return res.json();
 }
@@ -91,7 +94,7 @@ export async function exchangeCodeForToken(
 export async function getValidAccessToken(userId: string): Promise<string> {
   const account = await prisma.stravaAccount.findUnique({ where: { userId } });
   if (!account) {
-    throw new Error("Aucun compte Strava connecté. Va sur /settings pour te connecter.");
+    throw new UserFacingError("Aucun compte Strava connecté. Va sur /settings pour te connecter.");
   }
 
   const key = secretKeyFromEnv();
@@ -113,7 +116,8 @@ export async function getValidAccessToken(userId: string): Promise<string> {
   });
 
   if (!res.ok) {
-    throw new Error(`Refresh du token Strava échoué (${res.status}): ${await res.text()}`);
+    console.error("[strava] refresh token", res.status, await res.text().catch(() => ""));
+    throw new UpstreamError(res.status, "Session Strava expirée — reconnecte-toi dans les réglages.");
   }
 
   const data: TokenResponse = await res.json();
@@ -160,12 +164,14 @@ async function stravaFetch<T>(path: string, token: string): Promise<T> {
   });
 
   if (res.status === 429) {
-    throw new Error(
+    throw new UpstreamError(
+      429,
       "Limite de requêtes Strava atteinte (100 / 15 min). Réessaie dans quelques minutes."
     );
   }
   if (!res.ok) {
-    throw new Error(`Strava ${path} → ${res.status}: ${await res.text()}`);
+    console.error("[strava]", path, res.status, await res.text().catch(() => ""));
+    throw new UpstreamError(res.status, "Strava est indisponible pour le moment.");
   }
   return res.json();
 }

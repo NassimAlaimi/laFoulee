@@ -12,6 +12,7 @@ import {
   type StravaSummaryActivity,
 } from "@/lib/strava";
 import { encodeStream } from "@/lib/cardio";
+import { UpstreamError, UserFacingError, toSafeMessage } from "@/lib/http-error";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
 
     const account = await prisma.stravaAccount.findUnique({ where: { userId } });
     if (!account) {
-      throw new Error("Aucun compte Strava connecté.");
+      throw new UserFacingError("Aucun compte Strava connecté.");
     }
 
     const token = await getValidAccessToken(userId);
@@ -186,7 +187,7 @@ export async function POST(req: NextRequest) {
         }
       } catch (e) {
         // Rate limit ou activité inaccessible → on arrête l'enrichissement
-        if (e instanceof Error && e.message.includes("Limite de requêtes")) break;
+        if (e instanceof UpstreamError && e.status === 429) break;
       }
     }
 
@@ -228,7 +229,7 @@ export async function POST(req: NextRequest) {
           },
         });
       } catch (e) {
-        if (e instanceof Error && e.message.includes("Limite de requêtes")) break;
+        if (e instanceof UpstreamError && e.status === 429) break;
       }
     }
 
@@ -275,13 +276,13 @@ export async function POST(req: NextRequest) {
         streamed++;
       } catch (e) {
         // 404 = pas de streams pour cette activité : marquée vide, on passe.
-        if (e instanceof Error && e.message.includes("→ 404")) {
+        if (e instanceof UpstreamError && e.status === 404) {
           await prisma.hrStream
             .create({ data: { activityId: run.id, series: "" } })
             .catch(() => undefined);
           continue;
         }
-        if (e instanceof Error && e.message.includes("Limite de requêtes")) break;
+        if (e instanceof UpstreamError && e.status === 429) break;
       }
     }
 
@@ -309,7 +310,9 @@ export async function POST(req: NextRequest) {
       streamed,
     });
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Erreur inconnue";
+    // La cause réelle part dans les logs serveur (toSafeMessage) ; on ne
+    // stocke et on ne renvoie que le message sûr.
+    const message = toSafeMessage(e);
     await prisma.syncLog.update({
       where: { id: log.id },
       data: { finishedAt: new Date(), status: "error", message },

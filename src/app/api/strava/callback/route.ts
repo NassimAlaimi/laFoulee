@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { exchangeCodeForToken } from "@/lib/strava";
 import { encryptSecret, secretKeyFromEnv } from "@/lib/crypto";
+import { UserFacingError, toSafeMessage } from "@/lib/http-error";
 import {
   canRegister,
   createSession,
@@ -53,7 +54,7 @@ export async function GET(req: NextRequest) {
   try {
     const token = await exchangeCodeForToken(code);
     const athlete = token.athlete;
-    if (!athlete) throw new Error("Profil athlète absent de la réponse Strava");
+    if (!athlete) throw new UserFacingError("Profil athlète absent de la réponse Strava");
 
     const athleteId = BigInt(athlete.id);
 
@@ -118,6 +119,6 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.redirect(new URL("/settings?connected=1", APP_URL));
   } catch (e) {
-    return fail(back, e instanceof Error ? e.message : "Erreur inconnue");
+    return fail(back, toSafeMessage(e));
   }
 }

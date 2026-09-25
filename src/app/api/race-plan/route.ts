@@ -54,7 +54,7 @@ export async function POST(req: Request) {
   const parsed = RacePlanSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { ok: false, error: parsed.error.issues[0]?.message ?? "entrée invalide" },
+      { ok: false, error: "entrée invalide" },
       { status: 400 }
     );
   }
