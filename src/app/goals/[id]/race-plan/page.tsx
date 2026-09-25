@@ -14,6 +14,7 @@ import { parseGpx } from "@/lib/gpx";
 import { athleteContext } from "@/lib/plan-store";
 import {
   debrief,
+  gapFactor,
   heatPenalty,
   kmTable,
   pacingCurve,
@@ -28,6 +29,7 @@ import {
   type Strategy,
 } from "@/lib/race-plan";
 import { DEFAULT_PRODUCTS, caffeineDose, fuelPlan, preRace, type Product } from "@/lib/nutrition";
+import { fitGradeFactor, gradeSamples, personalGradeFactor } from "@/lib/ml";
 
 export const dynamic = "force-dynamic";
 
@@ -87,12 +89,20 @@ export default async function RacePlanPage({ params }: { params: Promise<{ id: s
   const strategy = (plan.strategy as Strategy) ?? "negative";
   const targetSeconds = plan.targetSeconds ?? goal.targetTime ?? null;
 
+  // Facteur de pente : personnel si mesuré sur tes splits, sinon générique.
+  const gradeSplits = await prisma.split.findMany({
+    where: { activity: { userId }, distance: { gte: 900 }, averageSpeed: { not: null } },
+    select: { distance: true, movingTime: true, elevationDiff: true, averageSpeed: true },
+  });
+  const gradeFit = fitGradeFactor(gradeSamples(gradeSplits));
+  const gradeFn = (g: number) => personalGradeFactor(gradeFit, g) ?? gapFactor(g);
+
   const ctx = await athleteContext(new Date(), userId);
   const realistic = ctx.predict(goal.distance || courseKm * 1000)?.realistic ?? null;
   const target = targetSeconds ?? realistic ?? Math.round(courseKm * 360);
-  const curve = pacingCurve({ samples, targetSeconds: target, strategy, heat });
+  const curve = pacingCurve({ samples, targetSeconds: target, strategy, heat, grade: gradeFn });
   const rows = kmTable(samples, curve);
-  const sc = scenarios({ samples, targetSeconds: target, realisticSeconds: realistic, strategy, heat, checkpoints });
+  const sc = scenarios({ samples, targetSeconds: target, realisticSeconds: realistic, strategy, heat, checkpoints, grade: gradeFn });
   const signal = switchSignal(sc);
   const finish = curve[curve.length - 1] ?? target;
 
