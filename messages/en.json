@@ -2101,5 +2101,25 @@
     "tooSlow": "Loop over the hour: too slow — walk less or run faster.",
     "sleep": "{h} h of borrowed sleep beyond 24 h.",
     "weekly": "Training: peak ~{peak} h/week on feet, base ~{base} h, long run ~{long} h."
+  },
+  "edition": {
+    "kicker": "Front page",
+    "target": "target time",
+    "days": "days",
+    "day": "day",
+    "openPlan": "Open the race plan",
+    "makePlan": "Build the race plan",
+    "debrief": "See the recap",
+    "raceDayBody": "{km} km, today. Nothing new: apply the plan, trust the training.",
+    "raceEveBody": "{km} km in a few days. Nothing more to gain: arrive fresh, the plan protects.",
+    "raceAfterBody": "The race is behind you: recover, log your feelings, then learn from it.",
+    "manchette": {
+      "raceDay": "{name}: race day. Everything you've built, today.",
+      "raceEve": "{name} in {days} day(s): rest, sleep, and read the plan once.",
+      "raceAfter": "{name} done. Recover first, understand next.",
+      "taper": "Taper week: the work is done.",
+      "offseason": "No race ahead: time to explore.",
+      "daily": "Your daily dashboard."
+    }
   }
 }

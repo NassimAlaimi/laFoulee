@@ -37,6 +37,8 @@ import { prisma } from "@/lib/prisma";
 import { ZoneSplit } from "@/components/analysis/ZoneSplit";
 import { NudgeLine } from "@/components/home/NudgeLine";
 import { BriefCard } from "@/components/home/BriefCard";
+import { RaceEdition } from "@/components/home/RaceEdition";
+import { editionFor } from "@/lib/edition";
 import { pickNudges } from "@/lib/nudges";
 import { adviceOfTheDay } from "@/lib/coach";
 import { RUN_TYPES } from "@/lib/strava";
@@ -199,7 +201,7 @@ export default async function SummaryPage() {
     prisma.raceGoal.findFirst({
       where: { userId, kind: "race", status: "upcoming", raceDate: { gte: new Date(now.getTime() - 86400000) } },
       orderBy: [{ raceDate: "asc" }],
-      select: { id: true, name: true, raceDate: true, distance: true, racePlan: { select: { id: true } }, plans: { where: { status: "active" }, select: { id: true } } },
+      select: { id: true, name: true, raceDate: true, distance: true, targetTime: true, racePlan: { select: { id: true } }, plans: { where: { status: "active" }, select: { id: true } } },
     }),
     prisma.activity.findMany({
       where: { userId, type: { in: [...RUN_TYPES] } },
@@ -220,6 +222,13 @@ export default async function SummaryPage() {
       : null,
     phase: planned.find((s) => s.date.getTime() > now.getTime())?.phase ?? null,
     pain: todayLog?.painLevel ?? 0,
+  });
+  const lastRace = runs.find((r) => r.isRace);
+  const edition = editionFor({
+    nextRaceDays: nextRace ? Math.ceil((nextRace.raceDate.getTime() - now.getTime()) / 86400000) : null,
+    lastRaceDays: lastRace ? Math.floor((now.getTime() - lastRace.startDate.getTime()) / 86400000) : null,
+    phase: planned.find((s) => s.date.getTime() > now.getTime())?.phase ?? null,
+    aRaceDays: null,
   });
   const nudges = pickNudges({
     now,
@@ -372,6 +381,19 @@ export default async function SummaryPage() {
       )}
 
       {gettingStarted}
+
+      {(edition === "raceEve" || edition === "raceDay" || edition === "raceAfter") && (
+        <RaceEdition
+          edition={edition}
+          nextRace={
+            nextRace
+              ? { id: nextRace.id, name: nextRace.name, days: Math.ceil((nextRace.raceDate.getTime() - now.getTime()) / 86400000), distanceKm: Math.round(nextRace.distance / 100) / 10, hasRacePlan: Boolean(nextRace.racePlan), targetSeconds: nextRace.targetTime ?? null }
+              : null
+          }
+          lastRace={lastRace ? { name: lastRace.name, days: Math.floor((now.getTime() - lastRace.startDate.getTime()) / 86400000), distanceKm: lastRace.distance / 1000 } : null}
+          hasPlan={Boolean(planned.length)}
+        />
+      )}
 
       <TodayHero userId={userId} firstname={user.firstname} runs={runs} now={now} form={form ? { tsb: form.tsb, zone: form.zone } : null} />
       <NudgeLine

@@ -2101,5 +2101,25 @@
     "tooSlow": "Vuelta por encima de la hora: demasiado lenta — camina menos o corre más rápido.",
     "sleep": "{h} h de sueño prestadas más allá de 24 h.",
     "weekly": "Entrenamiento: pico ~{peak} h/semana de pie, base ~{base} h, tirada larga ~{long} h."
+  },
+  "edition": {
+    "kicker": "La portada",
+    "target": "tiempo objetivo",
+    "days": "días",
+    "day": "día",
+    "openPlan": "Abrir el plan de carrera",
+    "makePlan": "Preparar el plan de carrera",
+    "debrief": "Ver el resumen",
+    "raceDayBody": "{km} km, hoy. Nada nuevo: aplica el plan, confía en el entrenamiento.",
+    "raceEveBody": "{km} km en unos días. Ya no se gana nada: llega fresco, el plan protege.",
+    "raceAfterBody": "La carrera quedó atrás: recupera, anota tus sensaciones, y saca lecciones.",
+    "manchette": {
+      "raceDay": "{name}: el día de la carrera. Todo lo construido, hoy.",
+      "raceEve": "{name} en {days} día(s): descanso, sueño, y leer el plan una vez.",
+      "raceAfter": "{name} corrida. Primero recuperar, después entender.",
+      "taper": "Semana de afinado: el trabajo está hecho.",
+      "offseason": "Sin carrera por delante: momento de explorar.",
+      "daily": "Tu panel del día."
+    }
   }
 }

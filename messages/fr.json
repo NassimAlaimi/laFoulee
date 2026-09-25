@@ -2101,5 +2101,25 @@
     "tooSlow": "Boucle au-dessus de l'heure : trop lent, il faut marcher moins ou courir plus vite.",
     "sleep": "{h} h de sommeil empruntées au-delà de 24 h.",
     "weekly": "Entraînement : pic ~{peak} h/semaine sur pieds, base ~{base} h, sortie longue ~{long} h."
+  },
+  "edition": {
+    "kicker": "La Une",
+    "target": "chrono visé",
+    "days": "jours",
+    "day": "jour",
+    "openPlan": "Ouvrir le plan de course",
+    "makePlan": "Préparer le plan de course",
+    "debrief": "Voir la rétrospective",
+    "raceDayBody": "{km} km, aujourd'hui. Rien de nouveau : applique le plan, fais confiance à l'entraînement.",
+    "raceEveBody": "{km} km dans quelques jours. On ne rattrape plus rien : on arrive frais, le plan protège.",
+    "raceAfterBody": "La course est derrière toi : récupère, note tes sensations, puis on en tire les leçons.",
+    "manchette": {
+      "raceDay": "{name} : le jour J. Tout ce que tu as construit, aujourd'hui.",
+      "raceEve": "{name} dans {days} jour(s) : repos, sommeil, et relire le plan une fois.",
+      "raceAfter": "{name} courue. D'abord récupérer, ensuite comprendre.",
+      "taper": "Semaine d'affûtage : le travail est fait.",
+      "offseason": "Pas de course devant : le moment d'explorer.",
+      "daily": "Ton tableau de bord du jour."
+    }
   }
 }
