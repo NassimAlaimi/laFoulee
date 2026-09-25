@@ -86,7 +86,29 @@
     "search": "Search",
     "searchTitle": "Search, navigate, calculate · ⌘K",
     "mainNav": "Main navigation",
-    "settings": "Settings"
+    "settings": "Settings",
+    "races": "Races",
+    "poleNav": "Section pages",
+    "pages": {
+      "today": "Today",
+      "log": "Daily log",
+      "activities": "Activities",
+      "plan": "Plan",
+      "workouts": "Workouts",
+      "goals": "Goals",
+      "records": "Records",
+      "calculator": "Predictions & tools",
+      "forme": "Fitness & load",
+      "modeles": "Models & thresholds",
+      "seances": "Past sessions",
+      "corps": "Overview",
+      "strength": "Strength",
+      "gear": "Gear",
+      "plus": "Overview",
+      "recap": "Recap",
+      "lexique": "Glossary",
+      "settings": "Settings"
+    }
   },
   "settings": {
     "language": "Language",
@@ -664,6 +686,34 @@
       "nextRace": "Next race",
       "addGoal": "Add a goal →",
       "freshness": "Freshness"
+    },
+    "nudges": {
+      "eyebrow": "Don't forget",
+      "dismiss": "Dismiss this reminder",
+      "racePlan": {
+        "text": "{name} in {days} days, and no race plan yet: pacing by section, fuelling, pace band.",
+        "cta": "Prepare the race plan"
+      },
+      "plan": {
+        "text": "{name} in {weeks} weeks: no training plan is preparing it yet.",
+        "cta": "Create the plan"
+      },
+      "feeling": {
+        "text": "{n} of your latest runs have no feeling logged — that's what lets the plan adapt.",
+        "cta": "Rate the latest"
+      },
+      "gear": {
+        "text": "Your {name} are at {km} km: cushioning is fading, plan the replacement.",
+        "cta": "See gear"
+      },
+      "recap": {
+        "text": "{month} is done: your recap is waiting.",
+        "cta": "Read the recap"
+      },
+      "log": {
+        "text": "Nothing in your log for a week: sleep, fatigue and pain sharpen your advice.",
+        "cta": "Fill in the log"
+      }
     }
   },
   "tour": {

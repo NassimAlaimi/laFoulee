@@ -5,23 +5,7 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ThemeToggle } from "./Theme";
 import { AccountMenu, type AccountInfo } from "./AccountMenu";
-
-const NAV = [
-  { href: "/", key: "today" },
-  { href: "/activities", key: "activities" },
-  { href: "/training", key: "training" },
-  { href: "/analysis", key: "analysis" },
-  { href: "/corps", key: "body" },
-  { href: "/plus", key: "more" },
-] as const;
-
-/** Chaque pôle éclaire aussi ses pages intérieures dans la barre. */
-const POLES: Record<string, string[]> = {
-  "/training": ["/training", "/workouts", "/goals"],
-  "/analysis": ["/analysis", "/records", "/calculator"],
-  "/corps": ["/corps", "/strength", "/gear"],
-  "/plus": ["/plus", "/settings", "/recap"],
-};
+import { POLES, locate } from "@/lib/poles";
 
 /**
  * Barre horizontale avec onglets soulignés plutôt qu'une sidebar à pastilles.
@@ -30,14 +14,13 @@ const POLES: Record<string, string[]> = {
 export function TopNav({ user }: { user: AccountInfo | null }) {
   const pathname = usePathname();
   const t = useTranslations("nav");
+  const here = locate(pathname);
   const isActive = (href: string) => {
-    if (href === "/") return pathname === "/" || pathname.startsWith("/log");
     if (href === "/activities") return pathname.startsWith("/activities");
-    return (
-      POLES[href]?.some((p) => pathname === p || pathname.startsWith(`${p}/`)) ??
-      pathname.startsWith(href)
-    );
+    const pole = POLES.find((p) => p.href === href);
+    return Boolean(pole && here?.pole.key === pole.key);
   };
+  const subPages = here && here.pole.pages.length > 1 ? here.pole.pages : null;
 
   return (
     <>
@@ -51,7 +34,7 @@ export function TopNav({ user }: { user: AccountInfo | null }) {
         </Link>
 
         <nav className="hidden min-w-0 flex-1 items-center gap-0.5 overflow-x-auto md:flex">
-          {NAV.map((item) => {
+          {POLES.map((item) => {
             const active = isActive(item.href);
             return (
               <Link
@@ -93,6 +76,34 @@ export function TopNav({ user }: { user: AccountInfo | null }) {
           {user && <AccountMenu user={user} />}
         </div>
       </div>
+      {subPages && (
+        <nav
+          aria-label={t("poleNav")}
+          className="border-t border-hair/70"
+        >
+          <div className="mx-auto flex max-w-[1240px] items-center gap-5 overflow-x-auto px-gutter [scrollbar-width:none]">
+            <span className="shrink-0 text-micro font-medium uppercase tracking-[0.14em] text-clay">
+              {t(here!.pole.key)}
+            </span>
+            {subPages.map((p) => {
+              const on = here!.page.href === p.href;
+              return (
+                <Link
+                  key={p.href}
+                  href={p.href}
+                  aria-current={on ? "page" : undefined}
+                  className={`relative whitespace-nowrap py-2 text-[0.78rem] transition-colors ${
+                    on ? "text-ink" : "text-ink3 hover:text-ink"
+                  }`}
+                >
+                  {t(`pages.${p.key}`)}
+                  {on && <span className="absolute inset-x-0 -bottom-px h-px bg-clay" />}
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      )}
     </header>
     <MobileTabs isActive={isActive} />
     </>

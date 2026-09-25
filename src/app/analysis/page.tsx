@@ -11,7 +11,7 @@ import { Legend, Stat } from "@/components/analysis/Bits";import {
 import { fmtDuration } from "@/lib/format";
 import { requireUserId } from "@/lib/auth";
 import { ZONE_LABEL, ZONE_TONE } from "@/lib/fitness-model";
-import { AnalysisHead, AnalysisPoleStrip, loadForme, NotEnough } from "./_shared";
+import { AnalysisHead, loadForme, NotEnough } from "./_shared";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +36,6 @@ export default async function FormePage() {
         title={t("title")}
         meta={t("meta")}
       />
-      <AnalysisPoleStrip active="/analysis" />
 
       {/* ------------------------------------------------ Ouverture */}
       <section className="rise" data-tour="forme">

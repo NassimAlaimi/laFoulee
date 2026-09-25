@@ -2,7 +2,6 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { revalidatePath } from "next/cache";
 import { Hint, NightBand, PageHead, Section, SectionHead } from "@/components/ui/Layout";
-import { PoleStrip } from "@/components/ui/PoleStrip";
 import { RacePoster, type PosterWeek } from "@/components/goals/RacePoster";
 import { Bar } from "@/components/ui/Metric";
 import { DeleteGoalButton } from "@/components/DeleteGoalButton";
@@ -130,6 +129,7 @@ export default async function GoalsPage() {
 
   return (
     <div className="space-y-10">
+      <div data-tour="objectifs">
       <PageHead
         title={t("title")}
         meta={
@@ -147,15 +147,6 @@ export default async function GoalsPage() {
           </a>
         }
       />
-      <div data-tour="objectifs">
-        <PoleStrip
-          items={[
-            { href: "/training", label: "Plan" },
-            { href: "/workouts", label: "Séances" },
-            { href: "/goals", label: "Objectifs" },
-          ]}
-          active="/goals"
-        />
       </div>
 
       {primary && (

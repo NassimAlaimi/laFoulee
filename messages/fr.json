@@ -86,7 +86,29 @@
     "search": "Rechercher",
     "searchTitle": "Rechercher, naviguer, calculer · ⌘K",
     "mainNav": "Navigation principale",
-    "settings": "Réglages"
+    "settings": "Réglages",
+    "races": "Courses",
+    "poleNav": "Pages du pôle",
+    "pages": {
+      "today": "Aujourd'hui",
+      "log": "Carnet du jour",
+      "activities": "Activités",
+      "plan": "Plan",
+      "workouts": "Séances",
+      "goals": "Objectifs",
+      "records": "Records",
+      "calculator": "Prédictions & calculs",
+      "forme": "Forme & charge",
+      "modeles": "Modèles & seuils",
+      "seances": "Séances passées",
+      "corps": "Vue d'ensemble",
+      "strength": "Musculation",
+      "gear": "Matériel",
+      "plus": "Vue d'ensemble",
+      "recap": "Rétrospective",
+      "lexique": "Lexique",
+      "settings": "Réglages"
+    }
   },
   "settings": {
     "language": "Langue",
@@ -664,6 +686,34 @@
       "nextRace": "Prochaine course",
       "addGoal": "Ajouter un objectif →",
       "freshness": "Fraîcheur"
+    },
+    "nudges": {
+      "eyebrow": "À ne pas oublier",
+      "dismiss": "Ignorer ce rappel",
+      "racePlan": {
+        "text": "{name} dans {days} jours, et pas encore de plan de course : allures par section, ravitaillement, bracelet.",
+        "cta": "Préparer le plan de course"
+      },
+      "plan": {
+        "text": "{name} dans {weeks} semaines : aucun plan d'entraînement ne la prépare encore.",
+        "cta": "Créer le plan"
+      },
+      "feeling": {
+        "text": "{n} de tes dernières sorties n'ont pas de ressenti noté — c'est ce qui permet d'adapter le plan.",
+        "cta": "Noter la dernière"
+      },
+      "gear": {
+        "text": "Tes {name} affichent {km} km : l'amorti s'essouffle, pense à la relève.",
+        "cta": "Voir le matériel"
+      },
+      "recap": {
+        "text": "Le mois de {month} est bouclé : ta rétrospective t'attend.",
+        "cta": "Lire la rétrospective"
+      },
+      "log": {
+        "text": "Rien au carnet depuis une semaine : sommeil, fatigue et douleurs affinent tes conseils.",
+        "cta": "Remplir le carnet"
+      }
     }
   },
   "tour": {

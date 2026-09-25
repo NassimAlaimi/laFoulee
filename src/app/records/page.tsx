@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Empty, Hint, PageHead, Section } from "@/components/ui/Layout";
-import { AnalysisPoleStrip } from "@/app/analysis/_shared";
 import { VdotChart } from "@/components/charts/Lazy";
 import { fmtDate, fmtDuration, fmtPace } from "@/lib/format";
 import { getBestEfforts, getRuns } from "@/lib/queries";
@@ -105,7 +104,6 @@ export default async function RecordsPage() {
           </Link>
         }
       />
-      <AnalysisPoleStrip active="/records" />
 
       {/* ------------------------------------------------ Le niveau, en grand */}
       <section className="rise grid gap-12 border-y border-hair py-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">

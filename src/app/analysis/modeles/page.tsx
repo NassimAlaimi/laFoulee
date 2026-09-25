@@ -10,7 +10,7 @@ import { fmtDuration, fmtPace } from "@/lib/format";
 import { requireUserId } from "@/lib/auth";
 import { RIEGEL_DEFAULT } from "@/lib/prediction";
 import { genericLt2Hr } from "@/lib/thresholds";
-import { AnalysisHead, AnalysisPoleStrip, loadModeles, NotEnough } from "../_shared";
+import { AnalysisHead, loadModeles, NotEnough } from "../_shared";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +34,6 @@ export default async function ModelesPage() {
         title={t("modeles")}
         meta={t("modelesMeta")}
       />
-      <AnalysisPoleStrip active="/analysis/modeles" />
 
       {/* ------------------------------------------------ Ouverture */}
       <section className="rise">

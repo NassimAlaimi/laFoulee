@@ -35,6 +35,9 @@ import {
 } from "@/lib/fitness-model";
 import { prisma } from "@/lib/prisma";
 import { ZoneSplit } from "@/components/analysis/ZoneSplit";
+import { NudgeLine } from "@/components/home/NudgeLine";
+import { pickNudges } from "@/lib/nudges";
+import { RUN_TYPES } from "@/lib/strava";
 import { loadAerobicSplits, loadDetailedRuns, loadZoneContext } from "@/lib/zones-store";
 import { aerobicPaceSeries, aerobicSummary } from "@/lib/aerobic-pace";
 import { aerobicDecoupling } from "@/lib/cardio";
@@ -187,6 +190,44 @@ export default async function SummaryPage() {
   const records = personalRecords(efforts, runs);
   const profile = fitnessProfile(records, 365, now);
 
+  // Rappels contextuels : une fonctionnalité utile au bon moment.
+  const [nextRace, recentFeel, shoes, log7] = await Promise.all([
+    prisma.raceGoal.findFirst({
+      where: { userId, kind: "race", status: "upcoming", raceDate: { gte: new Date(now.getTime() - 86400000) } },
+      orderBy: [{ raceDate: "asc" }],
+      select: { id: true, name: true, raceDate: true, distance: true, racePlan: { select: { id: true } }, plans: { where: { status: "active" }, select: { id: true } } },
+    }),
+    prisma.activity.findMany({
+      where: { userId, type: { in: [...RUN_TYPES] } },
+      orderBy: { startDate: "desc" },
+      take: 5,
+      select: { id: true, feeling: true },
+    }),
+    prisma.gear.findMany({ where: { userId, retired: false }, select: { name: true, stravaDistance: true, retireAtKm: true } }),
+    prisma.dailyLog.count({ where: { userId, date: { gte: new Date(now.getTime() - 7 * 86400000) } } }),
+  ]);
+  const nudges = pickNudges({
+    now,
+    nextRace: nextRace
+      ? {
+          id: nextRace.id,
+          name: nextRace.name,
+          date: nextRace.raceDate,
+          distance: nextRace.distance,
+          hasRacePlan: Boolean(nextRace.racePlan),
+          hasPlan: nextRace.plans.length > 0,
+        }
+      : null,
+    recentRuns: recentFeel,
+    shoes: shoes.map((g) => ({ name: g.name, km: g.stravaDistance / 1000, retireAtKm: g.retireAtKm })),
+    logDaysLast7: log7,
+    logDaysEver: logDays,
+  }).map((n) =>
+    n.key === "recap"
+      ? { ...n, params: { month: new Date(now.getFullYear(), Number(n.params.month), 1).toLocaleDateString(locale, { month: "long" }) } }
+      : n
+  );
+
   // Zones : un seul modèle (lib/zones), temps passé réel (courbe > splits > moyenne).
   const zoneCtx = await loadZoneContext({ userId, now, records, vdot: profile.vdot, settings, runs });
   const maxHr = zoneCtx.maxHr ?? estimateMaxHr(runs, settings.birthYear);
@@ -318,6 +359,15 @@ export default async function SummaryPage() {
       {gettingStarted}
 
       <TodayHero userId={userId} firstname={user.firstname} runs={runs} now={now} form={form ? { tsb: form.tsb, zone: form.zone } : null} />
+      <NudgeLine
+        nudges={nudges.map((n) => ({
+          id: n.id,
+          href: n.href,
+          text: t(`nudges.${n.key}.text`, n.params),
+          cta: t(`nudges.${n.key}.cta`),
+        }))}
+        labels={{ dismiss: t("nudges.dismiss"), eyebrow: t("nudges.eyebrow") }}
+      />
 
       <TodayLog log={todayLog} />
 

@@ -8,7 +8,7 @@ import {
   INTERVAL_CLASS_LABEL,
   type IntervalClass,
 } from "@/lib/intervals";
-import { AnalysisHead, AnalysisPoleStrip, loadSeances } from "../_shared";
+import { AnalysisHead, loadSeances } from "../_shared";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +31,6 @@ export default async function SeancesPage() {
         title={t("seances")}
         meta={t("seancesMeta")}
       />
-      <AnalysisPoleStrip active="/analysis/seances" />
 
       {/* ------------------------------------------------ Ouverture */}
       <section className="rise">

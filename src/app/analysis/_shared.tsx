@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Hint, PageHead } from "@/components/ui/Layout";
-import { PoleStrip } from "@/components/ui/PoleStrip";
 import { athleteContext } from "@/lib/plan-store";
 import { prisma } from "@/lib/prisma";
 import { getBestEfforts, getSettings } from "@/lib/queries";
@@ -33,25 +32,6 @@ import { activityMarks } from "@/lib/race-marks";
 
 const FOCUS_DISTANCES = ["5k", "10k", "half", "marathon"];
 
-export const ANALYSIS_POLES = [
-  { href: "/analysis", labelKey: "poleForme" },
-  { href: "/analysis/modeles", labelKey: "poleModeles" },
-  { href: "/analysis/seances", labelKey: "poleSeances" },
-  { href: "/records", labelKey: "poleRecords" },
-  { href: "/calculator", labelKey: "poleCalculator" },
-];
-
-/** Bandeau de pôle : les pages du pôle Analyse, l'active soulignée. */
-export async function AnalysisPoleStrip({ active }: { active: string }) {
-  const t = await getTranslations("analysis");
-  return (
-    <PoleStrip
-      items={ANALYSIS_POLES.map((p) => ({ href: p.href, label: t(p.labelKey) }))}
-      active={active}
-    />
-  );
-}
-
 /** En-tête commun aux trois pages du pôle. */
 export async function AnalysisHead({ title, meta }: { title: string; meta: string }) {
   const t = await getTranslations("analysis");
@@ -64,7 +44,6 @@ export async function NotEnough({ title }: { title: string }) {
   return (
     <div className="space-y-6">
       <AnalysisHead title={title} meta={t("notEnoughMeta")} />
-      <AnalysisPoleStrip active="/analysis" />
       <Hint height={230}>
         <p>{t("notEnoughIntro")}</p>
         <ol className="mt-3 space-y-2">

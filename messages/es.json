@@ -86,7 +86,29 @@
     "search": "Buscar",
     "searchTitle": "Buscar, navegar, calcular · ⌘K",
     "mainNav": "Navegación principal",
-    "settings": "Ajustes"
+    "settings": "Ajustes",
+    "races": "Carreras",
+    "poleNav": "Páginas de la sección",
+    "pages": {
+      "today": "Hoy",
+      "log": "Diario del día",
+      "activities": "Actividades",
+      "plan": "Plan",
+      "workouts": "Sesiones",
+      "goals": "Objetivos",
+      "records": "Récords",
+      "calculator": "Predicciones y cálculos",
+      "forme": "Forma y carga",
+      "modeles": "Modelos y umbrales",
+      "seances": "Sesiones pasadas",
+      "corps": "Resumen",
+      "strength": "Fuerza",
+      "gear": "Material",
+      "plus": "Resumen",
+      "recap": "Resumen del periodo",
+      "lexique": "Glosario",
+      "settings": "Ajustes"
+    }
   },
   "settings": {
     "language": "Idioma",
@@ -664,6 +686,34 @@
       "nextRace": "Próxima carrera",
       "addGoal": "Añadir un objetivo →",
       "freshness": "Frescura"
+    },
+    "nudges": {
+      "eyebrow": "No lo olvides",
+      "dismiss": "Ignorar este recordatorio",
+      "racePlan": {
+        "text": "{name} en {days} días y aún sin plan de carrera: ritmos por tramo, avituallamiento, pulsera.",
+        "cta": "Preparar el plan de carrera"
+      },
+      "plan": {
+        "text": "{name} en {weeks} semanas: ningún plan de entrenamiento la prepara todavía.",
+        "cta": "Crear el plan"
+      },
+      "feeling": {
+        "text": "{n} de tus últimas salidas no tienen sensación anotada — es lo que permite adaptar el plan.",
+        "cta": "Anotar la última"
+      },
+      "gear": {
+        "text": "Tus {name} llevan {km} km: la amortiguación se agota, piensa en el relevo.",
+        "cta": "Ver el material"
+      },
+      "recap": {
+        "text": "El mes de {month} ha terminado: tu resumen te espera.",
+        "cta": "Leer el resumen"
+      },
+      "log": {
+        "text": "Nada en el diario desde hace una semana: sueño, fatiga y dolores afinan tus consejos.",
+        "cta": "Rellenar el diario"
+      }
     }
   },
   "tour": {

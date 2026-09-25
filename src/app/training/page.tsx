@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Empty, PageHead, Section } from "@/components/ui/Layout";
-import { PoleStrip } from "@/components/ui/PoleStrip";
 import { Bar } from "@/components/ui/Metric";
 import { CheckinForm } from "@/components/training/CheckinForm";
 import { ComplianceBand, ComplianceOverview } from "@/components/training/ComplianceBand";
@@ -155,14 +154,6 @@ export default async function TrainingPage() {
             </Link>
           </div>
         }
-      />
-      <PoleStrip
-        items={[
-          { href: "/training", label: t("polePlan") },
-          { href: "/workouts", label: t("poleSessions") },
-          { href: "/goals", label: t("poleGoals") },
-        ]}
-        active="/training"
       />
 
       {/* ------------------------------------------------ La semaine au tableau */}

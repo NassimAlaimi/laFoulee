@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Empty, PageHead, Section } from "@/components/ui/Layout";
-import { PoleStrip } from "@/components/ui/PoleStrip";
 import { PrintButton } from "@/components/PrintButton";
 import { fmtPace } from "@/lib/format";
 import { getBestEfforts, getRuns } from "@/lib/queries";
@@ -47,14 +46,6 @@ export default async function WorkoutsPage({
         kicker={t("kicker")}
         meta={t("meta")}
         action={<PrintButton />}
-      />
-      <PoleStrip
-        items={[
-          { href: "/training", label: t("polePlan") },
-          { href: "/workouts", label: t("poleSessions") },
-          { href: "/goals", label: t("poleGoals") },
-        ]}
-        active="/workouts"
       />
 
       {/* ------------------------------------------------ Allures de référence */}
