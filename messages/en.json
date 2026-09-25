@@ -617,7 +617,8 @@
       "intensityTitle": "Intensity distribution",
       "intensityNote": "Last 28 days, by time actually spent in each zone — not by the session's average HR.",
       "cEasyPace": "Easy-run pace",
-      "thinCompare": "Fewer than 4 runs in one of the periods: changes are hidden."
+      "thinCompare": "Fewer than 4 runs in one of the periods: changes are hidden.",
+      "calendarNote": "A year at a glance, then the week ahead"
     },
     "hero": {
       "night": "Good night",
@@ -1259,7 +1260,11 @@
     "startDate": "First week (Monday)",
     "calLegend": "volume",
     "calTitle": "Training calendar",
-    "weekAgo": "{n} week{s} ago"
+    "weekAgo": "{n} week{s} ago",
+    "calRest": "rest",
+    "calSessions": "{n} sessions",
+    "calRace": "race",
+    "calPlanned": "planned"
   },
   "analysis": {
     "title": "Fitness & load",

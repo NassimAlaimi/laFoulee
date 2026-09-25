@@ -159,7 +159,7 @@ export default async function SummaryPage() {
       status: "planned",
       plan: { userId, status: "active" },
     },
-    select: { date: true, distanceKm: true, durationMin: true, intensity: true, kind: true },
+    select: { date: true, distanceKm: true, durationMin: true, intensity: true, kind: true, title: true },
   });
   const series = formSeries({
     activities: runs,
@@ -420,8 +420,8 @@ export default async function SummaryPage() {
       )}
 
       <div className="mt-16 space-y-14">
-        <Section title={t("ui.calendar")} note={t("ui.last26")}>
-          <TrainingCalendar activities={runs} weeks={26} now={now} />
+        <Section title={t("ui.calendar")} note={t("ui.calendarNote")}>
+          <TrainingCalendar activities={runs} planned={planned} now={now} />
         </Section>
 
         <Section title={t("ui.weeklyVolume")} note={t("ui.last12")}>

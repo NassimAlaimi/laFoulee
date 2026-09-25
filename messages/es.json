@@ -617,7 +617,8 @@
       "intensityTitle": "Distribución de la intensidad",
       "intensityNote": "Últimos 28 días, según el tiempo realmente pasado en cada zona — no la FC media de la sesión.",
       "cEasyPace": "Ritmo de rodajes",
-      "thinCompare": "Menos de 4 salidas en uno de los periodos: no se muestran las variaciones."
+      "thinCompare": "Menos de 4 salidas en uno de los periodos: no se muestran las variaciones.",
+      "calendarNote": "Un año de un vistazo, y la semana que viene"
     },
     "hero": {
       "night": "Buenas noches",
@@ -1259,7 +1260,11 @@
     "startDate": "Primera semana (lunes)",
     "calLegend": "volumen",
     "calTitle": "Calendario de entrenamiento",
-    "weekAgo": "hace {n} semana{s}"
+    "weekAgo": "hace {n} semana{s}",
+    "calRest": "descanso",
+    "calSessions": "{n} sesiones",
+    "calRace": "carrera",
+    "calPlanned": "previsto"
   },
   "analysis": {
     "title": "Forma y carga",

@@ -617,7 +617,8 @@
       "intensityTitle": "Répartition de l'intensité",
       "intensityNote": "28 derniers jours, au temps réellement passé dans chaque zone — pas à la FC moyenne de la séance.",
       "cEasyPace": "Allure des footings",
-      "thinCompare": "Moins de 4 sorties sur une des périodes : les écarts ne sont pas affichés."
+      "thinCompare": "Moins de 4 sorties sur une des périodes : les écarts ne sont pas affichés.",
+      "calendarNote": "Une année d'un coup d'œil, puis la semaine à venir"
     },
     "hero": {
       "night": "Bonne nuit",
@@ -1259,7 +1260,11 @@
     "startDate": "Première semaine (lundi)",
     "calLegend": "volume",
     "calTitle": "Calendrier d'entraînement",
-    "weekAgo": "il y a {n} semaine{s}"
+    "weekAgo": "il y a {n} semaine{s}",
+    "calRest": "repos",
+    "calSessions": "{n} séances",
+    "calRace": "course",
+    "calPlanned": "prévu"
   },
   "analysis": {
     "title": "Forme & charge",
