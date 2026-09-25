@@ -7,9 +7,9 @@ import { useState } from "react";
 type Brief = { content: string; usedLlm: boolean; createdAt: string };
 
 /**
- * Le brief de l'agent : bilan, semaine à venir, objectif, conseil. Calculé
- * par règles (aucun LLM requis) ; un LLM le met en forme si une clé est
- * configurée. Bouton « Générer » — l'agent ne fait que proposer.
+ * Le brief de la semaine : un mot du coach (interprétation, tendance, conseil),
+ * pas une redite des chiffres. Calculé par règles, reformulé par un LLM si une
+ * clé est configurée. Rendu en paragraphes — le premier est le « chapeau ».
  */
 export function BriefCard({ latest }: { latest: Brief | null }) {
   const t = useTranslations("brief");
@@ -28,20 +28,25 @@ export function BriefCard({ latest }: { latest: Brief | null }) {
     }
   };
 
+  const paras = (brief?.content ?? "").split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="max-w-2xl text-[0.8125rem] leading-relaxed text-ink2">{t("note")}</p>
         <button type="button" className="btn-outline btn-sm" onClick={generate} disabled={busy}>
           {brief ? t("regenerate") : t("generate")}
         </button>
       </div>
-      {brief ? (
-        <div className="whitespace-pre-wrap border-l-2 border-clay pl-4 text-[0.9375rem] leading-relaxed">
-          {brief.content}
-          <div className="mt-3 text-micro text-ink3">
-            {brief.usedLlm ? t("viaLlm") : t("viaRules")}
-          </div>
+
+      {paras.length > 0 ? (
+        <div className="max-w-2xl space-y-3 border-l-2 border-clay pl-5">
+          {paras.map((p, i) => (
+            <p key={i} className={i === 0 ? "text-[1.05rem] font-medium leading-snug tracking-[-0.01em]" : "text-[0.9375rem] leading-relaxed text-ink2"}>
+              {p}
+            </p>
+          ))}
+          <div className="pt-1 text-micro text-ink3">{brief!.usedLlm ? t("viaLlm") : t("viaRules")}</div>
         </div>
       ) : (
         <p className="text-[0.8125rem] text-ink3">{t("empty")}</p>

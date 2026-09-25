@@ -2083,7 +2083,7 @@
     "conflict": "Dos carreras A están demasiado cerca para dos bloques completos: la segunda queda en mantenimiento."
   },
   "brief": {
-    "note": "El agente solo recibe agregados (km, forma, carga): nunca tus recorridos ni tus notas.",
+    "note": "Una nota del entrenador, regenerada a la carta: lo que importa esta semana, la tendencia y el consejo. El agente solo recibe agregados, nunca tus recorridos ni tus notas.",
     "generate": "Generar mi resumen",
     "regenerate": "Regenerar",
     "empty": "Aún no hay resumen.",

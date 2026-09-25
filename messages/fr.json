@@ -2083,7 +2083,7 @@
     "conflict": "Deux courses A sont trop proches pour deux blocs complets : la seconde est en maintien."
   },
   "brief": {
-    "note": "L'agent ne reçoit que des agrégats (km, forme, charge) : jamais tes tracés ni tes notes.",
+    "note": "Un mot du coach, régénéré à la demande : ce qui compte cette semaine, la tendance, et le conseil à retenir. L'agent ne reçoit que des agrégats, jamais tes tracés ni tes notes.",
     "generate": "Générer mon brief",
     "regenerate": "Régénérer",
     "empty": "Aucun brief pour l'instant.",

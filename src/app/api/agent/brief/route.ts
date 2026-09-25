@@ -4,7 +4,7 @@ import { authed } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { athleteContext } from "@/lib/plan-store";
 import { periodStats } from "@/lib/stats";
-import { composeBrief, BRIEF_SYSTEM } from "@/lib/agent";
+import { composeBrief, sanitizeBrief, BRIEF_SYSTEM } from "@/lib/agent";
 import { isLlmConfigured, provider } from "@/lib/llm";
 import { adviceOfTheDay } from "@/lib/coach";
 
@@ -45,6 +45,10 @@ export async function POST() {
 
   const runs = ctx.runs;
   const week = periodStats(runs.filter((r) => (now.getTime() - r.startDate.getTime()) <= 7 * 86400000));
+  const prevWeek = periodStats(runs.filter((r) => {
+    const d = now.getTime() - r.startDate.getTime();
+    return d > 7 * 86400000 && d <= 14 * 86400000;
+  }));
   const easy = runs.filter((r) => (now.getTime() - r.startDate.getTime()) <= 28 * 86400000 && r.averageSpeed && r.averageHr);
   const easyShare = easy.length >= 4 ? Math.round((easy.filter((r) => (r.averageHr ?? 0) < 0.85 * (settings?.maxHr ?? 175)).length / easy.length) * 100) / 100 : 0.8;
   const advice = adviceOfTheDay({
@@ -60,7 +64,7 @@ export async function POST() {
   const bestRun = [...runs].sort((a, b) => b.distance - a.distance)[0] ?? null;
   const briefCtx = {
     week: { km: Math.round(week.km), sessions: week.sessions, goalKm: Math.round(settings?.weeklyKmGoal ?? 0), easyShare },
-    form: null,
+    prevKm: Math.round(prevWeek.km),
     acwr: ctx.acwr,
     nextWeek: {
       km: Math.round(planned.reduce((a, s) => a + s.distanceKm, 0)),
@@ -86,7 +90,7 @@ export async function POST() {
         { maxTokens: 600 }
       );
       if (llm && llm.trim().length > 40) {
-        content = llm.trim();
+        content = sanitizeBrief(llm);
         usedLlm = true;
       }
     } catch {

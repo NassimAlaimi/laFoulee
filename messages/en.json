@@ -2083,7 +2083,7 @@
     "conflict": "Two A races are too close for two full blocks: the second stays in maintenance."
   },
   "brief": {
-    "note": "The agent only receives aggregates (km, form, load): never your tracks or notes.",
+    "note": "A coach's note, regenerated on demand: what matters this week, the trend, and the takeaway. The agent only receives aggregates, never your tracks or notes.",
     "generate": "Generate my brief",
     "regenerate": "Regenerate",
     "empty": "No brief yet.",
