@@ -1758,7 +1758,9 @@
     "vma": "VAM estimada",
     "vmaPace": "Ritmo VAM",
     "distance": "Distancia",
-    "intensity": "Intensidad"
+    "intensity": "Intensidad",
+    "backyardTitle": "Backyard ultra",
+    "backyardNote": "Una vuelta de 6,706 km cada hora, el último en pie. Ajusta la parte de marcha para quedar bajo la hora."
   },
   "settingsPage": {
     "kick": "Tu cuenta"
@@ -2082,5 +2084,22 @@
     "empty": "Aún no hay resumen.",
     "viaLlm": "redactado por el agente (LLM)",
     "viaRules": "calculado por las reglas de la app"
+  },
+  "backyard": {
+    "runPace": "Ritmo de carrera",
+    "walkPace": "Ritmo de marcha",
+    "loops": "Vueltas objetivo",
+    "mix": "Correr / caminar",
+    "runShare": "{p} % corriendo",
+    "total": "distancia total",
+    "perLoop": "tiempo de vuelta",
+    "loop": "Vuelta",
+    "km": "km",
+    "loopTime": "Tiempo",
+    "rest": "Descanso",
+    "cumHours": "Acumulado",
+    "tooSlow": "Vuelta por encima de la hora: demasiado lenta — camina menos o corre más rápido.",
+    "sleep": "{h} h de sueño prestadas más allá de 24 h.",
+    "weekly": "Entrenamiento: pico ~{peak} h/semana de pie, base ~{base} h, tirada larga ~{long} h."
   }
 }

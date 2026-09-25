@@ -3,6 +3,8 @@ import { getTranslations } from "next-intl/server";
 import { getBestEfforts, getRuns } from "@/lib/queries";
 import { fitnessProfile, personalRecords } from "@/lib/records";
 import { CalculatorClient } from "./CalculatorClient";
+import { BackyardCalc } from "@/components/calculator/BackyardCalc";
+import { Section } from "@/components/ui/Layout";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +34,11 @@ export default async function CalculatorPage() {
         initialDistance={initialDistance}
         initialSeconds={initialSeconds}
       />
+      <div className="mt-16">
+        <Section title={t("backyardTitle")} note={t("backyardNote")}>
+          <BackyardCalc />
+        </Section>
+      </div>
     </>
   );
 }

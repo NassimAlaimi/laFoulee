@@ -1758,7 +1758,9 @@
     "vma": "VMA estimée",
     "vmaPace": "Allure VMA",
     "distance": "Distance",
-    "intensity": "Intensité"
+    "intensity": "Intensité",
+    "backyardTitle": "Backyard ultra",
+    "backyardNote": "Une boucle de 6,706 km toutes les heures, dernier debout. Règle la part de marche pour rester sous l'heure."
   },
   "settingsPage": {
     "kick": "Ton compte"
@@ -2082,5 +2084,22 @@
     "empty": "Aucun brief pour l'instant.",
     "viaLlm": "rédigé par l'agent (LLM)",
     "viaRules": "calculé par les règles de l'app"
+  },
+  "backyard": {
+    "runPace": "Allure de course",
+    "walkPace": "Allure de marche",
+    "loops": "Boucles visées",
+    "mix": "Course / marche",
+    "runShare": "{p} % en course",
+    "total": "distance totale",
+    "perLoop": "temps de boucle",
+    "loop": "Boucle",
+    "km": "km",
+    "loopTime": "Temps",
+    "rest": "Repos",
+    "cumHours": "Cumul",
+    "tooSlow": "Boucle au-dessus de l'heure : trop lent, il faut marcher moins ou courir plus vite.",
+    "sleep": "{h} h de sommeil empruntées au-delà de 24 h.",
+    "weekly": "Entraînement : pic ~{peak} h/semaine sur pieds, base ~{base} h, sortie longue ~{long} h."
   }
 }
