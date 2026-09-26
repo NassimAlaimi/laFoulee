@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { syncErrorKey } from "@/lib/sync-errors";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fmtDuration, fmtPace } from "@/lib/format";
@@ -88,6 +89,7 @@ const shortDate = (iso: string, locale: string) =>
 export function CommandPalette() {
   const router = useRouter();
   const t = useTranslations("palette");
+  const tErr = useTranslations("syncErrors");
   const locale = useLocale();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -203,7 +205,7 @@ export function CommandPalette() {
           setStatus(
             data?.ok
               ? t("syncResult", { n: data.imported, m: data.updated })
-              : t("syncFail", { error: data?.error ?? "network" })
+              : t("syncFail", { error: tErr(syncErrorKey(data?.error)) })
           );
           router.refresh();
           loadIndex();

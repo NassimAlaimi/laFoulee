@@ -86,7 +86,9 @@ export type WeeklySummary = {
 export function weeklyVolume(
   activities: ActivityLike[],
   weeks = 12,
-  now = new Date()
+  now = new Date(),
+  /** Langue des étiquettes de dates (fr-FR, en, es…). */
+  locale = "fr-FR"
 ): WeeklySummary[] {
   const currentMonday = startOfWeek(now);
   const buckets = new Map<string, ActivityLike[]>();
@@ -111,7 +113,7 @@ export function weeklyVolume(
 
     return {
       weekStart: mondays.get(key)!,
-      label: shortWeekLabel(mondays.get(key)!),
+      label: shortWeekLabel(mondays.get(key)!, locale),
       km: round(distance / 1000, 1),
       elevation: Math.round(sum(acts, (a) => a.totalElevation)),
       timeHours: round(time / 3600, 1),
@@ -125,8 +127,8 @@ export function weeklyVolume(
   });
 }
 
-function shortWeekLabel(monday: Date): string {
-  return monday.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
+function shortWeekLabel(monday: Date, locale: string): string {
+  return monday.toLocaleDateString(locale, { day: "2-digit", month: "short" });
 }
 
 // ---------------------------------------------------------------- Charge
@@ -180,7 +182,8 @@ export type LoadPoint = {
 export function acwrSeries(
   activities: ActivityLike[],
   days = 90,
-  now = new Date()
+  now = new Date(),
+  locale = "fr-FR"
 ): LoadPoint[] {
   const daily = new Map<string, number>();
   for (const a of activities) {
@@ -213,7 +216,7 @@ export function acwrSeries(
 
     points.push({
       date: day,
-      label: day.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }),
+      label: day.toLocaleDateString(locale, { day: "2-digit", month: "short" }),
       acute: round(acute, 1),
       chronic: round(chronic, 1),
       ratio: round(ratio, 2),
@@ -339,7 +342,7 @@ export function paceHrScatter(activities: ActivityLike[]) {
 }
 
 /** Série de progression : allure moyenne glissante par mois. */
-export function monthlyProgression(activities: ActivityLike[], months = 12, now = new Date()) {
+export function monthlyProgression(activities: ActivityLike[], months = 12, now = new Date(), locale = "fr-FR") {
   const buckets = new Map<string, ActivityLike[]>();
   // Clé de mois en heure LOCALE : via toISOString (UTC), le 1er du mois à
   // minuit à Paris tombait la veille, et tout l'axe glissait d'un mois.
@@ -360,7 +363,7 @@ export function monthlyProgression(activities: ActivityLike[], months = 12, now 
     const [y, m] = key.split("-");
     return {
       month: key,
-      label: new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("fr-FR", {
+      label: new Date(Number(y), Number(m) - 1, 1).toLocaleDateString(locale, {
         month: "short",
         year: "2-digit",
       }),

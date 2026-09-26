@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { currentUser, inviteCode } from "@/lib/auth";
 import { safeNextPath } from "@/lib/locale";
+import { authErrorCode } from "@/lib/auth-errors";
 import { isStravaConfigured } from "@/lib/strava";
 import { ConnectWithStrava } from "@/components/StravaBrand";
 
@@ -19,22 +20,7 @@ const LANGUAGES = [
   { code: "es", label: "Español" },
 ] as const;
 
-/** Erreurs émises par nos propres formulaires : traduites. Les autres
- *  (retour OAuth Strava) sont affichées telles quelles. */
-const KNOWN_ERRORS = new Set([
-  "invalid",
-  "credentials",
-  "throttled",
-  "email-taken",
-  "email-invalid",
-  "password-short",
-  "password-long",
-  "name-missing",
-  "not-allowed",
-  "bad-invite",
-  "origin",
-  "consent",
-]);
+
 
 /**
  * Point d'entrée de l'instance.
@@ -66,11 +52,9 @@ export default async function LoginPage({
   const modeHref = (m: "signin" | "signup") =>
     `/login?${new URLSearchParams({ mode: m, ...(nextPath ? { next: nextPath } : {}) })}`;
 
-  const errorText = error
-    ? KNOWN_ERRORS.has(error)
-      ? t(`errors.${error}` as "errors.invalid")
-      : decodeURIComponent(error)
-    : null;
+  // Jamais le texte brut de l'URL : seulement un code connu, traduit.
+  const code = authErrorCode(error);
+  const errorText = code ? t(`errors.${code}` as "errors.invalid") : null;
 
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center py-6">

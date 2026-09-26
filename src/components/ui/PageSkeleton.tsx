@@ -5,13 +5,16 @@
  * immédiat pendant que le serveur prépare les chiffres.
  */
 
+import { useTranslations } from "next-intl";
+
 export function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`rounded-[6px] bg-sunken ${className}`} aria-hidden />;
 }
 
 export function PageSkeleton() {
+  const t = useTranslations("common");
   return (
-    <div className="space-y-6" aria-busy="true" aria-label="Chargement des données">
+    <div className="space-y-6" aria-busy="true" aria-label={t("loading")}>
       <div className="space-y-3">
         <Skeleton className="h-7 w-52" />
         <Skeleton className="h-4 w-80 max-w-full" />

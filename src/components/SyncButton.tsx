@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { syncErrorKey } from "@/lib/sync-errors";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 
@@ -13,6 +14,7 @@ export function SyncButton({
 }) {
   const router = useRouter();
   const t = useTranslations("account");
+  const tErr = useTranslations("syncErrors");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
   const [, startTransition] = useTransition();
@@ -31,9 +33,8 @@ export function SyncButton({
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        // Le serveur renvoie déjà un message sûr (jamais la cause réelle).
-        if (typeof data?.error === "string") text = data.error;
-        else text = t("syncFail");
+        // Le serveur renvoie un code (jamais la cause réelle), traduit ici.
+        text = tErr(syncErrorKey(data?.error));
         setResult({ ok: false, text });
         return;
       }

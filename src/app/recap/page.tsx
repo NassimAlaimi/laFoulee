@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { privatePolyline } from "@/lib/polyline";
 import { getPrivacyZone } from "@/lib/queries";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Empty } from "@/components/ui/Layout";
 import { RouteGlyph } from "@/components/route/RouteGlyph";
 import { PrintButton } from "@/components/PrintButton";
@@ -13,10 +13,10 @@ import { tonnage } from "@/lib/strength";
 import { yearHeatmap } from "@/lib/heatmap";
 import { ConsistencyHeatmap } from "@/components/analysis/ConsistencyHeatmap";
 import {
-  DAY_NAMES,
   bestWeek,
-  distanceComparison,
-  elevationComparison,
+  distanceComparisonParts,
+  elevationComparisonParts,
+  type Comparison,
   longestDayStreak,
   monthlyKm,
   whenYouRun,
@@ -24,8 +24,6 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
-const MONTHS_LONG = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
 
 /**
  * Rétrospective — une saison racontée, pas pilotée. Pensée comme une double
@@ -34,6 +32,18 @@ const MONTHS_LONG = ["janvier", "février", "mars", "avril", "mai", "juin", "jui
  */
 export default async function RecapPage({ searchParams }: { searchParams: Promise<{ y?: string; m?: string }> }) {
   const t = await getTranslations("recap");
+  const locale = await getLocale();
+  const nf = (n: number, d = 0) => n.toLocaleString(locale, { maximumFractionDigits: d, minimumFractionDigits: d });
+  const MONTHS = Array.from({ length: 12 }, (_, i) => new Date(2024, i, 1).toLocaleDateString(locale, { month: "short" }));
+  const MONTHS_LONG = Array.from({ length: 12 }, (_, i) => new Date(2024, i, 1).toLocaleDateString(locale, { month: "long" }));
+  // Lundi = 0 (1er janvier 2024 était un lundi).
+  const DAY_NAMES = Array.from({ length: 7 }, (_, i) => new Date(2024, 0, 1 + i).toLocaleDateString(locale, { weekday: "long" }));
+  const cmp = (c: Comparison | null) =>
+    c
+      ? c.equivalent
+        ? t("cmpEquivalent", { ref: t(`refs.${c.ref}.of`) })
+        : t("cmpTimes", { ratio: nf(c.ratio, 1), ref: t(`refs.${c.ref}.the`) })
+      : null;
   const userId = await requireUserId();
   const params = await searchParams;
   const now = new Date();
@@ -80,7 +90,7 @@ export default async function RecapPage({ searchParams }: { searchParams: Promis
   const when = whenYouRun(runs);
   const months = month == null ? monthlyKm(runs, year) : null;
   const bestMonth = months ? months.indexOf(Math.max(...months)) : -1;
-  const heatmap = month == null ? yearHeatmap(runs, year) : null;
+  const heatmap = month == null ? yearHeatmap(runs, year, locale) : null;
 
   const [records, strength] = await Promise.all([
     prisma.bestEffort.findMany({
@@ -114,15 +124,15 @@ export default async function RecapPage({ searchParams }: { searchParams: Promis
     (a, b) => a - b
   );
 
-  const cmpKm = distanceComparison(km);
-  const cmpElev = elevationComparison(elevation);
+  const cmpKm = cmp(distanceComparisonParts(km));
+  const cmpElev = cmp(elevationComparisonParts(elevation));
   const maxCell = Math.max(1, ...when.grid.flat());
 
   return (
     <article className="recap">
       {/* ------------------------------------------------ Sélecteur */}
-      <nav className="print:hidden mb-10 flex flex-wrap items-center gap-x-5 gap-y-3 border-b border-hair pb-4" aria-label="Période">
-        <span className="eyebrow">Rétrospective</span>
+      <nav className="print:hidden mb-10 flex flex-wrap items-center gap-x-5 gap-y-3 border-b border-hair pb-4" aria-label={t("period")}>
+        <span className="eyebrow">{t("title")}</span>
         <div className="flex flex-wrap gap-1">
           {years.map((y) => (
             <Link
@@ -162,16 +172,16 @@ export default async function RecapPage({ searchParams }: { searchParams: Promis
           <header className="rise">
             <div className="text-micro font-medium uppercase tracking-[0.18em] text-clay">
               {periodLabel}
-              {ongoing && " · en cours"}
+              {ongoing && ` · ${t("ongoing")}`}
             </div>
             <div className="mt-2 flex items-baseline gap-3">
               <span className="font-semibold leading-[0.82] tracking-[-0.06em] tabular-nums text-[clamp(5.5rem,19vw,15rem)]">
-                {Math.round(km).toLocaleString("fr-FR")}
+                {nf(Math.round(km))}
               </span>
               <span className="text-[clamp(1.5rem,4vw,3rem)] font-medium tracking-tight text-ink3">km</span>
             </div>
             <p className="mt-6 max-w-3xl text-[clamp(1.2rem,2.4vw,1.75rem)] font-medium leading-snug tracking-[-0.01em]">
-              courus en {runs.length} sortie{runs.length > 1 ? "s" : ""}
+              {t("ranIn", { n: runs.length })}
               {cmpKm && (
                 <>
                   {" "}
@@ -184,7 +194,7 @@ export default async function RecapPage({ searchParams }: { searchParams: Promis
 
           <div className="mt-12 grid grid-cols-2 gap-y-8 border-y border-hair py-8 md:grid-cols-4">
             <Fig value={fmtHours(hours)} label={t("moving")} />
-            <Fig value={`${Math.round(elevation).toLocaleString("fr-FR")} m`} label={cmpElev ? t("elevGainCmp", { cmp: cmpElev }) : t("elevGain")} />
+            <Fig value={`${nf(Math.round(elevation))} m`} label={cmpElev ? t("elevGainCmp", { cmp: cmpElev }) : t("elevGain")} />
             <Fig value={String(activeDays)} label={t("runDays", { s: activeDays > 1 ? "s" : "" })} />
             <Fig value={fmtPace(pacePerKm(km * 1000, hours * 3600))} label={t("avgPace")} />
           </div>
@@ -194,14 +204,14 @@ export default async function RecapPage({ searchParams }: { searchParams: Promis
             <h2 className="text-[clamp(1.5rem,3vw,2.25rem)] font-semibold tracking-[-0.02em]">
               {month != null ? t("yourMonth") : t("yourYear")} · {t("inTraits", { n: runs.length })}
             </h2>
-            <p className="mt-2 text-[0.9375rem] text-ink2">Chaque sortie, dans l&apos;ordre. Les courses sont en terre cuite.</p>
+            <p className="mt-2 text-[0.9375rem] text-ink2">{t("traitsNote")}</p>
             <div className="mt-8 grid grid-cols-6 gap-x-2 gap-y-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12">
               {runs.map((r, i) => (
                 <Link
                   key={r.id}
                   href={`/activities/${r.id}`}
                   prefetch={false}
-                  title={`${fmtDateShort(r.startDate)} · ${(r.distance / 1000).toFixed(1)} km`}
+                  title={`${fmtDateShort(r.startDate, locale)} · ${(r.distance / 1000).toFixed(1)} km`}
                   className={`rise flex aspect-square items-center justify-center transition-colors hover:text-clay ${r.isRace ? "text-clay" : "text-ink"}`}
                   style={{ animationDelay: `${Math.min(i, 60) * 15}ms` }}
                 >
@@ -214,12 +224,11 @@ export default async function RecapPage({ searchParams }: { searchParams: Promis
           {heatmap && (
             <section className="mt-16">
               <h2 className="text-[clamp(1.5rem,3vw,2.25rem)] font-semibold tracking-[-0.02em]">
-                Toute l&apos;année d&apos;un coup d&apos;œil
+                {t("yearGlance")}
               </h2>
               <p className="mt-2 text-[0.9375rem] text-ink2">
-                Chaque carré est un jour de {year} — plus il est foncé, plus tu as couru.{" "}
-                {Math.round(heatmap.activeRate * 100)} % des semaines avec au moins une sortie
-                {heatmap.bestStreak > 1 && <> · meilleure série {heatmap.bestStreak} semaines d&apos;affilée</>}.
+                {t("yearGlanceNote", { year, pct: Math.round(heatmap.activeRate * 100) })}
+                {heatmap.bestStreak > 1 && ` · ${t("bestWeekStreak", { n: heatmap.bestStreak })}`}.
               </p>
               <div className="mt-8">
                 <ConsistencyHeatmap grid={heatmap} />
@@ -231,9 +240,13 @@ export default async function RecapPage({ searchParams }: { searchParams: Promis
             {/* -------------------------------------------- Mois par mois */}
             {months ? (
               <section>
-                <h3 className="eyebrow">Mois par mois</h3>
+                <h3 className="eyebrow">{t("monthByMonth")}</h3>
                 <p className="mt-2 text-[0.9375rem]">
-                  Meilleur mois : <span className="font-medium">{MONTHS_LONG[bestMonth]}</span>, {Math.round(months[bestMonth])} km.
+                  {t.rich("bestMonth", {
+                    month: MONTHS_LONG[bestMonth],
+                    km: Math.round(months[bestMonth]),
+                    b: (c) => <span className="font-medium">{c}</span>,
+                  })}
                 </p>
                 <div className="mt-6 flex h-[180px] items-end gap-1.5">
                   {months.map((v, i) => {
@@ -261,10 +274,10 @@ export default async function RecapPage({ searchParams }: { searchParams: Promis
               </section>
             ) : (
               <section>
-                <h3 className="eyebrow">Semaine après semaine</h3>
+                <h3 className="eyebrow">{t("weekByWeek")}</h3>
                 {week && (
                   <p className="mt-2 text-[0.9375rem]">
-                    Meilleure semaine : celle du {fmtDateShort(week.start)}, {Math.round(week.km)} km.
+                    {t("bestWeek", { date: fmtDateShort(week.start, locale), km: Math.round(week.km) })}
                   </p>
                 )}
               </section>
@@ -272,15 +285,17 @@ export default async function RecapPage({ searchParams }: { searchParams: Promis
 
             {/* -------------------------------------------- Quand */}
             <section>
-              <h3 className="eyebrow">Quand tu cours</h3>
+              <h3 className="eyebrow">{t("whenYouRun")}</h3>
               <p className="mt-2 text-[0.9375rem]">
-                {when.favoriteSlot != null && (
-                  <>
-                    {slotPersona(when.favoriteSlot)} : <span className="font-medium">{Math.round(when.share * 100)} %</span> de
-                    tes sorties entre {when.slots[when.favoriteSlot].replace("–", " et ")}. Jour préféré : le{" "}
-                    <span className="font-medium">{DAY_NAMES[when.favoriteDay!]}</span>.
-                  </>
-                )}
+                {when.favoriteSlot != null &&
+                  t.rich("whenSentence", {
+                    persona: t(`persona.${when.favoriteSlot}`),
+                    pct: Math.round(when.share * 100),
+                    from: when.slots[when.favoriteSlot].split("–")[0],
+                    to: when.slots[when.favoriteSlot].split("–")[1],
+                    day: DAY_NAMES[when.favoriteDay!],
+                    b: (c) => <span className="font-medium">{c}</span>,
+                  })}
               </p>
               <div className="mt-6 grid grid-cols-[70px_repeat(6,minmax(0,1fr))] items-center gap-y-1.5">
                 <span />
@@ -298,14 +313,14 @@ export default async function RecapPage({ searchParams }: { searchParams: Promis
 
           {/* ------------------------------------------------ Moments */}
           <section className="mt-16">
-            <h2 className="text-[clamp(1.5rem,3vw,2.25rem)] font-semibold tracking-[-0.02em]">Les moments</h2>
+            <h2 className="text-[clamp(1.5rem,3vw,2.25rem)] font-semibold tracking-[-0.02em]">{t("moments")}</h2>
             <div className="mt-8 grid gap-px overflow-hidden rounded-card border border-hair bg-hair sm:grid-cols-2 lg:grid-cols-3">
               {longest && (
                 <Moment
                   href={`/activities/${longest.id}`}
                   label={t("longest")}
                   value={`${(longest.distance / 1000).toFixed(1)} km`}
-                  note={`${fmtDate(longest.startDate)} · ${fmtDuration(longest.movingTime)}`}
+                  note={`${fmtDate(longest.startDate, locale)} · ${fmtDuration(longest.movingTime)}`}
                   polyline={longest.polyline}
                 />
               )}
@@ -314,7 +329,7 @@ export default async function RecapPage({ searchParams }: { searchParams: Promis
                   href={`/activities/${fastest.id}`}
                   label={t("fastest")}
                   value={fmtPace(pacePerKm(fastest.distance, fastest.movingTime))}
-                  note={`${fmtDate(fastest.startDate)} · ${(fastest.distance / 1000).toFixed(1)} km`}
+                  note={`${fmtDate(fastest.startDate, locale)} · ${(fastest.distance / 1000).toFixed(1)} km`}
                   polyline={fastest.polyline}
                 />
               )}
@@ -323,24 +338,24 @@ export default async function RecapPage({ searchParams }: { searchParams: Promis
                   href={`/activities/${highest.id}`}
                   label={t("highest")}
                   value={`${Math.round(highest.totalElevation)} m D+`}
-                  note={`${fmtDate(highest.startDate)} · ${(highest.distance / 1000).toFixed(1)} km`}
+                  note={`${fmtDate(highest.startDate, locale)} · ${(highest.distance / 1000).toFixed(1)} km`}
                   polyline={highest.polyline}
                 />
               )}
               {week && (
-                <Moment label={t("biggestWeek")} value={`${Math.round(week.km)} km`} note={t("weekOf", { date: fmtDate(week.start) })} />
+                <Moment label={t("biggestWeek")} value={`${Math.round(week.km)} km`} note={t("weekOf", { date: fmtDate(week.start, locale) })} />
               )}
               <Moment
                 label={t("longestStreak")}
-                value={`${streak.days} jour${streak.days > 1 ? "s" : ""}`}
-                note={streak.end && streak.days > 1 ? `d'affilée, jusqu'au ${fmtDate(streak.end)}` : "de course d'affilée"}
+                value={t("days", { n: streak.days })}
+                note={streak.end && streak.days > 1 ? t("streakUntil", { date: fmtDate(streak.end, locale) }) : t("streakRunning")}
               />
               {strength.length > 0 ? (
                 <Moment
                   href="/strength"
                   label={t("strengthSide")}
-                  value={`${strength.length} séance${strength.length > 1 ? "s" : ""}`}
-                  note={`${Math.round(strengthTonnage).toLocaleString("fr-FR")} kg soulevés`}
+                  value={t("sessions", { n: strength.length })}
+                  note={t("lifted", { kg: nf(Math.round(strengthTonnage)) })}
                 />
               ) : (
                 <Moment label={t("avgTime")} value={fmtDuration((hours * 3600) / runs.length)} note={t("avgKm", { km: (km / runs.length).toFixed(1) })} />
@@ -351,7 +366,7 @@ export default async function RecapPage({ searchParams }: { searchParams: Promis
           {/* ------------------------------------------------ Records */}
           {recordRows.length > 0 && (
             <section className="mt-16">
-              <h2 className="text-[clamp(1.5rem,3vw,2.25rem)] font-semibold tracking-[-0.02em]">Records tombés</h2>
+              <h2 className="text-[clamp(1.5rem,3vw,2.25rem)] font-semibold tracking-[-0.02em]">{t("recordsFell")}</h2>
               <div className="mt-6 grid gap-x-10 sm:grid-cols-2 lg:grid-cols-3">
                 {recordRows.map(({ best: r, count }) => (
                   <Link
@@ -361,10 +376,10 @@ export default async function RecapPage({ searchParams }: { searchParams: Promis
                   >
                     <span className="text-[0.9375rem]">
                       {r.name}
-                      {count > 1 && <span className="ml-2 text-micro text-clay">battu {count} fois</span>}
+                      {count > 1 && <span className="ml-2 text-micro text-clay">{t("beaten", { n: count })}</span>}
                     </span>
                     <span className="flex items-baseline gap-3">
-                      <span className="text-micro text-ink3">{fmtDateShort(r.startDate)}</span>
+                      <span className="text-micro text-ink3">{fmtDateShort(r.startDate, locale)}</span>
                       <span className="font-mono text-[0.9375rem] font-medium group-hover:text-clay">{fmtDuration(r.movingTime)}</span>
                     </span>
                   </Link>
@@ -381,7 +396,7 @@ export default async function RecapPage({ searchParams }: { searchParams: Promis
               Foulée · {periodLabel}
             </span>
             <span>
-              arrêté au {fmtDate(ongoing ? now : new Date(end.getTime() - 1))}
+              {t("stoppedAt", { date: fmtDate(ongoing ? now : new Date(end.getTime() - 1), locale) })}
             </span>
           </footer>
         </>
@@ -394,10 +409,6 @@ function fmtHours(h: number): string {
   const whole = Math.floor(h);
   const min = Math.round((h - whole) * 60);
   return `${whole} h ${String(min).padStart(2, "0")}`;
-}
-
-function slotPersona(slot: number): string {
-  return ["Lève-tôt", "Coureur du matin", "Coureur de midi", "Coureur de l'après-midi", "Coureur du soir", "Oiseau de nuit"][slot];
 }
 
 function Fig({ value, label }: { value: string; label: string }) {

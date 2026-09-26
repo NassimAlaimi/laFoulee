@@ -25,7 +25,7 @@ export function DeleteRacePlanButton({ goalId }: { goalId: string }) {
   if (!armed) {
     return (
       <button type="button" className="btn-quiet text-ink3" onClick={() => setArmed(true)}>
-        Supprimer le plan (pour changer de parcours)
+        {t("deletePlan")}
       </button>
     );
   }

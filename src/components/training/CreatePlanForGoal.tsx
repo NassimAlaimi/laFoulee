@@ -70,7 +70,7 @@ export function CreatePlanForGoal({
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="field-label" htmlFor="focus">
-            Orientation des séances
+            {t("orientation")}
           </label>
           <select
             id="focus"
@@ -89,7 +89,7 @@ export function CreatePlanForGoal({
         </div>
         <div>
           <label className="field-label" htmlFor="lrd2">
-            Jour de sortie longue
+            {t("longRunDay")}
           </label>
           <select
             id="lrd2"
@@ -113,7 +113,7 @@ export function CreatePlanForGoal({
           {busy ? t("generating") : t("generateForRace")}
         </button>
         <span className="text-micro text-ink3">
-          Sorties par semaine, volumes et allures déduits de ton historique.
+          {t("orientationNote")}
         </span>
       </div>
     </div>

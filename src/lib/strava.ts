@@ -111,7 +111,7 @@ const refreshing = new Map<string, Promise<string>>();
 export async function getValidAccessToken(userId: string): Promise<string> {
   const account = await prisma.stravaAccount.findUnique({ where: { userId } });
   if (!account) {
-    throw new UserFacingError("Aucun compte Strava connecté. Va sur /settings pour te connecter.");
+    throw new UserFacingError("Aucun compte Strava connecté. Va sur /settings pour te connecter.", "no-account");
   }
 
   const key = secretKeyFromEnv();
@@ -156,7 +156,7 @@ async function refreshAccessToken(
       return decryptIfNeeded(fresh.accessToken, key);
     }
     console.error("[strava] refresh token", res.status, await res.text().catch(() => ""));
-    throw new UpstreamError(res.status, "Session Strava expirée — reconnecte-toi dans les réglages.");
+    throw new UpstreamError(res.status, "Session Strava expirée — reconnecte-toi dans les réglages.", "expired");
   }
 
   const data: TokenResponse = await res.json();
@@ -257,12 +257,13 @@ async function stravaFetch<T>(path: string, token: string): Promise<T> {
   if (res.status === 429) {
     throw new UpstreamError(
       429,
-      "Limite de requêtes Strava atteinte (100 / 15 min). Réessaie dans quelques minutes."
+      "Limite de requêtes Strava atteinte (100 / 15 min). Réessaie dans quelques minutes.",
+      "rate-limit"
     );
   }
   if (!res.ok) {
     console.error("[strava]", path, res.status, await res.text().catch(() => ""));
-    throw new UpstreamError(res.status, "Strava est indisponible pour le moment.");
+    throw new UpstreamError(res.status, "Strava est indisponible pour le moment.", "unavailable");
   }
   return res.json();
 }

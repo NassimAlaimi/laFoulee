@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { fmtDuration, fmtPace } from "@/lib/format";
 
 export type RouteSplit = {
@@ -52,6 +53,7 @@ export function ActivityRoute({
   avgPace: number;
   summary: { pace: number; time: number; hr: number | null; elevation: number; km: number };
 }) {
+  const tt = useTranslations("activity");
   const [active, setActive] = useState<number | null>(null);
   const split = active != null ? splits.find((s) => s.index === active) : undefined;
 
@@ -92,7 +94,7 @@ export function ActivityRoute({
           />
         ) : (
           <div className="flex h-[200px] items-center justify-center rounded-card border border-dashed border-hairStrong text-[0.8125rem] text-ink3">
-            Pas de tracé GPS pour cette séance (tapis, montre sans GPS…)
+            {tt("noGps")}
           </div>
         )}
 
@@ -102,7 +104,7 @@ export function ActivityRoute({
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             className="rounded-[6px] outline-offset-4"
-            aria-label="Allure par kilomètre — flèches gauche/droite pour naviguer"
+            aria-label={tt("pacePerKmNav")}
           >
             <SplitStrip
               splits={splits}
@@ -116,7 +118,7 @@ export function ActivityRoute({
 
       {/* ------------------------------------------------ Lecture */}
       <aside className="lg:border-l lg:border-hair lg:pl-6">
-        <div className="eyebrow">{split ? `Kilomètre ${split.index}` : "Séance entière"}</div>
+        <div className="eyebrow">{split ? tt("kmN", { n: split.index }) : tt("wholeSession")}</div>
         <div className="mt-3 flex items-baseline gap-1.5">
           <span
             className="display text-d2 transition-colors"
@@ -130,13 +132,13 @@ export function ActivityRoute({
           {split ? <DiffToAvg pace={split.pace} avg={avgPace} /> : `${summary.km.toFixed(2)} km`}
         </div>
         <dl className="mt-5 text-[0.8125rem]">
-          <ReadRow label="Temps" value={fmtDuration(split ? split.movingTime : summary.time)} />
+          <ReadRow label={tt("time")} value={fmtDuration(split ? split.movingTime : summary.time)} />
           <ReadRow
-            label="FC moyenne"
+            label={tt("avgHr")}
             value={(split ? split.hr : summary.hr) ? `${Math.round((split ? split.hr : summary.hr)!)} bpm` : "—"}
           />
           <ReadRow
-            label={split ? "Dénivelé" : "D+"}
+            label={split ? tt("elevation") : "D+"}
             value={
               split
                 ? `${split.elevation > 0 ? "+" : ""}${Math.round(split.elevation)} m`
@@ -144,13 +146,11 @@ export function ActivityRoute({
             }
           />
           {split && split.meters < 950 && (
-            <ReadRow label="Tronçon" value={`${Math.round(split.meters)} m`} />
+            <ReadRow label={tt("segment")} value={`${Math.round(split.meters)} m`} />
           )}
         </dl>
         <p className="mt-5 text-micro leading-relaxed text-ink3">
-          {geometry
-            ? "Survole le tracé ou la bande pour lire un kilomètre. Couleur : vert plus rapide, terre cuite plus lent que ta moyenne."
-            : "Survole la bande pour lire un kilomètre."}
+          {geometry ? tt("hoverHint") : tt("hoverHintShort")}
         </p>
       </aside>
     </div>
@@ -158,15 +158,16 @@ export function ActivityRoute({
 }
 
 function DiffToAvg({ pace, avg }: { pace: number; avg: number }) {
+  const tt = useTranslations("activity");
   const diff = Math.round(pace - avg);
-  if (Math.abs(diff) < 2) return <span>à la moyenne</span>;
+  if (Math.abs(diff) < 2) return <span>{tt("atAverage")}</span>;
   return (
     <span>
       <span className={diff < 0 ? "text-sage" : "text-clay"}>
         {diff < 0 ? "−" : "+"}
         {Math.abs(diff)} s
       </span>{" "}
-      vs moyenne
+      {tt("vsAverage")}
     </span>
   );
 }
@@ -193,6 +194,7 @@ function RouteCanvas({
   colorFor: (km: number) => string;
   hasSplits: boolean;
 }) {
+  const tt = useTranslations("activity");
   const every = g.markers.length > 30 ? 5 : g.markers.length > 14 ? 2 : 1;
   return (
     <div className="route-paper relative overflow-hidden rounded-card border border-hair">
@@ -200,7 +202,7 @@ function RouteCanvas({
         viewBox={`0 0 ${g.w} ${g.h}`}
         className="block h-auto w-full"
         role="img"
-        aria-label="Tracé de la séance"
+        aria-label={tt("trackAria")}
         onMouseLeave={() => onHover(null)}
       >
         {/* Liseré : le tracé se détache du quadrillage */}
@@ -288,10 +290,10 @@ function RouteCanvas({
       )}
       <div className="pointer-events-none absolute bottom-3 right-3 flex items-center gap-3 text-[10px] text-ink3">
         <span className="flex items-center gap-1">
-          <span className="inline-block h-2 w-2 rounded-full border-2 border-ink" /> départ
+          <span className="inline-block h-2 w-2 rounded-full border-2 border-ink" /> {tt("start")}
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block h-2 w-2 bg-ink" /> arrivée
+          <span className="inline-block h-2 w-2 bg-ink" /> {tt("finish")}
         </span>
       </div>
     </div>
@@ -309,6 +311,7 @@ function SplitStrip({
   active: number | null;
   onHover: (km: number | null) => void;
 }) {
+  const tt = useTranslations("activity");
   const speeds = splits.map((s) => (s.pace > 0 ? 1000 / s.pace : 0));
   const minS = Math.min(...speeds.filter((v) => v > 0));
   const maxS = Math.max(...speeds);
@@ -342,7 +345,7 @@ function SplitStrip({
   return (
     <div>
       <div className="mb-2 flex items-baseline justify-between">
-        <span className="eyebrow">Allure par kilomètre</span>
+        <span className="eyebrow">{tt("pacePerKm")}</span>
         {hrPoints && (
           <span className="flex items-center gap-1.5 text-micro text-ink3">
             <span className="h-px w-3.5 bg-slate" /> FC {Math.round(hrMin)}–{Math.round(hrMax)}

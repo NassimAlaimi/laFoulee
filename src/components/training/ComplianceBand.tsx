@@ -60,7 +60,7 @@ export async function ComplianceOverview({ rows }: { rows: WeekCompliance[] }) {
 export async function ComplianceBand({ rows }: { rows: WeekCompliance[] }) {
   const t = await getTranslations("common");
   if (rows.length === 0) {
-    return <p className="py-4 text-sm text-ink3">Aucune séance dans ce plan.</p>;
+    return <p className="py-4 text-sm text-ink3">{t("noSessions")}</p>;
   }
 
   // La semaine en cours est la dernière semaine non future de la série.
@@ -78,7 +78,7 @@ export async function ComplianceBand({ rows }: { rows: WeekCompliance[] }) {
         <div
           className="flex min-w-[560px] items-end gap-[3px]"
           role="img"
-          aria-label="Conformité semaine par semaine : hauteur = part des séances réalisées, couleur = niveau de suivi"
+          aria-label={t("complianceAria")}
         >
           {rows.map((r) => (
             <WeekBar key={r.weekNumber} row={r} current={r.weekNumber === currentWeek} t={t} />
@@ -97,7 +97,7 @@ export async function ComplianceBand({ rows }: { rows: WeekCompliance[] }) {
           </span>
         ))}
         <span className="ml-auto hidden sm:inline">
-          barre = % de séances faites · filet = phase
+          {t("complianceKey")}
         </span>
       </div>
     </div>
@@ -111,13 +111,20 @@ function WeekBar({
 }: {
   row: WeekCompliance;
   current: boolean;
-  t: (key: string) => string;
+  t: (key: string, values?: Record<string, string | number>) => string;
 }) {
   const upcoming = row.zone === "upcoming";
   const pct = row.donePct ?? 0;
   const title = upcoming
-    ? `Semaine ${row.weekNumber} — ${row.sessionsPlanned} séances prévues · ${row.plannedKm} km`
-    : `${current ? "Semaine en cours" : `Semaine ${row.weekNumber}`} — ${row.sessionsDone}/${row.sessionsPlanned} séances · ${row.actualKm}/${row.plannedKm} km · ${t(`compliance.${row.zone}`)}`;
+    ? t("plannedWeek", { n: row.weekNumber, sessions: row.sessionsPlanned, km: row.plannedKm })
+    : t("doneWeek", {
+        week: current ? t("currentWeek") : t("weekNum", { n: row.weekNumber }),
+        done: row.sessionsDone,
+        planned: row.sessionsPlanned,
+        km: row.actualKm,
+        plannedKm: row.plannedKm,
+        zone: t(`compliance.${row.zone}`),
+      });
 
   return (
     <div

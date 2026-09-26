@@ -136,8 +136,7 @@ export default async function FormePage() {
           />
           <PaceZoneChart data={paceZones} />
           <p className="mt-4 border-t border-hair pt-4 font-mono text-micro leading-relaxed tabular-nums text-ink3">
-            Une allure facile qui s&apos;améliore sans que les séances rapides ne bougent
-            signale une base aérobie qui progresse.
+            {t("paceZoneInsight")}
           </p>
         </Section>
       </div>

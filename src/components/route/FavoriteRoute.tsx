@@ -46,7 +46,7 @@ export function FavoriteRoute({
     avgHr: o.hr,
   }));
 
-  const fr = (n: number) => n.toLocaleString("fr-FR", { maximumFractionDigits: 1 });
+  const fr = (n: number) => n.toLocaleString(locale, { maximumFractionDigits: 1 });
 
   let narrative: string;
   if (s.trend == null) {

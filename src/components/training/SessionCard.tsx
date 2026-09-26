@@ -91,7 +91,7 @@ export function SessionCard({
         <span
           className="mt-1.5 h-2 w-2 shrink-0 rounded-full"
           style={{ background: color }}
-          title={`Intensité ${session.intensity}/5`}
+          title={t("intensityOf", { n: session.intensity })}
         />
 
         <div className="min-w-0 flex-1">
@@ -105,11 +105,11 @@ export function SessionCard({
             <span className="tag">{tc(KIND_LABELS[session.kind as SessionKind] ?? `kind.${session.kind}`)}</span>
             {session.adapted && (
               <span className="tag border-ochre/40 text-ochre" title={session.adaptReason ?? ""}>
-                réadapté
+                {t("readapted")}
               </span>
             )}
-            {done && <span className="text-micro text-sage">✓ fait</span>}
-            {skipped && <span className="text-micro text-ink3">manquée</span>}
+            {done && <span className="text-micro text-sage">✓ {t("done")}</span>}
+            {skipped && <span className="text-micro text-ink3">{t("missed")}</span>}
           </div>
 
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-micro text-ink3">
@@ -120,7 +120,7 @@ export function SessionCard({
             {session.paceTarget && <span>{fmtPace(session.paceTarget)}</span>}
             {session.activity && (
               <Link href={`/activities/${session.activity.id}`} className="text-clay hover:underline">
-                {(session.activity.distance / 1000).toFixed(1)} km réalisés →
+                {t("kmDone", { km: (session.activity.distance / 1000).toFixed(1) })} →
               </Link>
             )}
           </div>
@@ -202,7 +202,7 @@ export function SessionCard({
                 <span className="text-micro text-ink3">RPE {session.rpe}/10</span>
               )}
               {session.painLevel > 0 && (
-                <span className="text-micro text-ochre">douleur {session.painLevel}/3</span>
+                <span className="text-micro text-ochre">{t("painShort", { n: session.painLevel })}</span>
               )}
             </div>
           )}

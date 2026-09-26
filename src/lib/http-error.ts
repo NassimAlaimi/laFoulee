@@ -10,9 +10,13 @@
  * on lève une `UserFacingError` : son `message` est réputé sûr à afficher.
  */
 
-/** Erreur dont le message est sûr à montrer à l'utilisateur. */
+/** Erreur dont le message est sûr à montrer à l'utilisateur. Le `code`
+ *  (facultatif) permet à l'interface d'afficher sa propre traduction. */
 export class UserFacingError extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    readonly code?: string
+  ) {
     super(message);
     this.name = "UserFacingError";
   }
@@ -25,9 +29,10 @@ export class UserFacingError extends Error {
 export class UpstreamError extends UserFacingError {
   constructor(
     readonly status: number,
-    message: string
+    message: string,
+    code?: string
   ) {
-    super(message);
+    super(message, code);
     this.name = "UpstreamError";
   }
 }
@@ -55,6 +60,16 @@ export class AthleteLimitError extends UserFacingError {
     );
     this.name = "AthleteLimitError";
   }
+}
+
+/** Codes d'erreur de synchronisation, traduits par l'interface (`syncErrors.*`). */
+export const SYNC_ERROR_CODES = ["no-account", "expired", "rate-limit", "unavailable", "busy", "generic"] as const;
+export type SyncErrorCode = (typeof SYNC_ERROR_CODES)[number];
+
+/** Code traduisible d'une erreur ; `generic` pour tout ce qui n'est pas prévu. */
+export function errorCode(err: unknown): SyncErrorCode {
+  const c = err instanceof UserFacingError ? err.code : undefined;
+  return (SYNC_ERROR_CODES as readonly string[]).includes(c ?? "") ? (c as SyncErrorCode) : "generic";
 }
 
 /**

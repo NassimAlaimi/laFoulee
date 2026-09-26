@@ -40,6 +40,30 @@ const ELEVATION_REFS: Array<[number, string, string]> = [
 
 const fr1 = (n: number) => n.toFixed(1).replace(".", ",");
 
+/** Clés de traduction des références (recap.refs.*), dans l'ordre des tables. */
+const DISTANCE_KEYS = ["periph", "marathon", "chartres", "rouen", "tours", "lyon", "marseille", "brest", "rome", "lisbon"];
+const ELEVATION_KEYS = ["eiffel", "sancy", "montblanc", "everest"];
+
+export type Comparison = { ref: string; ratio: number; equivalent: boolean };
+
+/** Version traduisible de distanceComparison : la référence et le ratio. */
+export function distanceComparisonParts(km: number): Comparison | null {
+  if (km < 10) return null;
+  const i = DISTANCE_REFS.map(([d]) => km >= d * 0.9).lastIndexOf(true);
+  if (i < 0) return null;
+  const ratio = km / DISTANCE_REFS[i][0];
+  return { ref: DISTANCE_KEYS[i], ratio, equivalent: ratio < 1.15 };
+}
+
+/** Version traduisible de elevationComparison. */
+export function elevationComparisonParts(m: number): Comparison | null {
+  if (m < 100) return null;
+  const found = ELEVATION_REFS.map(([h]) => m >= h * 0.9).lastIndexOf(true);
+  const i = found < 0 ? 0 : found;
+  const ratio = m / ELEVATION_REFS[i][0];
+  return { ref: ELEVATION_KEYS[i], ratio, equivalent: ratio < 1.15 && ratio >= 0.9 };
+}
+
 /** « l'équivalent de Paris → Tours » ou « 1,6 fois un marathon ». */
 export function distanceComparison(km: number): string | null {
   if (km < 10) return null;

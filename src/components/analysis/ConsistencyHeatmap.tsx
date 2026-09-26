@@ -1,3 +1,4 @@
+import { getLocale, getTranslations } from "next-intl/server";
 import type { ConsistencyGrid } from "@/lib/analysis";
 
 const DAYS = ["L", "M", "M", "J", "V", "S", "D"];
@@ -9,7 +10,9 @@ const DAYS = ["L", "M", "M", "J", "V", "S", "D"];
  * ne coûte rien à afficher. Les trous (coupures, blessures) sautent aux yeux
  * bien mieux que sur une courbe de volume.
  */
-export function ConsistencyHeatmap({ grid }: { grid: ConsistencyGrid }) {
+export async function ConsistencyHeatmap({ grid }: { grid: ConsistencyGrid }) {
+  const t = await getTranslations("common");
+  const locale = await getLocale();
   const max = Math.max(grid.max, 1);
 
   return (
@@ -39,8 +42,8 @@ export function ConsistencyHeatmap({ grid }: { grid: ConsistencyGrid }) {
                 return (
                   <div
                     key={di}
-                    title={`${day.date.toLocaleDateString("fr-FR")} — ${
-                      day.km > 0 ? `${day.km} km` : "repos"
+                    title={`${day.date.toLocaleDateString(locale)} — ${
+                      day.km > 0 ? `${day.km} km` : t("rest")
                     }`}
                     className="h-[13px] w-[13px] rounded-[2px] border border-hair/60"
                     style={{
@@ -71,7 +74,7 @@ export function ConsistencyHeatmap({ grid }: { grid: ConsistencyGrid }) {
             }}
           />
         ))}
-        <span>plus · {Math.round(max)} km max sur une journée</span>
+        <span>{t("heatmapMax", { km: Math.round(max) })}</span>
       </div>
     </div>
   );

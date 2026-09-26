@@ -329,7 +329,8 @@ function predictionConfidence(args: {
 export function vdotHistory(
   efforts: BestEffortLike[],
   months = 12,
-  now = new Date()
+  now = new Date(),
+  locale = "fr-FR"
 ): Array<{ month: string; label: string; vdot: number | null }> {
   const points: Array<{ month: string; label: string; vdot: number | null }> = [];
 
@@ -348,7 +349,7 @@ export function vdotHistory(
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     points.push({
       month: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
-      label: d.toLocaleDateString("fr-FR", { month: "short", year: "2-digit" }),
+      label: d.toLocaleDateString(locale, { month: "short", year: "2-digit" }),
       vdot: best > 0 ? Math.round(best * 10) / 10 : null,
     });
   }

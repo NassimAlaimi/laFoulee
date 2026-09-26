@@ -35,6 +35,16 @@ export const RIEGEL_DEFAULT = 1.06;
 export const RIEGEL_MIN = 1.01;
 export const RIEGEL_MAX = 1.18;
 
+export type EnduranceKey = "reference" | "marked" | "endurant" | "balanced" | "fast" | "speed";
+
+/** Facteur limitant, avec de quoi le traduire (terms.limiter.*). */
+export type Limiter = {
+  label: string;
+  costSeconds: number;
+  code: "endurance" | "volume" | "longRun";
+  params: Record<string, string | number>;
+};
+
 export type EnduranceIndex = {
   /** Exposant personnel k de la loi de Riegel */
   exponent: number;
@@ -47,6 +57,8 @@ export type EnduranceIndex = {
   /** Lecture : négatif = meilleure endurance que la moyenne */
   deltaVsReference: number;
   label: string;
+  /** Clé de traduction du profil (terms.endurance.*) */
+  labelKey: EnduranceKey;
   /** Perte de vitesse en % quand on double la distance */
   slowdownPerDoubling: number;
 };
@@ -82,6 +94,7 @@ export function enduranceIndex(
     r2: 0,
     deltaVsReference: 0,
     label: "Référence (pas assez de performances)",
+    labelKey: "reference",
     slowdownPerDoubling: pctSlowdown(RIEGEL_DEFAULT),
   });
 
@@ -117,6 +130,16 @@ export function enduranceIndex(
             : delta < 0.03
               ? "Plutôt rapide"
               : "Vitesse dominante",
+    labelKey:
+      delta <= -0.025
+        ? "marked"
+        : delta <= -0.008
+          ? "endurant"
+          : delta < 0.008
+            ? "balanced"
+            : delta < 0.03
+              ? "fast"
+              : "speed",
     slowdownPerDoubling: pctSlowdown(slope),
   };
 }
@@ -198,8 +221,12 @@ export type RacePrediction = {
   confidence: "high" | "medium" | "low";
   /** Raison courte, factuelle, de l'écart entre potentiel et réaliste */
   reason: string;
+  /** La même, traduisible : own | limiter | extrapolated | measured */
+  reasonCode: "own" | "limiter" | "extrapolated" | "measured";
+  /** Distance de base (clé STANDARD_DISTANCES) pour extrapolated/measured */
+  reasonBase: string | null;
   /** Facteurs limitants chiffrés */
-  limiters: Array<{ label: string; costSeconds: number }>;
+  limiters: Limiter[];
   /** Écart réaliste − potentiel, en secondes */
   gap: number;
 };
@@ -240,12 +267,17 @@ export function racePrediction(meters: number, ctx: PredictionContext): RacePred
   const ownMaximal =
     own?.seconds != null && own.vdot != null && own.vdot >= profile.vdot - 1.5 && !own.estimated;
 
-  const limiters: Array<{ label: string; costSeconds: number }> = [];
+  const limiters: Limiter[] = [];
   // Un facteur qui coûte quelques secondes n'est pas un facteur limitant :
   // l'annoncer donnerait une fausse impression de précision.
   const meaningful = Math.max(12, potential * 0.008);
-  const note = (label: string, costSeconds: number) => {
-    if (costSeconds >= meaningful) limiters.push({ label, costSeconds: Math.round(costSeconds) });
+  const note = (
+    label: string,
+    costSeconds: number,
+    code: Limiter["code"],
+    params: Limiter["params"]
+  ) => {
+    if (costSeconds >= meaningful) limiters.push({ label, costSeconds: Math.round(costSeconds), code, params });
   };
 
   // Modèle de base : le plus pessimiste des deux, car la physiologie ne suffit
@@ -255,7 +287,10 @@ export function racePrediction(meters: number, ctx: PredictionContext): RacePred
   let method: PredictionMethod = realistic === riegel && riegel > potential ? "riegel" : "vdot";
 
   if (riegel > potential && extrapolation > 1.25) {
-    note(`${endurance.label} · exposant ${endurance.exponent.toFixed(3)}`, riegel - potential);
+    note(`${endurance.label} · exposant ${endurance.exponent.toFixed(3)}`, riegel - potential, "endurance", {
+      profile: endurance.labelKey,
+      exponent: endurance.exponent.toFixed(3),
+    });
   }
 
   // --- Contrainte de volume (dominante au-delà du semi)
@@ -265,7 +300,10 @@ export function racePrediction(meters: number, ctx: PredictionContext): RacePred
       // Jusqu'à +12 % de temps quand le volume est à la moitié du nécessaire.
       const deficit = Math.min(1, (needed - ctx.weeklyKm) / needed);
       const cost = realistic * deficit * 0.12;
-      note(`Volume ${Math.round(ctx.weeklyKm)} km/sem (${Math.round(needed)} attendus)`, cost);
+      note(`Volume ${Math.round(ctx.weeklyKm)} km/sem (${Math.round(needed)} attendus)`, cost, "volume", {
+        km: Math.round(ctx.weeklyKm),
+        needed: Math.round(needed),
+      });
       realistic += cost;
       if (cost >= meaningful) method = "endurance-limited";
     }
@@ -277,10 +315,10 @@ export function racePrediction(meters: number, ctx: PredictionContext): RacePred
     if (ctx.longestRunKm < needed) {
       const deficit = Math.min(1, (needed - ctx.longestRunKm) / needed);
       const cost = realistic * deficit * 0.1;
-      note(
-        `Sortie longue ${Math.round(ctx.longestRunKm)} km (${Math.round(needed)} attendus)`,
-        cost
-      );
+      note(`Sortie longue ${Math.round(ctx.longestRunKm)} km (${Math.round(needed)} attendus)`, cost, "longRun", {
+        km: Math.round(ctx.longestRunKm),
+        needed: Math.round(needed),
+      });
       realistic += cost;
       if (cost >= meaningful) method = "endurance-limited";
     }
@@ -315,6 +353,13 @@ export function racePrediction(meters: number, ctx: PredictionContext): RacePred
       : extrapolation > 1.25
         ? `Extrapolé depuis ${base.name}`
         : `Mesuré sur ${base.name}`;
+  const reasonCode = ownMaximal
+    ? "own"
+    : ranked.length > 0
+      ? "limiter"
+      : extrapolation > 1.25
+        ? "extrapolated"
+        : "measured";
 
   return {
     meters,
@@ -327,6 +372,8 @@ export function racePrediction(meters: number, ctx: PredictionContext): RacePred
     method,
     confidence,
     reason,
+    reasonCode,
+    reasonBase: (base as { key?: string }).key ?? null,
     limiters: ranked,
     gap: Math.round(realistic - potential),
   };

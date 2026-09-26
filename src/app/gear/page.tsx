@@ -50,10 +50,10 @@ export default async function GearPage() {
   if (gear.length === 0) {
     return (
       <>
-        <PageHead title="Matériel" />
+        <PageHead title={t("title")} />
         <Empty
           title={t("empty")}
-          body="Associe tes chaussures à tes sorties dans Strava, puis relance une synchronisation. Le kilométrage et l'usure seront suivis ici."
+          body={t("emptyBody")}
         />
       </>
     );
@@ -125,7 +125,7 @@ export default async function GearPage() {
       <PageHead
         title={t("title")}
         kicker={t("kicker")}
-        meta={`${active.length} paire${active.length > 1 ? "s" : ""} en service · ${rotationKm} km cumulés · ${rotationSessions} séances`}
+        meta={t("meta", { pairs: active.length, km: rotationKm, sessions: rotationSessions })}
       />
 
       {next && (
@@ -141,16 +141,16 @@ export default async function GearPage() {
             </div>
             <p className="mt-4 text-[0.9375rem] text-ink2">
               {next.wear >= 100
-                ? "Le seuil est dépassé : il est temps de passer à la paire suivante."
+                ? t("thresholdCrossed")
                 : next.weeksLeft !== null
-                  ? `Encore ${next.remaining} km avant le seuil, soit ~${next.weeksLeft} semaine${next.weeksLeft > 1 ? "s" : ""} à ${next.kmPerWeek} km/semaine.`
-                  : `Encore ${next.remaining} km avant le seuil.`}
+                  ? t("remainingWeeks", { km: next.remaining, weeks: next.weeksLeft, perWeek: next.kmPerWeek })
+                  : t("remaining", { km: next.remaining })}
             </p>
           </div>
           <div className="flex flex-col justify-center">
             <div className="flex items-baseline justify-between text-micro text-ink3">
-              <span>usure</span>
-              <span className="font-mono">{Math.round(next.wear)} % du seuil de {next.g.retireAtKm} km</span>
+              <span>{t("wear")}</span>
+              <span className="font-mono">{t("wearOf", { pct: Math.round(next.wear), km: next.g.retireAtKm })}</span>
             </div>
             <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-hair">
               <span
@@ -173,7 +173,7 @@ export default async function GearPage() {
       <div className="space-y-10">
         <Section
           title={t("inService")}
-          note="Le seuil de remplacement est indicatif : la durée de vie d'une paire dépend du modèle, de ton poids et du terrain. Ajuste-le librement."
+          note={t("thresholdNote")}
         >
           <div className="space-y-px">
             {active.map((r) => (
@@ -189,7 +189,7 @@ export default async function GearPage() {
                 <tr>
                   <th>{t("model")}</th>
                   <th className="text-right">{t("mileage")}</th>
-                  <th className="text-right">Séances</th>
+                  <th className="text-right">{t("sessions")}</th>
                   <th className="text-right">{t("lastRun")}</th>
                 </tr>
               </thead>
@@ -258,7 +258,7 @@ function GearRow({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-[1.0625rem] font-medium tracking-tight">{g.name}</h3>
-            {g.primary && <span className="tag">par défaut</span>}
+            {g.primary && <span className="tag">{t("default")}</span>}
             <span className={`text-micro font-medium ${state.tone}`}>
               {state.label}
             </span>
@@ -272,19 +272,19 @@ function GearRow({
 
         <div className="flex items-end gap-7">
           <Fig value={row.totalKm} unit="km" label={t("travelled")} />
-          <Fig value={row.sessions} label="séances" />
+          <Fig value={row.sessions} label={t("sessions")} />
           <Fig
             value={row.remaining}
             unit="km"
             label={
               row.weeksLeft !== null
-                ? `restants · ~${row.weeksLeft} sem.`
-                : "restants"
+                ? `${t("remainingLabel")} · ~${row.weeksLeft} ${t("weeksShort")}`
+                : t("remainingLabel")
             }
           />
           <div className="hidden pb-1 sm:block">
             <MiniBars data={row.monthly} width={96} height={28} />
-            <div className="mt-1 text-micro text-ink3">10 mois</div>
+            <div className="mt-1 text-micro text-ink3">{t("last10months")}</div>
           </div>
         </div>
       </div>
@@ -293,9 +293,9 @@ function GearRow({
         <Bar value={Math.min(100, wear)} tone={state.bar} height={4} />
         <div className="mt-2 flex flex-wrap items-center justify-between gap-3 text-micro text-ink3">
           <span>
-            {Math.round(wear)} % du seuil · {row.kmPerWeek} km/semaine en moyenne
-            {row.avgPace > 0 && ` · allure moyenne ${fmtPace(row.avgPace)}`}
-            {row.time > 0 && ` · ${fmtDuration(row.time)} au total`}
+            {t("wearLine", { pct: Math.round(wear), km: row.kmPerWeek })}
+            {row.avgPace > 0 && ` · ${t("avgPaceLine", { pace: fmtPace(row.avgPace) })}`}
+            {row.time > 0 && ` · ${t("totalTime", { time: fmtDuration(row.time) })}`}
           </span>
           <form action={onSubmit} className="flex items-center gap-1.5">
             <input type="hidden" name="id" value={g.id} />

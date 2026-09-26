@@ -39,6 +39,7 @@ export type CurveRow = {
  */
 export function DurationCurveChart({ data }: { data: CurveRow[] }) {
   const t = useChartTheme();
+  const tt = useTranslations("common");
   const paces = data.flatMap((d) => [d.pace, d.modelPace ?? d.pace]);
   const min = Math.min(...paces);
   const max = Math.max(...paces);
@@ -123,6 +124,7 @@ export function CriticalSpeedChart({
   dPrime: number;
 }) {
   const t = useChartTheme();
+  const tt = useTranslations("common");
   const maxT = Math.max(...points.map((p) => p.seconds)) * 1.15;
   const line = [
     { seconds: 0, meters: dPrime },
@@ -195,6 +197,7 @@ export function YearCompareChart({
   years: string[];
 }) {
   const t = useChartTheme();
+  const tt = useTranslations("common");
   const colors = [t.clay, t.slate, t.faint];
 
   return (
@@ -259,6 +262,7 @@ export type PolarRow = {
  */
 export function PolarizationChart({ data }: { data: PolarRow[] }) {
   const t = useChartTheme();
+  const tt = useTranslations("common");
   const tz = useTranslations("zones");
 
   return (
@@ -308,6 +312,7 @@ export type PaceZoneRow = {
  */
 export function PaceZoneChart({ data }: { data: PaceZoneRow[] }) {
   const t = useChartTheme();
+  const tt = useTranslations("common");
   const vals = data.flatMap((d) => [d.easy, d.quality]).filter((v): v is number => v != null);
   if (vals.length === 0) return null;
 
@@ -334,7 +339,7 @@ export function PaceZoneChart({ data }: { data: PaceZoneRow[] }) {
                 rows={[
                   ...(d.easy ? [{ label: "Endurance", value: fmtPace(d.easy), color: t.sage }] : []),
                   ...(d.quality
-                    ? [{ label: "Séances rapides", value: fmtPace(d.quality), color: t.clay }]
+                    ? [{ label: tt("qualitySessions"), value: fmtPace(d.quality), color: t.clay }]
                     : []),
                 ]}
               />
@@ -376,6 +381,7 @@ export type PredictionRow = {
 /** Écart entre potentiel physiologique et chrono réellement atteignable. */
 export function PotentialGapChart({ data }: { data: PredictionRow[] }) {
   const t = useChartTheme();
+  const tt = useTranslations("common");
 
   return (
     <ResponsiveContainer width="100%" height={200}>

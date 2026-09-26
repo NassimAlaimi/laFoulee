@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { limiterLabel, predictionReason } from "@/components/terms";
+import { getLocale } from "next-intl/server";
 import { getTranslations } from "next-intl/server";
 import { notFound, redirect } from "next/navigation";
 import { FormChart } from "@/components/charts/Lazy";
@@ -15,7 +17,8 @@ import {
   ZONE_TONE,
 } from "@/lib/fitness-model";
 import { fmtDate, fmtDateShort, fmtDuration, fmtPace } from "@/lib/format";
-import { raceReadiness, readinessFacts } from "@/lib/goal";
+import { raceReadiness } from "@/lib/goal";
+import { FACTOR_KEY, factLines } from "@/components/goals/readiness-text";
 import { athleteContext } from "@/lib/plan-store";
 import { pacingPlan } from "@/lib/prediction";
 import type { ChartMark } from "@/lib/race-marks";
@@ -103,7 +106,7 @@ export default async function GoalDetailPage({
     .filter((s) => s.date > now && s.status === "planned")
     .map((s) => ({ date: s.date, load: plannedLoad(s) }));
 
-  const series = formSeries({ activities: ctx.runs, days: 90, future, now });
+  const series = formSeries({ activities: ctx.runs, days: 90, future, now, locale: await getLocale() });
   const raceForm = formAtStart(series, goal.raceDate);
   const formRows = series.map((p) => ({
     label: p.label,
@@ -121,15 +124,21 @@ export default async function GoalDetailPage({
   // un plan d'allure sert justement à ne pas partir au feeling.
   const paceBase = r.targetSeconds ?? r.prediction?.realistic ?? 0;
   const splits = paceBase > 0 ? pacingPlan(goal.distance, paceBase) : [];
-  const facts = readinessFacts(r);
 
+  // Phase (libellé français de lib/goal) → clé de traduction et teinte.
+  const phaseKey = (
+    { Préparation: "prep", Spécifique: "specific", Affûtage: "taper", "Jour J": "raceDay", Passée: "past" } as const
+  )[r.phase] ?? "prep";
   const countdownTone = {
-    Préparation: "text-sage",
-    Spécifique: "text-ochre",
-    Affûtage: "text-clay",
-    "Jour J": "text-rust",
-    Passée: "text-ink3",
-  }[r.phase] ?? "text-clay";
+    prep: "text-sage",
+    specific: "text-ochre",
+    taper: "text-clay",
+    raceDay: "text-rust",
+    past: "text-ink3",
+  }[phaseKey];
+  const locale = await getLocale();
+  const tt = await getTranslations("terms");
+  const facts = factLines(r, t);
 
   return (
     <div className="space-y-6">
@@ -137,16 +146,16 @@ export default async function GoalDetailPage({
       <section className="rise grid gap-8 border-y border-hair py-8 lg:grid-cols-[minmax(0,1fr)_auto]">
         <div className="min-w-0">
           <Link href="/goals" className="text-micro uppercase tracking-[0.1em] text-ink3 hover:text-clay">
-            ← Objectifs
+            ← {t("backToGoals")}
           </Link>
-          <div className="eyebrow mt-4">{r.phase} · {fmtDate(goal.raceDate)}</div>
+          <div className="eyebrow mt-4">{t(`racePhase.${phaseKey}`)} · {fmtDate(goal.raceDate, locale)}</div>
           <h1 className="mt-3 text-[clamp(1.9rem,4vw,3rem)] font-semibold leading-[1.02] tracking-[-0.03em]">
             {goal.name}
           </h1>
           <p className="mt-3 text-[0.9375rem] text-ink2">
             {(goal.distance / 1000).toFixed(1)} km
-            {goal.targetTime && ` · objectif ${fmtDuration(goal.targetTime)}`}
-            {r.targetPace && ` · allure ${fmtPace(r.targetPace)}`}
+            {goal.targetTime && ` · ${t("targetShort", { time: fmtDuration(goal.targetTime) })}`}
+            {r.targetPace && ` · ${t("paceShort", { pace: fmtPace(r.targetPace) })}`}
           </p>
         </div>
         <div className="flex flex-row items-end gap-6 lg:flex-col lg:items-end">
@@ -170,7 +179,7 @@ export default async function GoalDetailPage({
         <Kpi
           label={t("currentVolume")}
           value={`${ctx.fitness.weeklyKm} km`}
-          note={`${ctx.fitness.weeklyKm4w} km/sem sur 4 sem. · ${ctx.fitness.sessionsPerWeek} sorties/sem`}
+          note={t("volumeNote", { km: ctx.fitness.weeklyKm4w, n: ctx.fitness.sessionsPerWeek })}
         />
         <Kpi
           label={t("preparation")}
@@ -183,7 +192,7 @@ export default async function GoalDetailPage({
           value={r.prediction ? fmtDuration(r.prediction.realistic) : "—"}
           note={
             r.prediction
-              ? `${fmtPace(r.prediction.pace)} · potentiel ${fmtDuration(r.prediction.potential)}`
+              ? `${fmtPace(r.prediction.pace)} · ${t("potentialShort", { time: fmtDuration(r.prediction.potential) })}`
               : t("notEnoughData")
           }
         />
@@ -192,7 +201,7 @@ export default async function GoalDetailPage({
           value={raceForm ? `${raceForm.tsb > 0 ? "+" : ""}${Math.round(raceForm.tsb)}` : "—"}
           note={
             raceForm
-              ? `${tc(ZONE_LABEL[raceForm.zone])} · condition ${Math.round(raceForm.ctl)}`
+              ? `${tc(ZONE_LABEL[raceForm.zone])} · ${t("conditionShort", { n: Math.round(raceForm.ctl) })}`
               : plan
                 ? t("beyondProjection")
                 : t("noPlanAttached")
@@ -206,7 +215,7 @@ export default async function GoalDetailPage({
         <Section>
           <SectionHead
             title={t("gapTitle")}
-            note={`Objectif ${fmtDuration(r.targetSeconds ?? 0)} · niveau actuel ${fmtDuration(r.prediction.realistic)}`}
+            note={t("targetVsNow", { target: fmtDuration(r.targetSeconds ?? 0), now: fmtDuration(r.prediction.realistic) })}
           />
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <Fact
@@ -214,25 +223,25 @@ export default async function GoalDetailPage({
               value={
                 r.gap.secondsToFind > 0
                   ? `−${fmtDuration(Math.abs(r.gap.secondsToFind))}`
-                  : `${fmtDuration(Math.abs(r.gap.secondsToFind))} d'avance`
+                  : t("ahead", { time: fmtDuration(Math.abs(r.gap.secondsToFind)) })
               }
               tone={r.gap.secondsToFind > 0 ? "text-clay" : "text-sage"}
             />
             <Fact
               label={t("requiredLevel")}
               value={`VDOT ${r.gap.requiredVdot}`}
-              note={`actuel ${r.gap.currentVdot} · écart ${r.gap.gap > 0 ? "+" : ""}${r.gap.gap}`}
+              note={t("vdotGap", { now: r.gap.currentVdot, gap: `${r.gap.gap > 0 ? "+" : ""}${r.gap.gap}` })}
             />
             <Fact
               label={t("timeNeeded")}
-              value={`${r.gap.weeksNeeded} sem.`}
-              note={`${r.weeksRemaining} disponibles · +${r.gap.monthlyVdotGain} VDOT/mois`}
+              value={t("weeksShort", { n: r.gap.weeksNeeded })}
+              note={t("weeksAvailable", { n: r.weeksRemaining, gain: r.gap.monthlyVdotGain })}
               tone={r.gap.feasible ? "text-sage" : "text-ochre"}
             />
             <Fact
               label={t("range")}
               value={`${fmtDuration(r.prediction.low)} – ${fmtDuration(r.prediction.high)}`}
-              note={r.prediction.reason}
+              note={predictionReason(tt, r.prediction, "")}
             />
           </div>
 
@@ -240,7 +249,7 @@ export default async function GoalDetailPage({
             <ul className="mt-5 space-y-1.5 border-t border-hair pt-4">
               {r.prediction.limiters.map((l, i) => (
                 <li key={i} className="flex items-baseline justify-between gap-4 text-[0.8125rem]">
-                  <span className="text-ink2">{l.label}</span>
+                  <span className="text-ink2">{limiterLabel(tt, l)}</span>
                   <span className="font-mono text-micro tabular-nums text-clay">
                     +{fmtDuration(l.costSeconds)}
                   </span>
@@ -264,7 +273,7 @@ export default async function GoalDetailPage({
               </p>
             </div>
             <Link href={`/training/${plan.id}`} className="btn-outline btn-sm">
-              Ouvrir le plan →
+              {t("openPlan")} →
             </Link>
           </div>
 
@@ -277,7 +286,7 @@ export default async function GoalDetailPage({
                     className="h-[3px] w-3"
                     style={{ background: PHASE_COLOR[k] ?? "rgb(var(--hair-strong))" }}
                   />
-                  {label}
+                  {tc(label)}
                 </span>
               ))}
             </div>
@@ -287,13 +296,13 @@ export default async function GoalDetailPage({
             <table className="data-table">
               <thead>
                 <tr>
-                  <th className="w-12">Sem.</th>
-                  <th>Période</th>
-                  <th>Phase</th>
-                  <th className="text-right">Prévu</th>
-                  <th className="text-right">Réalisé</th>
-                  <th className="text-right">Séances</th>
-                  <th className="w-32">Avancement</th>
+                  <th className="w-12">{t("colWeek")}</th>
+                  <th>{t("colPeriod")}</th>
+                  <th>{t("colPhase")}</th>
+                  <th className="text-right">{t("colPlanned")}</th>
+                  <th className="text-right">{t("colDone")}</th>
+                  <th className="text-right">{t("colSessions")}</th>
+                  <th className="w-32">{t("colProgress")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -308,11 +317,11 @@ export default async function GoalDetailPage({
                         {isCurrent && <span className="ml-1 text-clay">•</span>}
                       </td>
                       <td className="whitespace-nowrap text-ink2">
-                        {fmtDateShort(w.weekStart)} – {fmtDateShort(addDays(w.weekStart, 6))}
+                        {fmtDateShort(w.weekStart, locale)} – {fmtDateShort(addDays(w.weekStart, 6), locale)}
                       </td>
                       <td>
                         <span className="badge bg-sunken text-ink2">
-                          {PHASE_LABELS[w.phase as keyof typeof PHASE_LABELS] ?? w.phase}
+                          {PHASE_LABELS[w.phase as keyof typeof PHASE_LABELS] ? tc(PHASE_LABELS[w.phase as keyof typeof PHASE_LABELS]) : w.phase}
                         </span>
                       </td>
                       <td className="text-right font-mono font-medium tabular-nums">
@@ -370,9 +379,9 @@ export default async function GoalDetailPage({
           />
           <FormChart data={formRows} marks={raceForm ? [{ label: raceForm.label, kind: "race", date: goal.raceDate } as ChartMark] : []} />
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-micro text-ink3">
-            <span>Condition (CTL) : ce que tu encaisses</span>
-            <span>Fatigue (ATL) : ce que tu as encaissé récemment</span>
-            <span>Fraîcheur (TSB) : la différence — positive le jour J</span>
+            <span>{t("legendCtl")}</span>
+            <span>{t("legendAtl")}</span>
+            <span>{t("legendTsb")}</span>
           </div>
         </Section>
       )}
@@ -384,12 +393,12 @@ export default async function GoalDetailPage({
             title={t("pacePlan")}
             note={
               r.targetSeconds
-                ? `Négatif léger : premier tiers retenu, dernier tiers accéléré — ${fmtDuration(r.targetSeconds)} au total (chrono visé)`
-                : `Négatif léger : premier tiers retenu, dernier tiers accéléré — ${fmtDuration(paceBase)} au total (chrono réaliste, aucun objectif saisi)`
+                ? t("pacingNoteTarget", { time: fmtDuration(r.targetSeconds) })
+                : t("pacingNoteRealistic", { time: fmtDuration(paceBase) })
             }
             action={
               <Link href={`/goals/${goal.id}/race-plan`} className="btn-outline btn-sm">
-                Plan de course →
+                {t("racePlanLink")} →
               </Link>
             }
           />
@@ -397,10 +406,10 @@ export default async function GoalDetailPage({
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Passage</th>
-                  <th className="text-right">Allure</th>
-                  <th className="text-right">Temps cumulé</th>
-                  <th className="text-right">Écart au régulier</th>
+                  <th>{t("colSplit")}</th>
+                  <th className="text-right">{t("colPace")}</th>
+                  <th className="text-right">{t("colCumulative")}</th>
+                  <th className="text-right">{t("colEvenGap")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -432,17 +441,17 @@ export default async function GoalDetailPage({
       <Section>
         <SectionHead
           title={t("prereq")}
-          note={`${r.raceKm} km — seuils utilisés aussi par le générateur de plan`}
+          note={t("prereqNote", { km: r.raceKm })}
         />
         <div className="space-y-4">
           {r.factors.map((f) => (
             <div key={f.label}>
               <div className="flex items-baseline justify-between gap-3">
-                <span className="text-[0.8125rem] text-ink2">{f.label}</span>
+                <span className="text-[0.8125rem] text-ink2">{t(`factor.${FACTOR_KEY[f.label] ?? "pace"}`)}</span>
                 <span className="font-mono text-micro tabular-nums text-ink3">
                   {f.unit === "s/km"
                     ? f.target > 0
-                      ? `${fmtPace(f.value)} / ${fmtPace(f.target)} visés`
+                      ? t("paceVsTarget", { value: fmtPace(f.value), target: fmtPace(f.target) })
                       : fmtPace(f.value)
                     : `${f.value} / ${f.target} ${f.unit}`}
                   <span className={`ml-2 ${f.ok ? "text-sage" : "text-ink3"}`}>

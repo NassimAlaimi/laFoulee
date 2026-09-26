@@ -71,7 +71,7 @@ export function CheckinForm({
         <div>
           <span className="field-label">{t("painWeek")}</span>
           <div className="flex gap-1.5">
-            {PAIN.map((p, i) => (
+            {[0, 1, 2, 3].map((i) => (
               <button
                 key={i}
                 type="button"
@@ -82,7 +82,7 @@ export function CheckinForm({
                     : "border-hair text-ink3 hover:text-ink"
                 }`}
               >
-                {p}
+                {t(("pain" + i) as "pain0")}
               </button>
             ))}
           </div>
@@ -150,8 +150,6 @@ export function CheckinForm({
     </div>
   );
 }
-
-const PAIN = ["Aucune", "Gêne", "Gêne la course", "Empêche de courir"];
 
 function Slider({
   label,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 type Mode = "light" | "dark";
 
@@ -33,6 +34,7 @@ export function toggleTheme() {
 }
 
 export function ThemeToggle() {
+  const t = useTranslations("common");
   const [mode, setMode] = useState<Mode | null>(null);
 
   // L'attribut peut changer ailleurs (palette, raccourci Maj+D) : on l'observe
@@ -52,8 +54,8 @@ export function ThemeToggle() {
     <button
       onClick={toggle}
       className="btn-quiet"
-      aria-label={mode === "dark" ? "Passer en thème clair" : "Passer en thème sombre"}
-      title={mode === "dark" ? "Thème clair" : "Thème sombre"}
+      aria-label={mode === "dark" ? t("toLight") : t("toDark")}
+      title={mode === "dark" ? t("lightTheme") : t("darkTheme")}
     >
       {mode === "dark" ? <SunIcon /> : <MoonIcon />}
     </button>

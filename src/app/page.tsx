@@ -59,7 +59,7 @@ import {
 } from "@/lib/zones";
 import { requireUser } from "@/lib/auth";
 import { vdotLevel } from "@/lib/vdot";
-import { activityMarks } from "@/lib/race-marks";
+import { activityMarks, dayMonthLabel } from "@/lib/race-marks";
 import {
   ACWR_LABELS,
   acwrSeries,
@@ -84,6 +84,7 @@ const ZONE_TONE: Record<string, string> = {
 
 export default async function SummaryPage() {
   const t = await getTranslations("home");
+  const tt = await getTranslations("terms");
   const tc = await getTranslations("common");
   const tcoach = await getTranslations("coach");
   const locale = await getLocale();
@@ -162,8 +163,8 @@ export default async function SummaryPage() {
   const month = periodStats(within(28));
   const monthPrev = periodStats(between(28, 56));
 
-  const weekly = weeklyVolume(runs, 12, now);
-  const load = acwrSeries(runs, 90, now);
+  const weekly = weeklyVolume(runs, 12, now, locale);
+  const load = acwrSeries(runs, 90, now, locale);
   const current = load[load.length - 1];
 
   // Condition / fatigue / fraîcheur, prolongées par les séances planifiées.
@@ -182,6 +183,7 @@ export default async function SummaryPage() {
     future: planned.map((p) => ({ date: p.date, load: plannedLoad(p) })),
     maxHr: settings.maxHr ?? undefined,
     restHr: settings.restHr ?? undefined,
+    locale,
   });
   const form = formSummary(series, now);
   const formRows = series.map((p) => ({
@@ -195,7 +197,7 @@ export default async function SummaryPage() {
     tsbPast: p.projected ? null : p.tsb,
     tsbFuture: p.projected ? p.tsb : null,
   }));
-  const progression = trimLeadingEmpty(monthlyProgression(runs, 12), (m) => m.sessions === 0);
+  const progression = trimLeadingEmpty(monthlyProgression(runs, 12, now, locale), (m) => m.sessions === 0);
 
   const records = personalRecords(efforts, runs);
   const profile = fitnessProfile(records, 365, now);
@@ -318,7 +320,7 @@ export default async function SummaryPage() {
     cLongest: (v) => `${v} km`,
   };
   const level = vdotLevel(profile.vdot);
-  const marks = activityMarks({ races: runs, records, now });
+  const marks = activityMarks({ races: runs, records, now, label: (d) => dayMonthLabel(d, locale) });
 
   const insights = buildInsights({
     runs,
@@ -452,7 +454,7 @@ export default async function SummaryPage() {
           label={t("ui.fitnessLevel")}
           value={profile.vdot > 0 ? profile.vdotDisplay : "—"}
           unit="VDOT"
-          note={profile.source ? `${level.label} · ${profile.source.name}` : undefined}
+          note={profile.source ? `${tt("level." + level.key)} · ${profile.source.name}` : undefined}
         />
       </MetricBand>
 

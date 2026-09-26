@@ -13,6 +13,7 @@ import { AccountActions } from "@/components/AccountActions";
 import { CalendarSubscription } from "@/components/CalendarSubscription";
 import { LanguageSwitcher } from "@/components/settings/LanguageSwitcher";
 import { AdminErrors } from "@/components/settings/AdminErrors";
+import { authErrorCode } from "@/lib/auth-errors";
 import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +24,7 @@ export default async function SettingsPage({
   searchParams: Promise<{ connected?: string; error?: string; welcome?: string }>;
 }) {
   const t = await getTranslations("settings");
+  const tl = await getTranslations("login");
   const params = await searchParams;
   const user = await requireUser();
   const userId = user.id;
@@ -126,84 +128,56 @@ export default async function SettingsPage({
   return (
     <div className="max-w-4xl space-y-6">
       <PageHead
-        title="Réglages"
+        title={t("title")}
         kicker={t("kick")}
         meta={
           account
-            ? `${account.firstname} ${account.lastname} · ${activityCount} activités · ${planCount} plan${planCount > 1 ? "s" : ""}`
-            : `${activityCount} activités importées`
+            ? t("metaStrava", { name: `${account.firstname ?? ""} ${account.lastname ?? ""}`.trim(), n: activityCount, plans: planCount })
+            : t("metaLocal", { n: activityCount })
         }
       />
 
       {params.error && (
-        <div className="rounded-card border border-negative/35 bg-negative/8 px-4 py-3.5 text-sm text-rust">
-          {decodeURIComponent(params.error)}
+        <div role="alert" className="rounded-card border border-negative/35 bg-negative/8 px-4 py-3.5 text-sm text-rust">
+          {/* Code traduit, jamais le texte brut de l'URL (lib/auth-errors.ts). */}
+          {tl(`errors.${authErrorCode(params.error) ?? "generic"}` as "errors.generic")}
         </div>
       )}
       {params.welcome && (
         <div className="rounded-card border border-positive/35 bg-positive/8 px-4 py-3.5 text-sm text-sage">
-          Bienvenue {displayName(user)}. Ton compte est créé :{" "}
-          {account ? (
-            "lance une première synchronisation pour importer ton historique Strava."
-          ) : (
-            <>
-              importe tes fichiers de montre (FIT, GPX, TCX, export Garmin) depuis{" "}
-              <a href="/import" className="underline underline-offset-2">
-                la page Import
-              </a>
-              , saisis tes séances dans le carnet, ou connecte Strava ci-dessous quand tu veux.
-            </>
-          )}
+          {account
+            ? t("welcomeStrava", { name: displayName(user) })
+            : t.rich("welcomeLocal", {
+                name: displayName(user),
+                link: (chunks) => (
+                  <a href="/import" className="underline underline-offset-2">
+                    {chunks}
+                  </a>
+                ),
+              })}
         </div>
       )}
       {params.connected && (
         <div className="rounded-card border border-positive/35 bg-positive/8 px-4 py-3.5 text-sm text-sage">
-          Compte Strava connecté. Lance une synchronisation pour importer tes activités.
+          {t("connected")}
         </div>
       )}
       {user.stravaEvictedAt && !account && (
-        <div className="rounded-card border border-caution/30 bg-caution/8 px-4 py-3.5 text-sm text-amber-200">
-          Ta connexion Strava a été libérée car la limite de 10 athlètes connectés
-          est atteinte. Tes données restent intactes — tu peux importer des fichiers
-          (FIT/GPX/TCX) ou te reconnecter quand une place se libère.
+        <div className="rounded-card border border-caution/30 bg-caution/8 px-4 py-3.5 text-sm text-ochre">
+          {t("evicted")}
         </div>
       )}
 
       {/* -------------------------------------------------- Strava */}
       <Section>
-        <SectionHead title="Connexion Strava"
-          note="Source de toutes les données d'activité"
-        />
+        <SectionHead title={t("stravaTitle")} note={t("stravaNote")} />
 
         {!configured && (
-          <div className="rounded-card border border-caution/30 bg-caution/8 p-4 text-sm text-amber-200">
-            <p className="font-medium">Configuration requise</p>
-            <ol className="mt-2.5 list-decimal space-y-1.5 pl-5 text-amber-200/85">
-              <li>
-                Crée une application sur{" "}
-                <a
-                  href="https://www.strava.com/settings/api"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline underline-offset-2"
-                >
-                  strava.com/settings/api
-                </a>
-              </li>
-              <li>
-                <code className="rounded bg-black/30 px-1 py-0.5 text-micro">
-                  Authorization Callback Domain
-                </code>{" "}
-                ={" "}
-                <code className="rounded bg-black/30 px-1 py-0.5 text-micro">localhost</code>
-              </li>
-              <li>
-                Renseigne <code className="rounded bg-black/30 px-1 py-0.5 text-micro">STRAVA_CLIENT_ID</code>{" "}
-                et <code className="rounded bg-black/30 px-1 py-0.5 text-micro">STRAVA_CLIENT_SECRET</code>{" "}
-                dans <code className="rounded bg-black/30 px-1 py-0.5 text-micro">.env</code>
-              </li>
-              <li>Redémarre le serveur</li>
-            </ol>
+          <div className="rounded-card border border-caution/30 bg-caution/8 p-4 text-sm">
+            <p className="font-medium text-ochre">{tl("notConfigured")}</p>
+            <p className="mt-1.5 text-ink2">
+              {user.role === "admin" ? t("unconfiguredAdmin") : t("unconfiguredUser")}
+            </p>
           </div>
         )}
 
@@ -227,23 +201,26 @@ export default async function SettingsPage({
                   {account.firstname} {account.lastname}
                 </div>
                 <div className="text-xs text-ink3">
-                  {[account.city, account.country].filter(Boolean).join(", ") ||
-                    "Compte connecté"}
+                  {[account.city, account.country].filter(Boolean).join(", ") || t("accountConnected")}
                 </div>
               </div>
               <DisconnectButton />
             </div>
 
             <div className="grid gap-3 sm:grid-cols-4">
-              <Info label="Activités" value={String(activityCount)} />
-              <Info label="Courses" value={String(runCount)} />
+              <Info label={t("infoActivities")} value={String(activityCount)} />
+              <Info label={t("infoRuns")} value={String(runCount)} />
               <Info
-                label="Dernière synchro"
-                value={account.lastSyncAt ? fmtDate(account.lastSyncAt) : "jamais"}
+                label={t("infoLastSync")}
+                value={account.lastSyncAt ? fmtDate(account.lastSyncAt) : t("never")}
               />
               <Info
-                label="Dernier statut"
-                value={lastSync?.status ?? "—"}
+                label={t("infoStatus")}
+                value={
+                  lastSync?.status === "success" || lastSync?.status === "error" || lastSync?.status === "running"
+                    ? t(`syncStatus.${lastSync.status}`)
+                    : "—"
+                }
                 tone={
                   lastSync?.status === "success"
                     ? "positive"
@@ -254,19 +231,15 @@ export default async function SettingsPage({
               />
             </div>
 
-            {lastSync?.message && (
-              <p className="text-xs text-ink3">{lastSync.message}</p>
+            {lastSync?.status === "success" && (
+              <p className="text-xs text-ink3">{t("syncResult", { imported: lastSync.imported, updated: lastSync.updated })}</p>
             )}
 
             <div className="flex flex-wrap items-start gap-3 border-t border-hair pt-5">
               <SyncButton />
               <SyncButton full />
             </div>
-            <p className="text-micro leading-relaxed text-ink3">
-              La synchronisation normale ne récupère que les nouvelles activités. La
-              réimportation complète reparcourt tout l&apos;historique — attention à la
-              limite Strava de 100 requêtes par tranche de 15 minutes.
-            </p>
+            <p className="text-micro leading-relaxed text-ink3">{t("syncHelp")}</p>
           </div>
         ) : (
           <a
@@ -283,11 +256,11 @@ export default async function SettingsPage({
       {user.role === "admin" && (
         <Section>
           <SectionHead
-            title="Connexions Strava"
-            note={`${connections.length} / 10 sièges occupés — libère une place pour laisser entrer un nouveau membre`}
+            title={t("seatsTitle")}
+            note={t("seatsNote", { n: connections.length })}
           />
           {connections.length === 0 ? (
-            <p className="text-sm text-ink3">Aucun compte Strava connecté pour le moment.</p>
+            <p className="text-sm text-ink3">{t("seatsNone")}</p>
           ) : (
             <ul className="divide-y divide-hair border-y border-hair">
               {connections.map((c) => (
@@ -296,21 +269,21 @@ export default async function SettingsPage({
                     <div className="truncate font-medium">
                       {c.user.firstname} {c.user.lastname}
                       {c.userId === user.id && (
-                        <span className="ml-2 text-micro text-ink3">(toi)</span>
+                        <span className="ml-2 text-micro text-ink3">{t("you")}</span>
                       )}
                       {c.user.role === "admin" && (
                         <span className="ml-2 text-micro text-clay">admin</span>
                       )}
                     </div>
                     <div className="text-xs text-ink3">
-                      {c.lastSyncAt ? `Dernière synchro : ${fmtDate(c.lastSyncAt)}` : "Jamais synchronisé"}
+                      {c.lastSyncAt ? t("seatLastSync", { date: fmtDate(c.lastSyncAt) }) : t("seatNeverSynced")}
                     </div>
                   </div>
                   {c.user.role !== "admin" && (
                     <form action={freeStravaSeat}>
                       <input type="hidden" name="userId" value={c.userId} />
                       <button type="submit" className="btn-outline btn-sm">
-                        Libérer la place
+                        {t("seatFree")}
                       </button>
                     </form>
                   )}
@@ -325,55 +298,56 @@ export default async function SettingsPage({
 
       {/* -------------------------------------------------- Profil */}
       <Section>
-        <SectionHead title="Profil athlète"
-          note="Affine le calcul des zones cardiaques, de la charge d'entraînement et des allures cibles"
+        <SectionHead title={t("profileTitle")} note={t("profileNote")} />
+        <ProfileGauge
+          settings={settings}
+          label={(done) => t("profileGauge", { done })}
         />
-        <ProfileGauge settings={settings} />
         <form action={saveSettings} className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           <Field
             name="maxHr"
-            label="FC max (bpm)"
+            label={t("fMaxHr")}
             defaultValue={settings.maxHr}
             placeholder="auto"
-            note="Sert aux zones cardiaques et à la charge (TRIMP). Vide = estimée depuis tes séances"
+            note={t("fMaxHrNote")}
           />
           <Field
             name="restHr"
-            label="FC au repos (bpm)"
+            label={t("fRestHr")}
             defaultValue={settings.restHr}
-            note="Le plancher du calcul de charge — une FC repos basse = plus de marge"
+            note={t("fRestHrNote")}
           />
           <Field
             name="birthYear"
-            label="Année de naissance"
+            label={t("fBirthYear")}
             defaultValue={settings.birthYear}
             placeholder="1995"
-            note="Sert à estimer la FC max si elle n'est pas mesurée"
+            note={t("fBirthYearNote")}
           />
           <Field
             name="weightKg"
-            label="Poids (kg)"
+            label={t("fWeight")}
             defaultValue={settings.weightKg}
             step="0.1"
-            note="Force relative en muscu (1RM ÷ poids) et charge musculaire"
+            note={t("fWeightNote")}
           />
           <Field
             name="vmaKmh"
-            label="VMA (km/h)"
+            label={t("fVma")}
             defaultValue={settings.vmaKmh}
             step="0.1"
             placeholder="auto"
-            note="Vide = calculée depuis ton VDOT"
+            note={t("fVmaNote")}
           />
           <Field
             name="weeklyKmGoal"
-            label="Objectif hebdomadaire (km)"
+            label={t("fWeekly")}
             defaultValue={settings.weeklyKmGoal}
-            note="La cible du compteur de volume sur l'accueil"
+            note={t("fWeeklyNote")}
           />
           <div className="sm:col-span-2 xl:col-span-3">
             <button type="submit" className="btn-solid">
-              Enregistrer
+              {t("save")}
             </button>
           </div>
         </form>
@@ -419,8 +393,8 @@ export default async function SettingsPage({
       <Section className="scroll-mt-24" >
         <div id="agenda" className="scroll-mt-24" />
         <SectionHead
-          title="Agenda"
-          note="Abonnement iCalendar au plan d'entraînement actif"
+          title={t("calTitle")}
+          note={t("calNote")}
         />
         <CalendarSubscription initialToken={calendar?.calendarToken ?? null} origin={origin} />
       </Section>
@@ -428,15 +402,15 @@ export default async function SettingsPage({
       {/* -------------------------------------------------- Export */}
       <Section>
         <SectionHead
-          title="Export de tes données"
-          note="Tes données t'appartiennent : tout récupérer, en un clic, sans dépendance."
+          title={t("exportTitle")}
+          note={t("exportNote")}
         />
         <div className="flex flex-wrap gap-3">
           <a href="/api/export" download className="btn-outline">
-            Exporter tout en JSON
+            {t("exportJson")}
           </a>
           <a href="/api/export?format=csv" download className="btn-outline">
-            Activités en CSV
+            {t("exportCsv")}
           </a>
         </div>
       </Section>
@@ -444,8 +418,12 @@ export default async function SettingsPage({
       {/* -------------------------------------------------- Compte */}
       <Section>
         <SectionHead
-          title="Compte"
-          note={`Connecté en tant que ${displayName(user)}${user.athleteId ? ` · athlète Strava ${user.athleteId}` : " · compte email"}`}
+          title={t("accountTitle")}
+          note={
+            user.athleteId
+              ? t("accountNoteStrava", { name: displayName(user), id: String(user.athleteId) })
+              : t("accountNoteLocal", { name: displayName(user) })
+          }
         />
         <AccountActions
           firstname={user.firstname?.trim() || displayName(user)}
@@ -515,7 +493,13 @@ function Info({
 }
 
 /** Jauge de complétude du profil — chaque champ alimente les modèles. */
-function ProfileGauge({ settings }: { settings: Awaited<ReturnType<typeof getSettings>> }) {
+function ProfileGauge({
+  settings,
+  label,
+}: {
+  settings: Awaited<ReturnType<typeof getSettings>>;
+  label: (done: number) => string;
+}) {
   const fields = [settings.maxHr, settings.birthYear, settings.weightKg, settings.vmaKmh];
   const done = fields.filter((f) => f != null).length;
   return (
@@ -526,12 +510,7 @@ function ProfileGauge({ settings }: { settings: Awaited<ReturnType<typeof getSet
           style={{ width: `${(done / 4) * 100}%` }}
         />
       </div>
-      <span className="text-micro text-ink3">
-        {done}/4 renseignés —{" "}
-        {done === 4
-          ? "profil complet, les modèles tournent au mieux"
-          : "chaque champ rend les modèles plus précis"}
-      </span>
+      <span className="text-micro text-ink3">{label(done)}</span>
     </div>
   );
 }

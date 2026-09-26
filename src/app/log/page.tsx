@@ -1,5 +1,5 @@
 import { PageHead, Section } from "@/components/ui/Layout";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { LogForm } from "@/components/log/LogForm";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
@@ -28,6 +28,7 @@ export const dynamic = "force-dynamic";
 export default async function LogPage() {
   const t = await getTranslations("logPage");
   const tc = await getTranslations("common");
+  const locale = await getLocale();
   const now = new Date();
   const userId = await requireUserId();
   const since = new Date(now.getTime() - 20 * 86400000);
@@ -46,7 +47,7 @@ export default async function LogPage() {
 
   // Corrélation charge (ATL) ↔ score du matin, jour par jour.
   const atlByDay = new Map<string, number>();
-  for (const p of formSeries({ activities: ctx.runs, days: 30, now })) {
+  for (const p of formSeries({ activities: ctx.runs, days: 30, now, locale: await getLocale() })) {
     atlByDay.set(localDayKey(p.date), p.atl);
   }
   const paired = series.filter((pt) => atlByDay.has(localDayKey(pt.date)));
@@ -63,7 +64,7 @@ export default async function LogPage() {
       <PageHead
         title={t("title")}
         kicker={t("kicker")}
-        meta="Sommeil, récupération, ressenti — ton état jour après jour, en regard de la charge"
+        meta={t("meta")}
       />
 
       {/* ------------------------------------------------ Le score du jour */}
@@ -71,7 +72,7 @@ export default async function LogPage() {
         <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
           <div>
             <div className="text-micro font-medium uppercase tracking-[0.16em] text-ink3">
-              Aujourd'hui · {fmtDateShort(now)}
+              {t("today")} · {fmtDateShort(now, locale)}
             </div>
             <div className="mt-2 flex items-baseline gap-4">
               <span className="display text-d4" style={{ color: READINESS_COLOR[readiness.zone] }}>
@@ -86,7 +87,7 @@ export default async function LogPage() {
                     )}
                   </>
                 ) : (
-                  "Remplis le carnet pour obtenir ton score de préparation"
+                  t("fillForScore")
                 )}
               </span>
             </div>
@@ -106,25 +107,19 @@ export default async function LogPage() {
 
         <Section title={t("last14")} note={t("last14Note")}>
           {series.length >= 2 ? (
-            <ReadinessChart points={series} />
+            <ReadinessChart points={series} label={t("trendChart")} />
           ) : (
             <p className="py-6 text-sm text-ink3">
-              {series.length === 1
-                ? "Un seul jour renseigné — la tendance apparaîtra dès demain."
-                : t("firstDay")}
+              {series.length === 1 ? t("singleDay") : t("firstDay")}
             </p>
           )}
 
           {r !== null && (
             <p className="mt-4 border-t border-hair pt-4 text-sm text-ink2">
-              Charge (ATL) ↔ forme du matin :{" "}
+              {t("chargeVsForm")}{" "}
               <span className="font-mono font-medium tabular-nums">{r > 0 ? "+" : ""}{r}</span>
               {" — "}
-              {r < -0.3
-                ? "ta forme du matin est sensible à la charge récente : surveille le sommeil après les grosses semaines."
-                : r > 0.3
-                  ? "contre-intuitif : ta forme du matin ne suit pas la charge — regarde plutôt le contexte de vie."
-                  : "pas de lien net entre la charge et ton score du matin."}
+              {r < -0.3 ? t("rNegative") : r > 0.3 ? t("rPositive") : t("rNone")}
             </p>
           )}
         </Section>
@@ -133,7 +128,7 @@ export default async function LogPage() {
       {/* ------------------------------------------------ Historique */}
       <Section title={t("history")} note={t("historyNote")}>
         {logs.length === 0 ? (
-          <p className="py-6 text-sm text-ink3">Aucune entrée pour l'instant.</p>
+          <p className="py-6 text-sm text-ink3">{t("noEntries")}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="data-table">
@@ -192,7 +187,7 @@ function Figure({ label, value, note }: { label: string; value: string; note?: s
  * Tendance 14 jours : polyline du score colorée par zone, barres de sommeil.
  * SVG statique côté serveur, aucune bibliothèque.
  */
-function ReadinessChart({ points }: { points: ReadinessPoint[] }) {
+function ReadinessChart({ points, label }: { points: ReadinessPoint[]; label: string }) {
   const W = 620;
   const H = 180;
   const PAD = 10;
@@ -202,7 +197,7 @@ function ReadinessChart({ points }: { points: ReadinessPoint[] }) {
   const line = points.map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(p.score).toFixed(1)}`).join(" ");
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Tendance du score de préparation sur 14 jours">
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label={label}>
       {[100, 75, 50, 25].map((v) => (
         <g key={v}>
           <line x1={PAD} x2={W - PAD} y1={y(v)} y2={y(v)} stroke="rgb(var(--hair))" strokeWidth="1" />

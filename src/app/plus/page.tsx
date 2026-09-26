@@ -74,9 +74,9 @@ export default async function PlusPage() {
         />
         <HubDoor
           href="/lexique"
-          title="Lexique"
-          tagline="CTL, VDOT, seuils, efficience : chaque terme de l'app traduit en langage courant."
-          note="Les termes, simplement"
+          title={t("lexique")}
+          tagline={t("lexiqueTagline")}
+          note={t("lexiqueNote")}
         />
         <TourDoor />
       </div>

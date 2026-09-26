@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import {
   Area,
   CartesianGrid,
@@ -53,6 +54,7 @@ export function FormChart({
   legend?: boolean;
 }) {
   const t = useChartTheme();
+  const tt = useTranslations("common");
   const firstProjected = data.find((d) => d.projected)?.label;
   const topH = Math.round(height * 0.6);
   const bottomH = height - topH;
@@ -206,11 +208,11 @@ export function FormChart({
       </ResponsiveContainer>
       {legend && (
         <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-micro text-ink3">
-          <Key color={t.slate} label="Condition (CTL)" />
-          <Key color={t.clay} label="Fatigue (ATL)" thin />
-          <Key color={t.sage} label="Fraîcheur (TSB) · au-dessus de 0 = frais" area />
-          {hasRace && <Key color={t.rust} label="Course" dashed />}
-          {hasPr && <Key color={t.plum} label="Record" dashed />}
+          <Key color={t.slate} label={tt("condition")} />
+          <Key color={t.clay} label={tt("fatigue")} thin />
+          <Key color={t.sage} label={tt("freshness")} area />
+          {hasRace && <Key color={t.rust} label={tt("race")} dashed />}
+          {hasPr && <Key color={t.plum} label={tt("record")} dashed />}
         </div>
       )}
     </div>

@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
+import { confidenceLabel, distanceName, enduranceLabel, paceName, paceUsage, predictionReason } from "@/components/terms";
 import { Empty, Hint, PageHead, Section } from "@/components/ui/Layout";
 import { VdotChart } from "@/components/charts/Lazy";
 import { fmtDate, fmtDuration, fmtPace } from "@/lib/format";
 import { getBestEfforts, getRuns } from "@/lib/queries";
 import { trimLeadingEmpty } from "@/lib/stats";
 import {
-  CONFIDENCE_LABELS,
   STANDARD_DISTANCES,
   fitnessProfile,
   isMaximalEffort,
@@ -20,15 +20,6 @@ import { danielsPaces, vdotLevel } from "@/lib/vdot";
 
 export const dynamic = "force-dynamic";
 
-const LEVEL_HEADLINE: Record<string, string> = {
-  Débutant: "Tout est à construire — et c'est la meilleure nouvelle : le niveau monte vite au début.",
-  Régulier: "Une base solide est posée. La marge est désormais dans la régularité.",
-  Confirmé: "Tu cours avec méthode. Les chronos suivront le volume, saison après saison.",
-  Avancé: "Un niveau sérieux. La marge se joue désormais sur les détails.",
-  Compétiteur: "Niveau compétiteur : tout se décide dans la finesse de la préparation.",
-  Élite: "Niveau élite. Protège la récupération, c'est elle qui fait la différence.",
-  default: "Chaque effort chronométré affine ton niveau réel.",
-};
 
 const CONF_TONE: Record<Confidence, string> = {
   high: "text-sage",
@@ -38,22 +29,24 @@ const CONF_TONE: Record<Confidence, string> = {
 
 export default async function RecordsPage() {
   const t = await getTranslations("records");
+  const tt = await getTranslations("terms");
+  const locale = await getLocale();
   const [runs, efforts] = await Promise.all([getRuns(), getBestEfforts()]);
 
   if (runs.length === 0) {
     return (
       <>
-        <PageHead title="Performance" />
+        <PageHead title={t("title")} />
         <Empty
-          title="Pas encore de données"
-          body="Synchronise tes activités Strava pour voir apparaître tes records, ton niveau de forme et tes prédictions."
+          title={t("emptyTitle")}
+          body={t("emptyBody")}
           action={
-            <Link href="/settings" className="btn-solid">
-              Réglages
+            <Link href="/import" className="btn-solid">
+              {t("emptyAction")}
             </Link>
           }
         />
-        <EmptySteps />
+        <EmptySteps steps={[t("step1"), t("step2"), t("step3")]} />
       </>
     );
   }
@@ -87,20 +80,20 @@ export default async function RecordsPage() {
         }
       : null;
   }).filter((p): p is NonNullable<typeof p> => p !== null);
-  const history = trimLeadingEmpty(vdotHistory(efforts, 12, now), (r) => r.vdot == null);
+  const history = trimLeadingEmpty(vdotHistory(efforts, 12, now, locale), (r) => r.vdot == null);
   const paces = profile.vdot > 0 ? danielsPaces(profile.vdot) : [];
   const marathon = preds.find((p) => p.key === "marathon");
-  const headline = LEVEL_HEADLINE[level.label] ?? LEVEL_HEADLINE.default;
+  const headline = t(`headline.${level.key}`);
 
   return (
     <>
       <PageHead
-        title="Performance"
-        kicker="Niveau de forme"
-        meta={`${efforts.length} efforts chronométrés · ${runs.length} courses`}
+        title={t("title")}
+        kicker={t("kicker")}
+        meta={t("meta", { efforts: efforts.length, runs: runs.length })}
         action={
           <Link href="/calculator" className="btn-outline btn-sm">
-            Calculateur
+            {t("calculator")}
           </Link>
         }
       />
@@ -116,39 +109,46 @@ export default async function RecordsPage() {
           </div>
           <div className="mt-4 inline-flex items-center gap-2 text-sm font-medium" style={{ color: level.color }}>
             <span className="h-2.5 w-2.5 rounded-full" style={{ background: level.color }} aria-hidden />
-            Coureur {level.label.toLowerCase()}
+            {tt(`runnerLevel.${level.key}`)}
           </div>
           <p className="mt-6 max-w-lg text-[clamp(1.1rem,2vw,1.5rem)] font-medium leading-snug tracking-[-0.01em]">
             {headline}
           </p>
           {marathon && (
             <p className="mt-3 text-[0.9375rem] text-ink2">
-              Tu vaux un marathon en{" "}
-              <span className="font-mono font-medium text-ink">{fmtDuration(marathon.realistic)}</span>
-              {" "}({fmtPace(marathon.pace)}) — <span className="text-ink3">à ton niveau actuel</span>
+              {t.rich("marathonWorth", {
+                time: fmtDuration(marathon.realistic),
+                pace: fmtPace(marathon.pace),
+                b: (c) => <span className="font-mono font-medium text-ink">{c}</span>,
+                m: (c) => <span className="text-ink3">{c}</span>,
+              })}
             </p>
           )}
           {profile.source && (
             <p className="mt-6 text-[0.8125rem] text-ink2">
-              Référence : <span className="font-medium text-ink">{profile.source.name}</span> en{" "}
-              <span className="font-mono">{fmtDuration(profile.source.seconds!)}</span>
-              {profile.source.date ? ` · ${fmtDate(profile.source.date)}` : ""}
+              {t.rich("reference", {
+                name: distanceName(tt, profile.source.key, profile.source.name),
+                time: fmtDuration(profile.source.seconds!),
+                b: (c) => <span className="font-medium text-ink">{c}</span>,
+                m: (c) => <span className="font-mono">{c}</span>,
+              })}
+              {profile.source.date ? ` · ${fmtDate(profile.source.date, locale)}` : ""}
             </p>
           )}
         </div>
 
         <div>
-          <div className="eyebrow mb-3">Évolution · meilleure performance glissante sur 90 jours</div>
+          <div className="eyebrow mb-3">{t("evolution")}</div>
           {history.some((h) => h.vdot !== null) ? (
             <VdotChart data={history} />
           ) : (
             <Hint height={200}>{t("notEnough")}</Hint>
           )}
           <dl className="mt-8 grid grid-cols-2 border-t border-hair">
-            <HeroStat label="VMA estimée" value={profile.vma > 0 ? `${profile.vma} km/h` : "—"} />
-            <HeroStat label="Volume hebdo" value={`${fitness.weeklyKm} km`} />
-            <HeroStat label="Endurance" value={endurance.exponent.toFixed(3)} note={endurance.label} />
-            <HeroStat label="Sortie la plus longue" value={`${fitness.longestRunKm} km`} />
+            <HeroStat label={t("vma")} value={profile.vma > 0 ? `${profile.vma} km/h` : "—"} />
+            <HeroStat label={t("weeklyVolume")} value={`${fitness.weeklyKm} km`} />
+            <HeroStat label={t("endurance")} value={endurance.exponent.toFixed(3)} note={enduranceLabel(tt, endurance.labelKey)} />
+            <HeroStat label={t("longestRun")} value={`${fitness.longestRunKm} km`} />
           </dl>
         </div>
       </section>
@@ -156,14 +156,8 @@ export default async function RecordsPage() {
       <div className="mt-10 space-y-10">
         {/* ------------------------------------------------ Records */}
         <Section
-          title="Records personnels"
-          note={
-            <>
-              Extraits des efforts chronométrés par Strava. Les lignes marquées{" "}
-              <span className="tag">sortie</span> ont été courues nettement sous ton
-              potentiel : ce sont des records par défaut, pas des efforts maximaux.
-            </>
-          }
+          title={t("prTitle")}
+          note={t.rich("prNote", { tag: (c) => <span className="tag">{c}</span> })}
         >
           <div className="overflow-x-auto">
             <table className="data-table">
@@ -188,15 +182,15 @@ export default async function RecordsPage() {
                         <td>
                           <span className="flex items-center gap-2">
                             <span className={r.major ? "font-medium" : "text-ink2"}>
-                              {r.name}
+                              {distanceName(tt, r.key, r.name)}
                             </span>
                             {isRef && (
                               <span className="tag border-clay/40 text-clay">
-                                référence
+                                {t("tagReference")}
                               </span>
                             )}
-                            {r.estimated && <span className="tag">estimé</span>}
-                            {!isRef && !maximal && <span className="tag">sortie</span>}
+                            {r.estimated && <span className="tag">{t("tagEstimated")}</span>}
+                            {!isRef && !maximal && <span className="tag">{t("tagOuting")}</span>}
                           </span>
                         </td>
                         <td className="num text-right font-medium">
@@ -209,7 +203,7 @@ export default async function RecordsPage() {
                           {r.vdot ? r.vdot.toFixed(1) : "—"}
                         </td>
                         <td className="whitespace-nowrap text-ink2">
-                          {r.date ? fmtDate(r.date) : "—"}
+                          {r.date ? fmtDate(r.date, locale) : "—"}
                         </td>
                         <td>
                           {r.activityId ? (
@@ -233,21 +227,26 @@ export default async function RecordsPage() {
 
         {/* ------------------------------------------------ Prédictions */}
         <Section
-          title="Prédictions de chrono"
-          note={`Potentiel = ce que ton VDOT ${profile.vdotDisplay} autorise. Réaliste = ce que ton entraînement actuel permet (volume ${fitness.weeklyKm} km/sem, sortie longue ${fitness.longestRunKm} km, exposant d'endurance ${endurance.exponent.toFixed(3)}). Les deux pages Objectifs et Analyse affichent ces mêmes chiffres.`}
+          title={t("predTitle")}
+          note={t("predNote", {
+            vdot: profile.vdotDisplay,
+            km: fitness.weeklyKm,
+            long: fitness.longestRunKm,
+            exponent: endurance.exponent.toFixed(3),
+          })}
         >
           {preds.length ? (
             <div className="overflow-x-auto">
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Distance</th>
+                    <th>{t("distance")}</th>
                     <th className="text-right">{t("potential")}</th>
                     <th className="text-right">{t("realistic")}</th>
-                    <th className="text-right">Allure</th>
-                    <th className="text-right">Ton record</th>
-                    <th className="text-right">Écart</th>
-                    <th>Fiabilité</th>
+                    <th className="text-right">{t("pace")}</th>
+                    <th className="text-right">{t("yourRecord")}</th>
+                    <th className="text-right">{t("gap")}</th>
+                    <th>{t("reliability")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -259,7 +258,7 @@ export default async function RecordsPage() {
                       return (
                         <tr key={p.key}>
                           <td className={p.major ? "font-medium" : "text-ink2"}>
-                            {p.name}
+                            {distanceName(tt, p.key, p.name)}
                           </td>
                           <td className="num text-right text-ink3">
                             {fmtDuration(p.potential)}
@@ -298,9 +297,11 @@ export default async function RecordsPage() {
                               <span
                                 className={`text-[0.8125rem] font-medium ${CONF_TONE[p.confidence]}`}
                               >
-                                {CONFIDENCE_LABELS[p.confidence]}
+                                {confidenceLabel(tt, p.confidence)}
                               </span>
-                              <span className="text-micro text-ink3">{p.reason}</span>
+                              <span className="text-micro text-ink3">
+                                {predictionReason(tt, p, profile.source?.name ?? "")}
+                              </span>
                             </span>
                           </td>
                         </tr>
@@ -310,23 +311,23 @@ export default async function RecordsPage() {
               </table>
             </div>
           ) : (
-            <Hint height={120}>Il faut au moins un effort chronométré.</Hint>
+            <Hint height={120}>{t("needEffort")}</Hint>
           )}
         </Section>
 
         {/* ------------------------------------------------ Allures */}
         {paces.length > 0 && (
           <Section
-            title="Allures d'entraînement"
-            note={`Méthode Daniels, dérivées de ton VDOT ${profile.vdotDisplay}.`}
+            title={t("pacesTitle")}
+            note={t("pacesNote", { vdot: profile.vdotDisplay })}
           >
             <div className="overflow-x-auto">
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Intensité</th>
-                    <th className="text-right">Allure /km</th>
-                    <th className="hidden sm:table-cell">Usage</th>
+                    <th>{t("intensity")}</th>
+                    <th className="text-right">{t("pacePerKm")}</th>
+                    <th className="hidden sm:table-cell">{t("usage")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -338,14 +339,14 @@ export default async function RecordsPage() {
                             className="h-[3px] w-3.5 shrink-0"
                             style={{ background: p.color }}
                           />
-                          <span className="font-medium">{p.name}</span>
+                          <span className="font-medium">{paceName(tt, p.key)}</span>
                         </span>
                       </td>
                       <td className="num whitespace-nowrap text-right font-medium">
                         {fmtPace(p.paceFast, "")} – {fmtPace(p.pace, "")}
                       </td>
                       <td className="hidden max-w-xl text-[0.8125rem] text-ink2 sm:table-cell">
-                        {p.usage}
+                        {paceUsage(tt, p.key)}
                       </td>
                     </tr>
                   ))}
@@ -372,14 +373,10 @@ function HeroStat({ label, value, note }: { label: string; value: string; note?:
 }
 
 /** Ce qui débloque la page Performance, en trois étapes. */
-function EmptySteps() {
+function EmptySteps({ steps }: { steps: string[] }) {
   return (
     <ol className="mt-8 max-w-xl space-y-2 border-t border-hair pt-5">
-      {[
-        "Synchronise Strava : tes activités et tes efforts chronométrés arrivent.",
-        "Cours un 5 km (ou un 10 km) à fond : c'est lui qui cale ton VDOT.",
-        "Les records tombent tout seuls ensuite — et le niveau de forme monte.",
-      ].map((t, i) => (
+      {steps.map((t, i) => (
         <li key={i} className="flex items-baseline gap-2.5 text-sm text-ink2">
           <span className="font-mono text-clay">{i + 1}.</span>
           {t}

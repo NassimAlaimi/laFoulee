@@ -1,4 +1,4 @@
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { seasonPlan, type SeasonPhase, type SeasonRace } from "@/lib/season";
 import { fmtDateShort } from "@/lib/format";
 
@@ -18,6 +18,7 @@ const COLOR: Record<SeasonPhase, string> = {
  */
 export async function SeasonTimeline({ races, startWeeklyKm }: { races: SeasonRace[]; startWeeklyKm: number }) {
   const t = await getTranslations("season");
+  const locale = await getLocale();
   const season = seasonPlan({ races, startWeeklyKm });
   if (season.weeks.length === 0) return null;
 
@@ -48,11 +49,11 @@ export async function SeasonTimeline({ races, startWeeklyKm }: { races: SeasonRa
           return (
             <g key={i}>
               <rect x={x} y={26} width={Math.max(1, cw - 1)} height={H - 34} fill={COLOR[w.phase]} rx="1.5">
-                <title>{`${fmtDateShort(w.weekStart)} — ${t(`phase.${w.phase}`)}${w.note ? ` · ${w.note}` : ""} · ~${w.targetKm} km`}</title>
+                <title>{`${fmtDateShort(w.weekStart, locale)} — ${t(`phase.${w.phase}`)}${w.note ? ` · ${w.note}` : ""} · ~${w.targetKm} km`}</title>
               </rect>
               {(i % 4 === 0) && (
                 <text x={x} y={H - 4} fontSize="8" fill="rgb(var(--ink-3))">
-                  {w.weekStart.toLocaleDateString("fr-FR", { month: "short" })}
+                  {w.weekStart.toLocaleDateString(locale, { month: "short" })}
                 </text>
               )}
             </g>

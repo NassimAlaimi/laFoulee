@@ -200,7 +200,7 @@ export default async function ActivityDetailPage({
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <Link href="/activities" className="text-micro uppercase tracking-[0.1em] text-ink3 hover:text-clay">
-            ← Activités
+            ← {t("backToActivities")}
           </Link>
           <h1 className="mt-2 text-[1.75rem] font-semibold tracking-[-0.02em]">{activity.name}</h1>
           <p className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-ink2">
@@ -224,7 +224,7 @@ export default async function ActivityDetailPage({
             {gear && <span className="text-micro text-ink3">chaussures · {gear.name}</span>}
           </p>
         </div>
-        <nav className="flex items-center gap-1" aria-label="Séances voisines">
+        <nav className="flex items-center gap-1" aria-label={t("neighbourSessions")}>
           <NeighbourLink href={older ? `/activities/${older.id}` : null} label={t("previous")} dir="←" hint={older ? fmtDateShort(older.startDate, locale) : undefined} />
           <NeighbourLink href={newer ? `/activities/${newer.id}` : null} label={t("next")} dir="→" hint={newer ? fmtDateShort(newer.startDate, locale) : undefined} />
         </nav>
@@ -270,10 +270,10 @@ export default async function ActivityDetailPage({
         {planned && (
           <Section
             title={t("plannedVsDone")}
-            note={`Séance « ${planned.title} » du plan ${planned.plan.name}, validée automatiquement par cette activité.`}
+            note={t("plannedValidated", { session: planned.title, plan: planned.plan.name })}
             action={
               <Link href={`/training/${planned.plan.id}`} className="btn-quiet">
-                Voir le plan →
+                {t("viewPlan")} →
               </Link>
             }
           >
@@ -319,23 +319,23 @@ export default async function ActivityDetailPage({
                       {routeRank === 1 ? t("bestPass") : t("rankPass", { rank: routeRank })}
                     </span>
                   </div>
-                  <RouteHistory rows={routeHistory} current={activity.id} />
+                  <RouteHistory rows={routeHistory} current={activity.id} locale={locale} />
                 </div>
               ) : (
                 <div className="flex items-center gap-4 text-[0.8125rem] text-ink3">
                   <RouteGlyph polyline={hidden.polyline} size={56} stroke="rgb(var(--ink-3))" />
-                  Premier passage sur ce parcours : les prochains y seront comparés.
+                  {t("firstPass")}
                 </div>
               )}
               {comparable.length > 2 && (
                 <div>
                   <div className="eyebrow mb-3">
-                    Sorties de {round((activity.distance * 0.85) / 1000, 0)} à {round((activity.distance * 1.15) / 1000, 0)} km
+                    {t("similarRange", { from: round((activity.distance * 0.85) / 1000, 0), to: round((activity.distance * 1.15) / 1000, 0) })}
                   </div>
                   <div className="flex items-baseline gap-2">
                     <span className="display text-d2">{compRank}</span>
                     <span className="text-sm text-ink2">
-                      {compRank === 1 ? "ʳᵉ" : "ᵉ"} sur {comparable.length} en allure
+                      {t("rankOf", { n: compRank, total: comparable.length })}
                     </span>
                   </div>
                   <RankDots total={comparable.length} rank={compRank} />
@@ -392,8 +392,7 @@ export default async function ActivityDetailPage({
             )}
             <Row label={t("stravaSuffer")} value={activity.sufferScore ? Math.round(activity.sufferScore) : "—"} />
             <p className="mt-3 text-micro leading-relaxed text-ink3">
-              Le découplage compare l&apos;efficience (vitesse ÷ FC) de la seconde moitié à
-              la première. Sous 5 %, la base aérobie tient la durée de la séance.
+              {t("decouplingNote")}
             </p>
           </Section>
         </div>
@@ -404,7 +403,7 @@ export default async function ActivityDetailPage({
             title={t("hrCurve")}
             note={t("hrCurveNote")}
           >
-            <HrCurveChart stream={hrStream} maxHr={maxHr} />
+            <HrCurveChart stream={hrStream} maxHr={maxHr} label={t("hrProfile")} />
             {decoupling && (
               <div className="mt-5 grid gap-4 border-t border-hair pt-4 sm:grid-cols-4">
                 <Metric
@@ -434,7 +433,7 @@ export default async function ActivityDetailPage({
               <Metric
                 label={t("reps")}
                 value={String(interval.summary.count)}
-                note={`≈ ${fmtDistance(interval.summary.repDistance)} par fraction`}
+                note={t("perRep", { d: fmtDistance(interval.summary.repDistance) })}
               />
               <Metric
                 label={t("avgIntervalPace")}
@@ -461,9 +460,9 @@ export default async function ActivityDetailPage({
                 <thead>
                   <tr>
                     <th>#</th>
-                    <th className="text-right">Allure</th>
-                    <th className="text-right">Écart au meilleur</th>
-                    <th className="text-right">Temps</th>
+                    <th className="text-right">{t("pace")}</th>
+                    <th className="text-right">{t("gapToBest")}</th>
+                    <th className="text-right">{t("time")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -495,10 +494,10 @@ export default async function ActivityDetailPage({
                 <thead>
                   <tr>
                     <th>{t("segment")}</th>
-                    <th className="text-right">Temps</th>
-                    <th className="text-right">Allure</th>
+                    <th className="text-right">{t("time")}</th>
+                    <th className="text-right">{t("pace")}</th>
                     <th className="text-right">VDOT</th>
-                    <th className="text-right">Record</th>
+                    <th className="text-right">{t("record")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -549,7 +548,7 @@ export default async function ActivityDetailPage({
 
         <p className="text-center text-micro text-ink3">
           <kbd className="kbd">←</kbd> <kbd className="kbd">→</kbd> {t("kbdPrevNext")} ·{" "}
-          <kbd className="kbd">Échap</kbd> {t("kbdBack")}
+          <kbd className="kbd">{t("esc")}</kbd> {t("kbdBack")}
         </p>
       </div>
     </div>
@@ -629,9 +628,11 @@ function PlanCompare({
 function RouteHistory({
   rows,
   current,
+  locale,
 }: {
   rows: Array<{ id: string; startDate: Date; pace: number; movingTime: number; averageHr: number | null; distance: number }>;
   current: string;
+  locale: string;
 }) {
   const best = Math.min(...rows.map((r) => r.pace));
   const worst = Math.max(...rows.map((r) => r.pace));
@@ -649,7 +650,7 @@ function RouteHistory({
               on ? "font-medium" : "text-ink2 hover:text-ink"
             }`}
           >
-            <span className="whitespace-nowrap">{fmtDateShort(r.startDate)}</span>
+            <span className="whitespace-nowrap">{fmtDateShort(r.startDate, locale)}</span>
             <span className="h-[5px] rounded-full bg-sunken">
               <span
                 className="block h-full rounded-full transition-all"
@@ -702,9 +703,11 @@ const HR_ZONE_COLORS = [
 function HrCurveChart({
   stream,
   maxHr,
+  label,
 }: {
   stream: ReturnType<typeof decodeStream>;
   maxHr: number;
+  label: string;
 }) {
   const W = 720;
   const H = 200;
@@ -729,7 +732,7 @@ function HrCurveChart({
   const line = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Profil de fréquence cardiaque de la séance">
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label={label}>
       {HR_ZONE_STEPS.map((f, i) => {
         const y = H - PAD - ((f * maxHr - hrMin) / (hrMax - hrMin)) * (H - 2 * PAD);
         if (y < 0 || y > H) return null;

@@ -121,7 +121,7 @@ export default async function ActivitiesPage({
   const poly = new Map(polyRows.map((p) => [p.id, privatePolyline(p.polyline, zone)]));
 
   const stats = periodStats(runs);
-  const weekly = weeklyVolume(runs, 12);
+  const weekly = weeklyVolume(runs, 12, new Date(), locale);
 
   const qs = (patch: Partial<Filters>) => {
     const next = new URLSearchParams();

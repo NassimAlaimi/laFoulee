@@ -23,7 +23,7 @@ export type HeatmapRun = {
  * peuvent déborder sur l'année voisine pour rester des semaines entières
  * (comme le fait le graphe « contributions » de référence).
  */
-export function yearHeatmap(runs: HeatmapRun[], year: number): ConsistencyGrid {
+export function yearHeatmap(runs: HeatmapRun[], year: number, locale = "fr-FR"): ConsistencyGrid {
   const firstMonday = startOfWeek(new Date(year, 0, 1));
   const lastMonday = startOfWeek(new Date(year, 11, 31));
 
@@ -42,7 +42,7 @@ export function yearHeatmap(runs: HeatmapRun[], year: number): ConsistencyGrid {
 
     weeks.push({
       weekStart: monday,
-      label: monday.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }),
+      label: monday.toLocaleDateString(locale, { day: "2-digit", month: "short" }),
       days,
       km: round(days.reduce((a, d) => a + d.km, 0), 1),
     });

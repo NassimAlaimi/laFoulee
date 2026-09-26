@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { FACTOR_KEY, PHASE_KEY } from "@/components/goals/readiness-text";
+import { getLocale } from "next-intl/server";
 import { fmtDuration, fmtPace } from "@/lib/format";
 import type { RaceReadiness } from "@/lib/goal";
 import { getTranslations } from "next-intl/server";
@@ -31,7 +33,9 @@ export async function RacePoster({
   startsOn?: Date | null;
 }) {
   const t = await getTranslations("common");
-  const dateLabel = goal.raceDate.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const tgoals = await getTranslations("goals");
+  const locale = await getLocale();
+  const dateLabel = goal.raceDate.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const km = goal.distance / 1000;
 
   // Frise : semaines du plan, sinon semaines d'ici la course
@@ -52,8 +56,8 @@ export async function RacePoster({
   return (
     <div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-micro font-medium uppercase tracking-[0.16em]">
-        <span className="text-clay">Objectif {goal.priority === "A" ? "principal" : `priorité ${goal.priority}`}</span>
-        <span className="text-ink3">{p.phase}</span>
+        <span className="text-clay">{goal.priority === "A" ? tgoals("priorityA") : tgoals("priorityBadge", { p: goal.priority })}</span>
+        <span className="text-ink3">{tgoals(`racePhase.${PHASE_KEY[p.phase] ?? "prep"}`)}</span>
       </div>
 
       <div className="mt-5 grid items-end gap-8 lg:grid-cols-[minmax(0,1fr)_auto]">
@@ -65,7 +69,7 @@ export async function RacePoster({
             {goal.targetTime && (
               <>
                 {" "}
-                · objectif <span className="text-ink">{fmtDuration(goal.targetTime)}</span>
+                · {tgoals("goalTag")} <span className="text-ink">{fmtDuration(goal.targetTime)}</span>
               </>
             )}
           </p>
@@ -75,20 +79,20 @@ export async function RacePoster({
             {p.daysRemaining}
           </span>
           <span className="text-[0.9375rem] text-ink2 lg:mt-3">
-            jour{p.daysRemaining > 1 ? "s" : ""} · {p.weeksRemaining} semaine{p.weeksRemaining > 1 ? "s" : ""}
+            {tgoals("daysAndWeeks", { d: p.daysRemaining, w: p.weeksRemaining })}
           </span>
         </div>
       </div>
 
       {/* ------------------------------------------------ Le chemin */}
       <div className="mt-10">
-        <div className="flex h-16 items-end gap-[3px]" role="img" aria-label="Semaines jusqu'à la course">
+        <div className="flex h-16 items-end gap-[3px]" role="img" aria-label={tgoals("weeksToRace")}>
           {strip.map((w, i) => {
             const past = i < current || (current < 0 && w.weekStart < now);
             const h = w.km ? 18 + (w.km / maxKm) * 46 : 20;
             const isRace = i === strip.length - 1;
             return (
-              <div key={i} className="relative flex h-full flex-1 flex-col justify-end" title={`${w.weekStart.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}${w.km ? ` · ${Math.round(w.km)} km` : ""}${w.phase ? ` · ${t(PHASE_LABELS[w.phase as Phase] ?? `phase.${w.phase}`)}` : ""}`}>
+              <div key={i} className="relative flex h-full flex-1 flex-col justify-end" title={`${w.weekStart.toLocaleDateString(locale, { day: "numeric", month: "short" })}${w.km ? ` · ${Math.round(w.km)} km` : ""}${w.phase ? ` · ${t(PHASE_LABELS[w.phase as Phase] ?? `phase.${w.phase}`)}` : ""}`}>
                 {i === current && (
                   <span className="absolute -top-5 left-0 whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.12em] text-clay">
                     ▾ ici
@@ -106,7 +110,7 @@ export async function RacePoster({
                 />
                 {isRace && (
                   <span className="absolute -top-5 right-0 whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.12em] text-ink2">
-                    jour J
+                    {tgoals("raceDay")}
                   </span>
                 )}
               </div>
@@ -121,48 +125,48 @@ export async function RacePoster({
                 {t(PHASE_LABELS[ph as Phase] ?? `phase.${ph}`)}
               </span>
             ))}
-            {!phasesInPlan.length && <span>Aucun plan pour cette course : les semaines restantes, à remplir.</span>}
+            {!phasesInPlan.length && <span>{tgoals("posterNoPlan")}</span>}
           </span>
           <span>
-            {startsIn > 0 && <span className="mr-3 text-clay">le plan démarre dans {startsIn} jour{startsIn > 1 ? "s" : ""}</span>}
-            {strip[0].weekStart.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} →{" "}
-            {goal.raceDate.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+            {startsIn > 0 && <span className="mr-3 text-clay">{tgoals("planStartsIn", { n: startsIn })}</span>}
+            {strip[0].weekStart.toLocaleDateString(locale, { day: "numeric", month: "short" })} →{" "}
+            {goal.raceDate.toLocaleDateString(locale, { day: "numeric", month: "short" })}
           </span>
         </div>
       </div>
 
       {/* ------------------------------------------------ Où j'en suis */}
       <div className="mt-10 grid grid-cols-2 border-t border-hair lg:grid-cols-4">
-        <PosterFig label="Préparation" value={`${p.readiness}`} unit="/100">
+        <PosterFig label={tgoals("preparation")} value={`${p.readiness}`} unit="/100">
           <span className="mt-3 block h-[3px] w-full max-w-[160px] rounded-full bg-hair">
             <span className="block h-full rounded-full bg-clay" style={{ width: `${p.readiness}%` }} />
           </span>
         </PosterFig>
         <PosterFig
-          label="Chrono réaliste"
+          label={tgoals("realisticTime")}
           value={p.prediction ? fmtDuration(p.prediction.realistic) : "—"}
-          note={p.prediction ? `potentiel ${fmtDuration(p.prediction.potential)}` : undefined}
+          note={p.prediction ? tgoals("potentialShort", { time: fmtDuration(p.prediction.potential) }) : undefined}
         />
-        <PosterFig label="Allure" value={p.prediction ? fmtPace(p.prediction.pace, "") : "—"} unit="/km" note={p.targetPace ? `visée ${fmtPace(p.targetPace)}` : "réaliste aujourd'hui"} />
+        <PosterFig label={tgoals("paceShort2")} value={p.prediction ? fmtPace(p.prediction.pace, "") : "—"} unit="/km" note={p.targetPace ? tgoals("targetPaceShort", { pace: fmtPace(p.targetPace) }) : tgoals("realisticToday")} />
         <PosterFig
-          label="Le point faible"
-          value={weakest(p).label}
-          note={weakest(p).note}
+          label={tgoals("weakest")}
+          value={weakest(p, tgoals).label}
+          note={weakest(p, tgoals).note}
           small
         />
       </div>
 
       <div className="mt-8 flex flex-wrap gap-2">
         <Link href={`/goals/${goal.id}`} className="btn-solid">
-          Détail de la préparation →
+          {tgoals("prepDetail")} →
         </Link>
         {planId ? (
           <Link href={`/training/${planId}`} className="btn-outline">
-            Plan séance par séance
+            {tgoals("planBySession")}
           </Link>
         ) : (
           <Link href={`/goals/${goal.id}`} className="btn-outline">
-            Générer un plan
+            {tgoals("generatePlan")}
           </Link>
         )}
         {extra && <div className="ml-auto self-center">{extra}</div>}
@@ -172,16 +176,19 @@ export async function RacePoster({
 }
 
 /** Le facteur de préparation le plus en retard, dit simplement. */
-function weakest(p: RaceReadiness): { label: string; note: string } {
+function weakest(
+  p: RaceReadiness,
+  tgoals: (key: string, params?: Record<string, string | number>) => string
+): { label: string; note: string } {
   const f = [...p.factors].sort((a, b) => a.score / a.max - b.score / b.max)[0];
   if (!f) return { label: "—", note: "" };
   const note =
     f.unit === "s/km"
       ? f.target > 0
-        ? `${fmtPace(f.value)} pour ${fmtPace(f.target)} visés`
-        : `${fmtPace(f.value)} aujourd'hui`
+        ? tgoals("paceVsTarget", { value: fmtPace(f.value), target: fmtPace(f.target) })
+        : tgoals("paceToday", { value: fmtPace(f.value) })
       : `${f.value} / ${f.target} ${f.unit}`;
-  return { label: f.label, note: `${note} · ${Math.round((f.score / f.max) * 100)} %` };
+  return { label: tgoals(`factor.${FACTOR_KEY[f.label] ?? "pace"}`), note: `${note} · ${Math.round((f.score / f.max) * 100)} %` };
 }
 
 function PosterFig({

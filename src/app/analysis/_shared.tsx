@@ -20,7 +20,7 @@ import { loadDetailedRuns, loadZoneContext } from "@/lib/zones-store";
 import { monthlyPolar, percents, polarized, polarVerdict, zoneDistribution } from "@/lib/zones";
 import { RUN_TYPES } from "@/lib/strava";
 import { STANDARD_DISTANCES } from "@/lib/records";
-import { activityMarks } from "@/lib/race-marks";
+import { activityMarks, dayMonthLabel } from "@/lib/race-marks";
 
 /**
  * Chargeurs partagés du pôle Analyse, découpé en trois pages :
@@ -95,7 +95,7 @@ export async function loadForme(now: Date, userId: string, locale = "fr") {
 
   const { runs, records, profile, fitness } = ctx;
   const future = futureSessions.map((s) => ({ date: s.date, load: plannedLoad(s) }));
-  const series = formSeries({ activities: runs, days: 180, future, now });
+  const series = formSeries({ activities: runs, days: 180, future, now, locale });
   const form = formSummary(series, now);
   const formRows = series.map((p) => ({
     label: p.label,
@@ -108,7 +108,7 @@ export async function loadForme(now: Date, userId: string, locale = "fr") {
     tsbPast: p.projected ? null : p.tsb,
     tsbFuture: p.projected ? p.tsb : null,
   }));
-  const marks = activityMarks({ races: runs, records, now });
+  const marks = activityMarks({ races: runs, records, now, label: (d) => dayMonthLabel(d, locale) });
   const yoy = yearCompare(runs, { years: 3, now });
   // Répartition de l'intensité : même modèle que l'accueil (lib/zones), au
   // temps passé par km-split, dimension allure (toutes les sorties en ont une).
@@ -135,11 +135,11 @@ export async function loadForme(now: Date, userId: string, locale = "fr") {
       ? { easy: pEasy, moderate: pMid, hard: pHard, verdict: polarVerdict(dist90.pace, dist90.sessions), source: zoneCtx.model.paceSource }
       : null;
   const paceZones = trimLeadingEmpty(
-    paceByIntensity(runs, profile.vdot, { months: 12, now }),
+    paceByIntensity(runs, profile.vdot, { months: 12, now, locale }),
     (r) => r.easy == null && r.quality == null
   );
-  const grid = consistencyGrid(runs, { weeks: 26, now });
-  const timeline = recordTimeline(efforts).slice(0, 8);
+  const grid = consistencyGrid(runs, { weeks: 26, now, locale });
+  const timeline = recordTimeline(efforts, { locale }).slice(0, 8);
 
   return { runs, form, formRows, marks, yoy, polar, polarSum, paceZones, grid, timeline, fitness };
 }
@@ -154,12 +154,13 @@ export async function loadModeles(now: Date, userId: string) {
   const predictions = STANDARD_DISTANCES.filter((d) => FOCUS_DISTANCES.includes(d.key))
     .map((d) => {
       const p = ctx.predict(d.meters);
-      return p ? { ...p, name: d.name } : null;
+      return p ? { ...p, name: d.name, key: d.key } : null;
     })
     .filter((p): p is NonNullable<typeof p> => p !== null);
 
   const gapRows = predictions.map((p) => ({
     name: p.name,
+    key: p.key,
     potential: p.potential,
     realistic: p.realistic,
     gapPct: Math.round(((p.realistic - p.potential) / p.potential) * 1000) / 10,

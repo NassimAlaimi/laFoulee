@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import {
   Bar,
   BarChart,
@@ -27,6 +28,7 @@ type Row = {
 
 export function VolumeChart({ data, goalKm }: { data: Row[]; goalKm?: number }) {
   const t = useChartTheme();
+  const tt = useTranslations("common");
 
   return (
     <ResponsiveContainer width="100%" height={230}>
@@ -41,14 +43,14 @@ export function VolumeChart({ data, goalKm }: { data: Row[]; goalKm?: number }) 
             if (!d) return null;
             return (
               <Tip
-                label={`Semaine du ${label}`}
+                label={tt("weekOf", { label })}
                 rows={[
-                  { label: "Volume", value: `${d.km} km`, color: t.clay },
-                  { label: "Séances", value: d.sessions },
-                  { label: "Temps", value: `${d.timeHours} h` },
-                  { label: "Dénivelé", value: `${d.elevation} m` },
-                  ...(d.avgPace ? [{ label: "Allure", value: fmtPace(d.avgPace) }] : []),
-                  ...(d.avgHr ? [{ label: "FC", value: `${d.avgHr} bpm` }] : []),
+                  { label: tt("volume"), value: `${d.km} km`, color: t.clay },
+                  { label: tt("sessions"), value: d.sessions },
+                  { label: tt("time"), value: `${d.timeHours} h` },
+                  { label: tt("elevation"), value: `${d.elevation} m` },
+                  ...(d.avgPace ? [{ label: tt("pace"), value: fmtPace(d.avgPace) }] : []),
+                  ...(d.avgHr ? [{ label: tt("hr"), value: `${d.avgHr} bpm` }] : []),
                 ]}
               />
             );
@@ -61,7 +63,7 @@ export function VolumeChart({ data, goalKm }: { data: Row[]; goalKm?: number }) 
             strokeDasharray="3 3"
             strokeWidth={1}
             label={{
-              value: `objectif ${goalKm}`,
+              value: tt("goal", { km: goalKm }),
               position: "insideRight",
               fill: t.axis,
               fontSize: 10,
@@ -81,6 +83,7 @@ export function VolumeChart({ data, goalKm }: { data: Row[]; goalKm?: number }) 
 
 export function ElevationChart({ data }: { data: Row[] }) {
   const t = useChartTheme();
+  const tt = useTranslations("common");
   return (
     <ResponsiveContainer width="100%" height={180}>
       <BarChart data={data} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
@@ -91,10 +94,10 @@ export function ElevationChart({ data }: { data: Row[] }) {
           cursor={{ fill: t.grid, fillOpacity: 0.45 }}
           content={({ payload, label }) => (
             <Tip
-              label={`Semaine du ${label}`}
+              label={tt("weekOf", { label })}
               rows={[
                 {
-                  label: "Dénivelé positif",
+                  label: tt("elevGain"),
                   value: `${payload?.[0]?.value ?? 0} m`,
                   color: t.slate,
                 },

@@ -20,8 +20,8 @@ export type ChartMark = {
 };
 
 /** « 14 sept. » — le format de l'axe du PMC (formSeries). */
-export function dayMonthLabel(d: Date): string {
-  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
+export function dayMonthLabel(d: Date, locale = "fr-FR"): string {
+  return d.toLocaleDateString(locale, { day: "2-digit", month: "short" });
 }
 
 /**

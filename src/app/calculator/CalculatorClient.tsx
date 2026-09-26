@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { distanceName, paceName, paceUsage } from "@/components/terms";
 import { useTranslations } from "next-intl";
 import { fmtDuration, fmtPace, pacePerKm } from "@/lib/format";
 import { STANDARD_DISTANCES } from "@/lib/records";
@@ -26,6 +27,7 @@ export function CalculatorClient({
   initialSeconds: number;
 }) {
   const t = useTranslations("calculator");
+  const tt = useTranslations("terms");
   const [meters, setMeters] = useState(initialDistance);
   const [h, setH] = useState(Math.floor(initialSeconds / 3600));
   const [m, setM] = useState(Math.floor((initialSeconds % 3600) / 60));
@@ -70,11 +72,11 @@ export function CalculatorClient({
     <div className="space-y-10">
       {/* ---------------------------------------------------- Saisie */}
       <section className="border-t border-hair pt-5">
-        <h2 className="eyebrow mb-5">Ta performance de référence</h2>
+        <h2 className="eyebrow mb-5">{t("reference")}</h2>
 
         <div className="flex flex-wrap items-end gap-x-8 gap-y-5">
           <div>
-            <span className="field-label">Distance</span>
+            <span className="field-label">{t("distance")}</span>
             <div className="flex flex-wrap gap-1">
               {PRESETS.map((d) => (
                 <button
@@ -86,7 +88,7 @@ export function CalculatorClient({
                       : "border-hair text-ink2 hover:border-hairStrong hover:text-ink"
                   }`}
                 >
-                  {d.name}
+                  {distanceName(tt, d.key, d.name)}
                 </button>
               ))}
             </div>
@@ -94,7 +96,7 @@ export function CalculatorClient({
 
           <div>
             <label className="field-label" htmlFor="custom-km">
-              ou distance libre (km)
+              {t("freeDistance")}
             </label>
             <input
               id="custom-km"
@@ -108,7 +110,7 @@ export function CalculatorClient({
           </div>
 
           <div>
-            <span className="field-label">Chrono</span>
+            <span className="field-label">{t("time")}</span>
             <div className="flex items-center gap-1.5">
               <TimeInput value={h} onChange={setH} max={23} suffix="h" />
               <TimeInput value={m} onChange={setM} max={59} suffix="min" />
@@ -117,7 +119,7 @@ export function CalculatorClient({
           </div>
 
           <div className="pb-1">
-            <div className="eyebrow">Allure</div>
+            <div className="eyebrow">{t("pace")}</div>
             <div className="mt-1.5 font-mono text-d4 tabular-nums">
               {valid ? fmtPace(pace, "") : "—"}
               <span className="ml-1 text-micro text-ink3">/km</span>
@@ -128,7 +130,7 @@ export function CalculatorClient({
 
       {!valid ? (
         <p className="border-t border-hair pt-8 text-sm text-ink2">
-          Saisis une distance et un chrono pour lancer le calcul.
+          {t("enterPrompt")}
         </p>
       ) : (
         <>
@@ -137,7 +139,7 @@ export function CalculatorClient({
             <Figure
               label={t("vdot")}
               value={vdot.toFixed(1)}
-              note={level?.label}
+              note={level ? tt(`level.${level.key}`) : undefined}
               big
             />
             <Figure label={t("vma")} value={vma.toFixed(1)} unit="km/h" />
@@ -150,28 +152,26 @@ export function CalculatorClient({
 
           {/* ---------------------------------------------------- Équivalents */}
           <section className="border-t border-hair pt-5">
-            <h2 className="eyebrow mb-1.5">Chronos équivalents</h2>
+            <h2 className="eyebrow mb-1.5">{t("equivalents")}</h2>
             <p className="mb-5 max-w-2xl text-[0.8125rem] leading-relaxed text-ink2">
-              Performances correspondant au même niveau de forme. Elles supposent
-              un entraînement adapté à chaque distance : un marathon réussi
-              demande du volume que ce calcul ne mesure pas.
+              {t("equivalentsNote")}
             </p>
             <div className="overflow-x-auto">
               <table className="data-table">
                 <thead>
                   <tr>
                     <th>{t("distance")}</th>
-                    <th className="text-right">Chrono</th>
-                    <th className="text-right">Allure</th>
-                    <th className="text-right">Vitesse</th>
+                    <th className="text-right">{t("time")}</th>
+                    <th className="text-right">{t("pace")}</th>
+                    <th className="text-right">{t("speed")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {equivalents.map((e) => (
                     <tr key={e.key} className={e.isSource ? "text-clay" : ""}>
                       <td className={e.isSource ? "font-medium" : ""}>
-                        {e.name}
-                        {e.isSource && <span className="ml-2 tag">saisi</span>}
+                        {distanceName(tt, e.key, e.name)}
+                        {e.isSource && <span className="ml-2 tag">{t("entered")}</span>}
                       </td>
                       <td className="num text-right font-medium">
                         {fmtDuration(e.seconds)}
@@ -191,19 +191,19 @@ export function CalculatorClient({
 
           {/* ---------------------------------------------------- Allures */}
           <section className="border-t border-hair pt-5">
-            <h2 className="eyebrow mb-1.5">Allures d&apos;entraînement</h2>
+            <h2 className="eyebrow mb-1.5">{t("trainingPaces")}</h2>
             <p className="mb-5 text-[0.8125rem] text-ink2">
-              Méthode Daniels, dérivées du VDOT {vdot.toFixed(1)}.
+              {t("danielsNote", { vdot: vdot.toFixed(1) })}
             </p>
             <div className="overflow-x-auto">
               <table className="data-table">
                 <thead>
                   <tr>
                     <th>{t("intensity")}</th>
-                    <th className="text-right">Allure</th>
-                    <th className="text-right">Sur 400 m</th>
-                    <th className="text-right">Sur 1 km</th>
-                    <th className="hidden md:table-cell">Usage</th>
+                    <th className="text-right">{t("pace")}</th>
+                    <th className="text-right">{t("per400")}</th>
+                    <th className="text-right">{t("per1k")}</th>
+                    <th className="hidden md:table-cell">{t("usage")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -215,7 +215,7 @@ export function CalculatorClient({
                             className="h-[3px] w-3"
                             style={{ background: p.color }}
                           />
-                          {p.name}
+                          {paceName(tt, p.key)}
                         </span>
                       </td>
                       <td className="num text-right font-medium">
@@ -228,7 +228,7 @@ export function CalculatorClient({
                         {fmtDuration((p.pace + p.paceFast) / 2)}
                       </td>
                       <td className="hidden max-w-sm text-[0.8125rem] text-ink2 md:table-cell">
-                        {p.usage}
+                        {paceUsage(tt, p.key)}
                       </td>
                     </tr>
                   ))}

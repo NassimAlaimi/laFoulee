@@ -105,6 +105,8 @@ export function formSeries(opts: {
   future?: Array<{ date: Date; load: number }>;
   maxHr?: number;
   restHr?: number;
+  /** Langue des étiquettes de dates. */
+  locale?: string;
 }): FormPoint[] {
   const now = opts.now ?? new Date();
   const days = opts.days ?? 180;
@@ -152,7 +154,7 @@ export function formSeries(opts: {
 
     out.push({
       date: new Date(d),
-      label: d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }),
+      label: d.toLocaleDateString(opts.locale ?? "fr-FR", { day: "2-digit", month: "short" }),
       load: Math.round(load),
       ctl: Math.round(ctl * 10) / 10,
       atl: Math.round(atl * 10) / 10,

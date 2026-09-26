@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { revalidatePath } from "next/cache";
 import { Hint, NightBand, PageHead, Section, SectionHead } from "@/components/ui/Layout";
 import { RacePoster, type PosterWeek } from "@/components/goals/RacePoster";
@@ -9,7 +9,9 @@ import { fmtDate, fmtDuration, fmtPace } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
 import { STANDARD_DISTANCES } from "@/lib/records";
-import { raceReadiness, readinessFacts } from "@/lib/goal";
+import { raceReadiness } from "@/lib/goal";
+import { FACTOR_KEY, PHASE_KEY, factLines } from "@/components/goals/readiness-text";
+import { distanceName } from "@/components/terms";
 import { goalProgress, type GoalKind } from "@/lib/goal-progress";
 import { SeasonTimeline } from "@/components/goals/SeasonTimeline";
 import { athleteContext } from "@/lib/plan-store";
@@ -22,14 +24,11 @@ const PRIORITY_STYLE: Record<string, string> = {
   C: "bg-sunken text-ink2",
 };
 
-const KIND_LABEL: Record<string, string> = {
-  volume: "Volume",
-  streak: "Série",
-  frequency: "Fréquence",
-};
 
 export default async function GoalsPage() {
   const t = await getTranslations("goals");
+  const tt = await getTranslations("terms");
+  const locale = await getLocale();
   const now = new Date();
   const userId = await requireUserId();
   const [goals, ctx, plans] = await Promise.all([
@@ -144,7 +143,7 @@ export default async function GoalsPage() {
         }
         action={
           <a href="#nouvel-objectif" className="btn-outline">
-            + Nouvel objectif
+            + {t("newGoalShort")}
           </a>
         }
       />
@@ -176,7 +175,7 @@ export default async function GoalsPage() {
       {/* ------------------------------------------------ Objectifs du quotidien */}
       {dailyGoals.length > 0 && (
         <div className="space-y-6">
-          <h2 className="text-[1.3125rem] font-semibold tracking-[-0.018em]">Objectifs du quotidien</h2>
+          <h2 className="text-[1.3125rem] font-semibold tracking-[-0.018em]">{t("dailyGoals")}</h2>
           <div className="grid gap-4 md:grid-cols-2">
             {dailyGoals.map((g) => {
               const p = goalProgress({
@@ -191,11 +190,12 @@ export default async function GoalsPage() {
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-[0.9375rem] font-semibold tracking-tight">{g.name}</h3>
-                        <span className="badge bg-sunken text-ink2">{KIND_LABEL[g.kind] ?? g.kind}</span>
+                        <span className="badge bg-sunken text-ink2">{t(`kind.${g.kind === "streak" || g.kind === "frequency" ? g.kind : "volume"}`)}</span>
                       </div>
                       {p && (
                         <p className="mt-1 text-sm text-ink2">
-                          {p.label} · objectif {p.target} {p.unit}
+                          {t(`progress.${g.kind === "streak" || g.kind === "frequency" ? g.kind : "volume"}`, { n: p.current })} ·{" "}
+                          {t(`progressTarget.${g.kind === "streak" || g.kind === "frequency" ? g.kind : "volume"}`, { n: p.target })}
                         </p>
                       )}
                     </div>
@@ -221,10 +221,10 @@ export default async function GoalsPage() {
       {/* -------------------------------------------------- À venir */}
       {others.length > 0 && (
         <div className="space-y-6">
-          <h2 className="text-[1.3125rem] font-semibold tracking-[-0.018em]">Aussi au programme</h2>
+          <h2 className="text-[1.3125rem] font-semibold tracking-[-0.018em]">{t("alsoPlanned")}</h2>
           {others.map((goal) => {
             const p = readinessOf(goal);
-            const facts = readinessFacts(p);
+            const facts = factLines(p, t);
             const planId = planByGoal.get(goal.id);
             return (
               <Section key={goal.id}>
@@ -235,14 +235,14 @@ export default async function GoalsPage() {
                         {goal.name}
                       </h3>
                       <span className={`badge ${PRIORITY_STYLE[goal.priority]}`}>
-                        Priorité {goal.priority}
+                        {t("priorityBadge", { p: goal.priority })}
                       </span>
                       <span className="badge bg-sunken text-ink2">
-                        {p.phase}
+                        {t(`racePhase.${PHASE_KEY[p.phase] ?? "prep"}`)}
                       </span>
                     </div>
                     <p className="mt-1.5 text-sm text-ink2">
-                      {fmtDate(goal.raceDate)} · {(goal.distance / 1000).toFixed(1)} km
+                      {fmtDate(goal.raceDate, locale)} · {(goal.distance / 1000).toFixed(1)} km
                       {goal.targetTime && (
                         <>
                           {` · ${t("goalTag")} `}
@@ -270,7 +270,7 @@ export default async function GoalsPage() {
                 <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
                   <div>
                     <div className="mb-2 flex items-baseline justify-between">
-                      <span className="section-title">Préparation</span>
+                      <span className="section-title">{t("preparation")}</span>
                       <span className="text-sm font-semibold ">
                         {p.readiness}
                         <span className="text-ink3">/100</span>
@@ -292,7 +292,7 @@ export default async function GoalsPage() {
                       {p.factors.map((b) => (
                         <div key={b.label}>
                           <div className="flex items-baseline justify-between text-micro">
-                            <span className="text-ink2">{b.label}</span>
+                            <span className="text-ink2">{t(`factor.${FACTOR_KEY[b.label] ?? "pace"}`)}</span>
                             <span className="font-mono tabular-nums text-ink3">
                               {b.score}/{b.max}
                             </span>
@@ -303,7 +303,7 @@ export default async function GoalsPage() {
                           <div className="mt-0.5 font-mono text-micro tabular-nums text-ink3">
                             {b.unit === "s/km"
                               ? b.target > 0
-                                ? `${fmtPace(b.value)} vs ${fmtPace(b.target)} visés`
+                                ? t("paceVsTarget", { value: fmtPace(b.value), target: fmtPace(b.target) })
                                 : fmtPace(b.value)
                               : `${b.value} / ${b.target} ${b.unit}`}
                           </div>
@@ -316,13 +316,13 @@ export default async function GoalsPage() {
                     <Metric
                       label={t("weeklyVolume")}
                       value={`${ctx.fitness.weeklyKm} km`}
-                      note={`référence ${p.needs.weeklyKm} km`}
+                      note={t("referenceKm", { km: p.needs.weeklyKm })}
                       ok={ctx.fitness.weeklyKm >= p.needs.weeklyKm}
                     />
                     <Metric
                       label={t("longestRun")}
                       value={`${ctx.fitness.longestRunKm} km`}
-                      note={`cible ${p.needs.longRunKm} km`}
+                      note={t("targetKm", { km: p.needs.longRunKm })}
                       ok={ctx.fitness.longestRunKm >= p.needs.longRunKm}
                     />
                     <Metric
@@ -330,7 +330,7 @@ export default async function GoalsPage() {
                       value={p.prediction ? fmtDuration(p.prediction.realistic) : "—"}
                       note={
                         p.prediction
-                          ? `potentiel ${fmtDuration(p.prediction.potential)}`
+                          ? t("potentialShort", { time: fmtDuration(p.prediction.potential) })
                           : undefined
                       }
                       ok={
@@ -342,7 +342,7 @@ export default async function GoalsPage() {
                     <Metric
                       label={t("requiredLevel")}
                       value={p.gap ? `VDOT ${p.gap.requiredVdot}` : "—"}
-                      note={p.gap ? `actuel ${p.gap.currentVdot}` : undefined}
+                      note={p.gap ? t("currentShort", { n: p.gap.currentVdot }) : undefined}
                       ok={p.gap ? p.gap.gap <= 0 : undefined}
                     />
                   </div>
@@ -350,15 +350,15 @@ export default async function GoalsPage() {
 
                 <div className="mt-5 flex flex-wrap gap-2 border-t border-hair pt-4">
                   <Link href={`/goals/${goal.id}`} className="btn-outline btn-sm">
-                    Détail de la préparation →
+                    {t("prepDetail")} →
                   </Link>
                   {planId ? (
                     <Link href={`/training/${planId}`} className="btn-quiet btn-sm">
-                      Plan séance par séance
+                      {t("planBySession")}
                     </Link>
                   ) : (
                     <Link href={`/goals/${goal.id}`} className="btn-quiet btn-sm">
-                      Aucun plan · en générer un
+                      {t("noPlanGenerate")}
                     </Link>
                   )}
                 </div>
@@ -375,7 +375,7 @@ export default async function GoalsPage() {
         <form action={createGoal} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <div className="sm:col-span-2">
             <label className="field-label" htmlFor="name">
-              Nom de la course
+              {t("raceName")}
             </label>
             <input
               id="name"
@@ -387,13 +387,13 @@ export default async function GoalsPage() {
           </div>
           <div>
             <label className="field-label" htmlFor="raceDate">
-              Date
+              {t("date")}
             </label>
             <input id="raceDate" name="raceDate" type="date" required className="field" />
           </div>
           <div>
             <label className="field-label" htmlFor="distanceKm">
-              Distance (km)
+              {t("distanceKm")}
             </label>
             <input
               id="distanceKm"
@@ -409,13 +409,13 @@ export default async function GoalsPage() {
             <datalist id="distances">
               {STANDARD_DISTANCES.filter((d) => d.major).map((d) => (
                 <option key={d.key} value={(d.meters / 1000).toFixed(1)}>
-                  {d.name}
+                  {distanceName(tt, d.key, d.name)}
                 </option>
               ))}
             </datalist>
           </div>
           <div className="sm:col-span-2">
-            <span className="field-label">Chrono visé (optionnel)</span>
+            <span className="field-label">{t("targetTimeOptional")}</span>
             <div className="flex gap-2">
               <input name="hours" type="number" min="0" max="23" placeholder="h" className="field" />
               <input name="minutes" type="number" min="0" max="59" placeholder="min" className="field" />
@@ -424,17 +424,17 @@ export default async function GoalsPage() {
           </div>
           <div>
             <label className="field-label" htmlFor="priority">
-              Priorité
+              {t("priority")}
             </label>
             <select id="priority" name="priority" className="field">
-              <option value="A">A — objectif principal</option>
-              <option value="B">B — course intermédiaire</option>
-              <option value="C">C — entraînement</option>
+              <option value="A">{t("priorityA")}</option>
+              <option value="B">{t("priorityB")}</option>
+              <option value="C">{t("priorityC")}</option>
             </select>
           </div>
           <div className="flex items-end">
             <button type="submit" className="btn-solid w-full">
-              Ajouter l&apos;objectif
+              {t("addGoal")}
             </button>
           </div>
         </form>
@@ -450,13 +450,13 @@ export default async function GoalsPage() {
         <form action={createDailyGoal} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <div className="sm:col-span-2">
             <label className="field-label" htmlFor="dname">
-              Nom
+              {t("name")}
             </label>
-            <input id="dname" name="name" required placeholder="200 km ce mois" className="field" />
+            <input id="dname" name="name" required placeholder={t("dailyPlaceholder")} className="field" />
           </div>
           <div>
             <label className="field-label" htmlFor="kind">
-              Type
+              {t("type")}
             </label>
             <select id="kind" name="kind" className="field">
               <option value="volume">{t("optVolume")}</option>
@@ -466,19 +466,19 @@ export default async function GoalsPage() {
           </div>
           <div>
             <label className="field-label" htmlFor="targetValue">
-              Objectif (km / jours / sorties)
+              {t("targetValue")}
             </label>
             <input id="targetValue" name="targetValue" type="number" step="1" min="1" required placeholder="200" className="field" />
           </div>
           <div className="sm:col-span-2">
             <label className="field-label" htmlFor="endDate">
-              Échéance (optionnel)
+              {t("deadlineOptional")}
             </label>
             <input id="endDate" name="endDate" type="date" className="field" />
           </div>
           <div className="flex items-end sm:col-span-2 xl:col-span-1">
             <button type="submit" className="btn-solid w-full">
-              Ajouter l&apos;objectif
+              {t("addGoal")}
             </button>
           </div>
         </form>
@@ -487,14 +487,14 @@ export default async function GoalsPage() {
       {/* -------------------------------------------------- Passées */}
       {past.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-[1.3125rem] font-semibold tracking-[-0.018em]">Courses passées</h2>
+          <h2 className="text-[1.3125rem] font-semibold tracking-[-0.018em]">{t("pastRaces")}</h2>
           <Section>
             <table className="data-table">
               <tbody>
                 {past.map((goal) => (
                   <tr key={goal.id}>
                     <td className="font-medium text-ink">{goal.name}</td>
-                    <td className="text-ink2">{fmtDate(goal.raceDate)}</td>
+                    <td className="text-ink2">{fmtDate(goal.raceDate, locale)}</td>
                     <td className="text-right font-mono tabular-nums text-ink2">
                       {(goal.distance / 1000).toFixed(1)} km
                     </td>
@@ -514,7 +514,7 @@ export default async function GoalsPage() {
 
       {goals.length === 0 && (
         <Hint height={140}>
-          Aucun objectif pour le moment — ajoute une course ou un objectif du quotidien ci-dessus.
+          {t("noGoals")}
         </Hint>
       )}
     </div>

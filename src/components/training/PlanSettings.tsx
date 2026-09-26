@@ -92,7 +92,7 @@ export function PlanSettings({ plan }: { plan: Plan }) {
           />
         </Field>
 
-        <Field label="Plafond km/sem (0 = auto)">
+        <Field label={t("ceilingKm")}>
           <input
             type="number"
             min={0}
@@ -127,7 +127,7 @@ export function PlanSettings({ plan }: { plan: Plan }) {
           }}
           className="accent-clay"
         />
-        Réadaptation automatique après chaque point hebdomadaire
+        {t("autoReadapt")}
       </label>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -164,7 +164,7 @@ export function PlanSettings({ plan }: { plan: Plan }) {
           </button>
         ) : (
           <button onClick={() => patch({ status: "active" }, "resume")} className="btn-quiet">
-            Réactiver
+            {t("reactivate")}
           </button>
         )}
 
@@ -175,7 +175,7 @@ export function PlanSettings({ plan }: { plan: Plan }) {
 
       {saved && (
         <p className="text-micro text-sage">
-          Plan mis à jour — les séances passées et modifiées à la main sont conservées.
+          {t("planUpdated")}
         </p>
       )}
     </div>

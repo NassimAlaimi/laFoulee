@@ -154,11 +154,14 @@ export function danielsPaces(vdot: number) {
  * Les couleurs sont des variables CSS : elles suivent le thème clair/sombre.
  */
 /** Interprétation qualitative du VDOT (repères indicatifs, coureur loisir → confirmé). */
-export function vdotLevel(vdot: number): { label: string; color: string } {
-  if (vdot < 30) return { label: "Débutant", color: "rgb(var(--ink-3))" };
-  if (vdot < 38) return { label: "Régulier", color: "rgb(var(--sage))" };
-  if (vdot < 46) return { label: "Confirmé", color: "rgb(var(--ochre))" };
-  if (vdot < 54) return { label: "Avancé", color: "rgb(var(--clay))" };
-  if (vdot < 62) return { label: "Compétiteur", color: "rgb(var(--rust))" };
-  return { label: "Élite", color: "rgb(var(--plum))" };
+export type LevelKey = "beginner" | "regular" | "confirmed" | "advanced" | "competitor" | "elite";
+
+/** Niveau lisible ; `key` sert à la traduction (terms.level.*). */
+export function vdotLevel(vdot: number): { label: string; key: LevelKey; color: string } {
+  if (vdot < 30) return { label: "Débutant", key: "beginner", color: "rgb(var(--ink-3))" };
+  if (vdot < 38) return { label: "Régulier", key: "regular", color: "rgb(var(--sage))" };
+  if (vdot < 46) return { label: "Confirmé", key: "confirmed", color: "rgb(var(--ochre))" };
+  if (vdot < 54) return { label: "Avancé", key: "advanced", color: "rgb(var(--clay))" };
+  if (vdot < 62) return { label: "Compétiteur", key: "competitor", color: "rgb(var(--rust))" };
+  return { label: "Élite", key: "elite", color: "rgb(var(--plum))" };
 }

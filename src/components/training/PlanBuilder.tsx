@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   assessFeasibility,
   buildBlueprint,
@@ -44,6 +44,7 @@ export function PlanBuilder({
   defaults?: { daysPerWeek?: number; longRunDay?: number; ceilingKm?: number };
 }) {
   const t = useTranslations("training");
+  const locale = useLocale();
   const router = useRouter();
   const [mode, setMode] = useState<"open" | "race">(goals.length > 0 ? "race" : "open");
   const [goalId, setGoalId] = useState(goals[0]?.id ?? "");
@@ -183,12 +184,12 @@ export function PlanBuilder({
         {mode === "race" ? (
           <div>
             <label className="field-label" htmlFor="goal">
-              Course visée
+              {t("goalRace")}
             </label>
             <select id="goal" value={goalId} onChange={(e) => setGoalId(e.target.value)} className="field">
               {goals.map((g) => (
                 <option key={g.id} value={g.id}>
-                  {g.name} — {g.distanceKm} km — {new Date(g.raceDate).toLocaleDateString("fr-FR")}
+                  {g.name} — {g.distanceKm} km — {new Date(g.raceDate).toLocaleDateString(locale)}
                 </option>
               ))}
             </select>
@@ -310,7 +311,7 @@ export function PlanBuilder({
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="field-label" htmlFor="days">
-              Sorties / semaine
+              {t("runsPerWeek")}
             </label>
             <select
               id="days"
@@ -319,11 +320,11 @@ export function PlanBuilder({
               className="field"
             >
               <option value={0}>
-                Auto — {suggestDaysPerWeek({ weeklyKm: startKm, sessionsPerWeek: fitness.sessionsPerWeek })} puis plus si le volume monte
+                {t("autoRuns", { n: suggestDaysPerWeek({ weeklyKm: startKm, sessionsPerWeek: fitness.sessionsPerWeek }) })}
               </option>
               {[3, 4, 5, 6, 7].map((d) => (
                 <option key={d} value={d}>
-                  {d} sorties, fixe
+                  {t("runsFixed", { n: d })}
                 </option>
               ))}
             </select>
@@ -332,16 +333,16 @@ export function PlanBuilder({
                 ? preview.bp.daysSteps.length > 1
                   ? preview.bp.daysSteps
                       .map((p, i) =>
-                        i === 0 ? `${p.days} sorties` : `${p.days} dès la semaine ${p.fromWeek}`
+                        i === 0 ? t("runsCount", { n: p.days }) : t("runsFromWeek", { n: p.days, week: p.fromWeek })
                       )
                       .join(" · ")
-                  : `${preview.bp.daysStart} sorties sur tout le plan`
+                  : t("runsWholePlan", { n: preview.bp.daysStart })
                 : t("manual")}
             </div>
           </div>
           <div>
             <label className="field-label" htmlFor="lrd">
-              Jour de sortie longue
+              {t("longRunDay")}
             </label>
             <select
               id="lrd"
@@ -356,9 +357,9 @@ export function PlanBuilder({
               ))}
             </select>
           </div>
-          <NumField label="Renfo / semaine" value={strength} onChange={setStrength} min={0} max={3} />
+          <NumField label={t("strengthWeek")} value={strength} onChange={setStrength} min={0} max={3} />
           {mode === "open" ? (
-            <NumField label="Horizon (semaines)" value={horizon} onChange={setHorizon} min={4} max={52} />
+            <NumField label={t("horizonWeeks")} value={horizon} onChange={setHorizon} min={4} max={52} />
           ) : null}
           <NumField
             label={t("ceilingVolume")}
@@ -377,7 +378,7 @@ export function PlanBuilder({
             onChange={(e) => setAutoAdapt(e.target.checked)}
             className="accent-clay"
           />
-          Réadapter automatiquement selon douleurs, fatigue et assiduité
+          {t("autoReadapt")}
         </label>
 
         <button onClick={create} disabled={busy || (mode === "race" && !goal)} className="btn-solid">
@@ -391,7 +392,7 @@ export function PlanBuilder({
 
         <div>
           <div className="mb-2 flex items-baseline justify-between">
-            <span className="eyebrow">Trajectoire de volume</span>
+            <span className="eyebrow">{t("volumeTrajectory")}</span>
             <span className="font-mono text-micro tabular-nums text-ink3">
               {startKm} → {preview.bp.peakKm} km/sem
             </span>
@@ -402,11 +403,11 @@ export function PlanBuilder({
         <div className="grid grid-cols-3 gap-4 border-t border-hair pt-4">
           <Stat label={t("weeksStat")} value={String(preview.weeks)} />
           <Stat label={t("totalVolume")} value={`${preview.bp.totalKm} km`} />
-          <Stat label="Sortie longue max" value={`${preview.bp.longRunPeakKm} km`} />
+          <Stat label={t("maxLongRun")} value={`${preview.bp.longRunPeakKm} km`} />
         </div>
 
         <div>
-          <span className="eyebrow">Première semaine</span>
+          <span className="eyebrow">{t("firstWeek")}</span>
           <ul className="mt-2 space-y-1">
             {preview.bp.sessions
               .filter((s) => s.weekNumber === 1)
@@ -458,6 +459,7 @@ export function FeasibilityPanel({
     requiredPeakKm: number;
   };
 }) {
+  const t = useTranslations("training");
   const tone = LEVEL_TONE[f.level] ?? LEVEL_TONE.demanding;
   // 4 crans : la position du curseur est le ratio temps disponible / nécessaire
   const pos = Math.max(4, Math.min(100, (f.ratio / 2) * 100));
@@ -465,7 +467,7 @@ export function FeasibilityPanel({
   return (
     <div>
       <div className="mb-2 flex items-baseline justify-between">
-        <span className="eyebrow">Dosage de la difficulté</span>
+        <span className="eyebrow">{t("difficultyDose")}</span>
         <span className={`text-sm font-medium ${tone.text}`}>{f.label}</span>
       </div>
 
@@ -476,8 +478,8 @@ export function FeasibilityPanel({
         />
       </div>
       <div className="mt-1 flex justify-between text-[10px] text-ink3">
-        <span>serré</span>
-        <span>confortable</span>
+        <span>{t("tight")}</span>
+        <span>{t("comfortable")}</span>
       </div>
 
       <ul className="mt-3 space-y-1">

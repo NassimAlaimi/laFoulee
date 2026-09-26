@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { AuthErrorCode } from "@/lib/auth-errors";
 import { getLocale } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { exchangeCodeForToken, evictLeastActiveStravaUser } from "@/lib/strava";
 import { encryptSecret, secretKeyFromEnv } from "@/lib/crypto";
-import { AthleteLimitError, UserFacingError, toSafeMessage } from "@/lib/http-error";
+import { AthleteLimitError, toSafeMessage } from "@/lib/http-error";
 import {
   canRegister,
   createSession,
@@ -17,10 +18,9 @@ export const dynamic = "force-dynamic";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
-function fail(target: string, message: string) {
-  return NextResponse.redirect(
-    new URL(`${target}?error=${encodeURIComponent(message)}`, APP_URL)
-  );
+/** Retour avec un code d'erreur traduit par la page (lib/auth-errors.ts). */
+function fail(target: string, code: AuthErrorCode) {
+  return NextResponse.redirect(new URL(`${target}?error=${code}`, APP_URL));
 }
 
 /**
@@ -43,13 +43,10 @@ export async function GET(req: NextRequest) {
   const back = session ? "/settings" : "/login";
 
   if (error || !code) {
-    return fail(back, error ?? "Code d'autorisation manquant");
+    return fail(back, "strava-denied");
   }
   if (!scope.includes("activity:read")) {
-    return fail(
-      back,
-      "Permission « activités » non accordée. Reconnecte-toi en cochant toutes les cases."
-    );
+    return fail(back, "strava-scope");
   }
 
   try {
@@ -65,7 +62,7 @@ export async function GET(req: NextRequest) {
       token = await exchangeCodeForToken(code);
     }
     const athlete = token.athlete;
-    if (!athlete) throw new UserFacingError("Profil athlète absent de la réponse Strava");
+    if (!athlete) throw new Error("Profil athlète absent de la réponse Strava");
 
     const athleteId = BigInt(athlete.id);
 
@@ -73,21 +70,13 @@ export async function GET(req: NextRequest) {
     // comptes importeraient les mêmes activités sans savoir qui est qui.
     const owner = await prisma.user.findUnique({ where: { athleteId } });
     if (session && owner && owner.id !== session.id) {
-      return fail(
-        "/settings",
-        "Ce compte Strava est déjà rattaché à un autre utilisateur de cette instance."
-      );
+      return fail("/settings", "strava-taken");
     }
 
     if (!session && !owner) {
       const decision = canRegister(athleteId, invite);
       if (!decision.ok) {
-        return fail(
-          "/login",
-          decision.reason === "not-allowed"
-            ? "Cette instance est privée : ton compte Strava n'est pas dans la liste d'accès."
-            : "Code d'invitation invalide."
-        );
+        return fail("/login", decision.reason === "not-allowed" ? "strava-not-allowed" : "bad-invite");
       }
     }
 
@@ -140,6 +129,9 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.redirect(new URL("/settings?connected=1", APP_URL));
   } catch (e) {
-    return fail(back, toSafeMessage(e));
+    // Détail dans le journal des erreurs ; l'utilisateur ne voit qu'un code.
+    if (e instanceof AthleteLimitError) return fail(back, "strava-limit");
+    toSafeMessage(e, "GET /api/strava/callback");
+    return fail(back, "strava-failed");
   }
 }

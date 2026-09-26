@@ -12,7 +12,7 @@ import {
   type StravaSummaryActivity,
 } from "@/lib/strava";
 import { encodeStream } from "@/lib/cardio";
-import { UpstreamError, UserFacingError, toSafeMessage } from "@/lib/http-error";
+import { UpstreamError, UserFacingError, errorCode, toSafeMessage } from "@/lib/http-error";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -48,8 +48,8 @@ export async function POST(req: NextRequest) {
   });
   if (claimed.count === 0) {
     const hasAccount = await prisma.stravaAccount.count({ where: { userId } });
-    if (!hasAccount) return NextResponse.json({ ok: false, error: "Aucun compte Strava connecté." }, { status: 400 });
-    return NextResponse.json({ ok: false, busy: true, error: "Synchronisation déjà en cours" }, { status: 409 });
+    if (!hasAccount) return NextResponse.json({ ok: false, error: "no-account" }, { status: 400 });
+    return NextResponse.json({ ok: false, busy: true, error: "busy" }, { status: 409 });
   }
 
   const log = await prisma.syncLog.create({ data: { userId } });
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
 
     const account = await prisma.stravaAccount.findUnique({ where: { userId } });
     if (!account) {
-      throw new UserFacingError("Aucun compte Strava connecté.");
+      throw new UserFacingError("Aucun compte Strava connecté.", "no-account");
     }
 
     const token = await getValidAccessToken(userId);
@@ -325,12 +325,13 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     // La cause réelle part dans les logs serveur (toSafeMessage) ; on ne
     // stocke et on ne renvoie que le message sûr.
-    const message = toSafeMessage(e);
+    const message = toSafeMessage(e, "POST /api/strava/sync");
     await prisma.syncLog.update({
       where: { id: log.id },
       data: { finishedAt: new Date(), status: "error", message },
     });
-    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+    // Un code, traduit par l'interface (syncErrors.*), jamais la cause réelle.
+    return NextResponse.json({ ok: false, error: errorCode(e) }, { status: 500 });
   } finally {
     // Levée du verrou (seulement le nôtre : `syncingSince` inchangé).
     await prisma.stravaAccount

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -30,6 +31,7 @@ export function RouteOverlay({
 }) {
   const router = useRouter();
   const [hover, setHover] = useState<string | null>(null);
+  const t = useTranslations("common");
   const current = paths.find((p) => p.id === hover);
   // L'opacité de base baisse quand les tracés sont nombreux, pour que la
   // densité reste lisible au lieu de saturer immédiatement.
@@ -41,7 +43,7 @@ export function RouteOverlay({
         viewBox={`0 0 ${w} ${h}`}
         className="block h-auto w-full"
         role="img"
-        aria-label={`${paths.length} tracés superposés`}
+        aria-label={t("tracksOverlaid", { n: paths.length })}
         onMouseLeave={() => setHover(null)}
       >
         <g fill="none" strokeLinecap="round" strokeLinejoin="round" className="heat-lines">

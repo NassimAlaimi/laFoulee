@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 /**
@@ -36,6 +37,7 @@ export function LogForm({
   today: string;
 }) {
   const router = useRouter();
+  const t = useTranslations("logPage");
   const [state, setState] = useState<LogFormState>({
     sleepHours: existing?.sleepHours != null ? String(existing.sleepHours) : "",
     sleepQuality: existing?.sleepQuality ?? null,
@@ -87,7 +89,7 @@ export function LogForm({
         save();
       }}
     >
-      <Field label="Sommeil">
+      <Field label={t("sleep")}>
         <div className="flex items-center gap-2">
           <input
             type="number"
@@ -99,23 +101,23 @@ export function LogForm({
             onChange={(e) => set("sleepHours", e.target.value)}
             placeholder="7,5"
             className="field w-20"
-            aria-label="Heures de sommeil"
+            aria-label={t("sleepHours")}
           />
-          <span className="text-sm text-ink3">h cette nuit</span>
+          <span className="text-sm text-ink3">{t("tonight")}</span>
         </div>
       </Field>
 
-      <Scale label="Qualité du sommeil" value={state.sleepQuality} onChange={(v) => set("sleepQuality", v)} levels={["agité", "", "moyen", "", "profond"]} />
+      <Scale label={t("sleepQuality")} value={state.sleepQuality} onChange={(v) => set("sleepQuality", v)} levels={[t("agitated"), "", t("medium"), "", t("deep")]} />
 
-      <Scale label="Fatigue" value={state.fatigue} onChange={(v) => set("fatigue", v)} levels={["frais", "", "moyen", "", "vidé"]} />
+      <Scale label={t("fatigue")} value={state.fatigue} onChange={(v) => set("fatigue", v)} levels={[t("fresh"), "", t("medium"), "", t("drained")]} />
 
-      <Scale label="Moral" value={state.mood} onChange={(v) => set("mood", v)} levels={["bas", "", "neutre", "", "au top"]} />
+      <Scale label={t("mood")} value={state.mood} onChange={(v) => set("mood", v)} levels={[t("low"), "", t("neutral"), "", t("great")]} />
 
-      <Scale label="Journée (RPE)" value={state.rpe} onChange={(v) => set("rpe", v)} levels={["légère", "", "soutenue", "", "épuisante"]} count={10} />
+      <Scale label={t("rpeDay")} value={state.rpe} onChange={(v) => set("rpe", v)} levels={[t("light"), "", t("sustained"), "", t("exhausting")]} count={10} />
 
-      <Field label="Douleurs">
+      <Field label={t("pain")}>
         <div className="flex items-center gap-1.5">
-          {["Rien", "Gêne", "Douleur", "Empêche"].map((label, i) => (
+          {[t("painNone"), t("painMild"), t("painModerate"), t("painBlocks")].map((label, i) => (
             <button
               key={label}
               type="button"
@@ -131,17 +133,17 @@ export function LogForm({
             type="text"
             value={state.painArea}
             onChange={(e) => set("painArea", e.target.value)}
-            placeholder="Où ? (mollet, genou, tendon…)"
+            placeholder={t("painWhere")}
             className="field mt-2 w-full max-w-xs"
           />
         )}
       </Field>
 
-      <Field label="Note du jour">
+      <Field label={t("note")}>
         <textarea
           value={state.note}
           onChange={(e) => set("note", e.target.value)}
-          placeholder="Contexte : stress, voyage, maladie, changement d'entraînement…"
+          placeholder={t("notePlaceholder")}
           className="field min-h-[72px] w-full"
           rows={3}
         />
@@ -149,9 +151,9 @@ export function LogForm({
 
       <div className="flex items-center gap-3">
         <button type="submit" className="btn-primary" disabled={busy}>
-          {busy ? "Enregistrement…" : "Enregistrer"}
+          {busy ? t("saving") : t("save")}
         </button>
-        {saved && <span className="text-micro text-sage">Enregistré — le score est recalculé.</span>}
+        {saved && <span className="text-micro text-sage">{t("saved")}</span>}
       </div>
     </form>
   );

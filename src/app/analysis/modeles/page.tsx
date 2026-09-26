@@ -1,4 +1,5 @@
 import { Section, SectionHead } from "@/components/ui/Layout";
+import { distanceName, limiterLabel } from "@/components/terms";
 import { getTranslations } from "next-intl/server";
 import { Stat } from "@/components/analysis/Bits";
 import {
@@ -26,7 +27,10 @@ export default async function ModelesPage() {
   const data = await loadModeles(now, userId);
   if (data.runs.length < 5) return <NotEnough title={t("modeles")} />;
 
-  const { settings, cs, curve, predictions, gapRows, thresholds, endurance } = data;
+  const tt = await getTranslations("terms");
+  const { settings, cs, curve, thresholds, endurance } = data;
+  const predictions = data.predictions.map((p) => ({ ...p, name: distanceName(tt, p.key, p.name) }));
+  const gapRows = data.gapRows.map((r) => ({ ...r, name: distanceName(tt, r.key, r.name) }));
 
   return (
     <div className="space-y-6">
@@ -40,13 +44,13 @@ export default async function ModelesPage() {
         <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
           <div>
             <div className="text-micro font-medium uppercase tracking-[0.16em] text-ink3">
-              Ta vitesse critique
+              {t("yourCs")}
             </div>
             <div className="mt-2 flex items-baseline gap-4">
               <span className="display text-d4">{cs ? fmtPace(cs.pace) : "—"}</span>
               <span className="text-sm text-ink3">
                 {cs
-                  ? `tenable ~45-60 min · D′ ${cs.dPrime} m`
+                  ? t("csHeld", { d: cs.dPrime })
                   : t("need2Efforts")}
               </span>
             </div>
@@ -55,12 +59,12 @@ export default async function ModelesPage() {
             <Figure
               label={t("anaerobicThreshold")}
               value={thresholds ? `${thresholds.lt2Hr} bpm` : "—"}
-              note={thresholds ? `mesuré · R² ${thresholds.r2}` : undefined}
+              note={thresholds ? t("measuredR2", { r2: thresholds.r2 }) : undefined}
             />
             <Figure
               label={t("enduranceIndex")}
               value={endurance.exponent.toFixed(3)}
-              note={`référence ${RIEGEL_DEFAULT}`}
+              note={t("referenceN", { n: RIEGEL_DEFAULT })}
             />
           </dl>
         </div>
@@ -79,10 +83,10 @@ export default async function ModelesPage() {
               <table className="data-table mt-4">
                 <thead>
                   <tr>
-                    <th>Distance</th>
-                    <th className="text-right">Potentiel</th>
-                    <th className="text-right">Réaliste</th>
-                    <th className="text-right">Fourchette</th>
+                    <th>{t("colDistance")}</th>
+                    <th className="text-right">{t("colPotential")}</th>
+                    <th className="text-right">{t("colRealistic")}</th>
+                    <th className="text-right">{t("colRange")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -108,13 +112,13 @@ export default async function ModelesPage() {
                   .slice(0, 2)
                   .map((p) => (
                     <li key={p.name} className="font-mono text-micro tabular-nums text-ink3">
-                      {p.name} : {p.limiters.map((l) => l.label).join(" · ")}
+                      {p.name} : {p.limiters.map((l) => limiterLabel(tt, l)).join(" · ")}
                     </li>
                   ))}
               </ul>
             </>
           ) : (
-            <p className="py-6 text-sm text-ink3">Pas encore assez de performances chronométrées.</p>
+            <p className="py-6 text-sm text-ink3">{t("notEnoughEfforts")}</p>
           )}
         </Section>
 
@@ -126,20 +130,18 @@ export default async function ModelesPage() {
           <DurationCurveChart data={curve} />
           <div className="mt-4 border-t border-hair pt-4">
             <div className="flex items-baseline justify-between text-[0.8125rem]">
-              <span className="text-ink2">Exposant de fatigue</span>
+              <span className="text-ink2">{t("fatigueExponent")}</span>
               <span className="font-mono font-medium tabular-nums">
                 {endurance.exponent.toFixed(3)}
                 <span className="ml-2 text-micro text-ink3">
                   {endurance.measured
-                    ? `mesuré sur ${endurance.samples} perfs · R² ${endurance.r2.toFixed(2)}`
+                    ? t("measuredOn", { n: endurance.samples, r2: endurance.r2.toFixed(2) })
                     : t("referenceValue")}
                 </span>
               </span>
             </div>
             <p className="mt-2 font-mono text-micro leading-relaxed tabular-nums text-ink3">
-              Quand la distance double, ton allure ralentit de {endurance.slowdownPerDoubling} %
-              (référence : 4,2 %). Les points au-dessus de la courbe signalent une distance
-              où il reste du temps à prendre.
+              {t("slowdownNote", { pct: endurance.slowdownPerDoubling })}
             </p>
           </div>
         </Section>
@@ -158,7 +160,7 @@ export default async function ModelesPage() {
               <Stat
                 label={t("csLabel")}
                 value={`${cs.cs.toFixed(2)} m/s`}
-                note={`${fmtPace(cs.pace)} — allure tenable ~45-60 min`}
+                note={t("csPaceNote", { pace: fmtPace(cs.pace) })}
               />
               <Stat
                 label={t("dprimeLabel")}
@@ -168,11 +170,10 @@ export default async function ModelesPage() {
               <Stat
                 label={t("vmaLabel")}
                 value={`${cs.vmaEstimate} km/h`}
-                note={`CS ≈ 90 % de la VMA · ajustement R² ${cs.r2.toFixed(3)}`}
+                note={t("csVmaNote", { r2: cs.r2.toFixed(3) })}
               />
               <p className="border-t border-hair pt-3 font-mono text-micro leading-relaxed tabular-nums text-ink3">
-                Une CS élevée avec un D′ faible = profil diesel. L&apos;inverse = profil
-                explosif qui s&apos;appuie sur la réserve anaérobie.
+                {t("csProfileNote")}
               </p>
             </div>
           </div>
@@ -191,24 +192,23 @@ export default async function ModelesPage() {
               <Stat
                 label={t("lt1Label")}
                 value={`${thresholds.lt1Hr} bpm`}
-                note={`jusqu'à ${fmtPace(thresholds.lt1Pace)}`}
+                note={t("upTo", { pace: fmtPace(thresholds.lt1Pace) })}
               />
               <Stat
                 label={t("lt2Label")}
                 value={`${thresholds.lt2Hr} bpm`}
-                note={`ancré sur la vitesse critique ${fmtPace(thresholds.csPace)}`}
+                note={t("anchoredOnCs", { pace: fmtPace(thresholds.csPace) })}
               />
               <Stat
                 label={t("qualityLabel")}
                 value={`R² ${thresholds.r2}`}
-                note={`${thresholds.points} km-splits avec FC`}
+                note={t("splitsWithHr", { n: thresholds.points })}
               />
             </div>
 
             {settings?.maxHr && (
               <p className="mt-4 font-mono text-micro tabular-nums text-ink3">
-                Les % de FC max donneraient un seuil à {genericLt2Hr(settings.maxHr)} bpm —
-                {" "}
+                {t("genericThreshold", { hr: genericLt2Hr(settings.maxHr) })}{" "}
                 {Math.abs(thresholds.lt2Hr - genericLt2Hr(settings.maxHr)) <= 4
                   ? t("thresholdMatches")
                   : thresholds.lt2Hr > genericLt2Hr(settings.maxHr) ? t("thresholdAbove") : t("thresholdBelow")}
@@ -219,9 +219,9 @@ export default async function ModelesPage() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Zone</th>
-                    <th className="text-right">FC</th>
-                    <th className="text-right">Allure</th>
+                    <th>{t("colZone")}</th>
+                    <th className="text-right">{t("colHr")}</th>
+                    <th className="text-right">{t("colPace")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -230,7 +230,7 @@ export default async function ModelesPage() {
                       <td>
                         <span className="flex items-center gap-2">
                           <span className="h-[8px] w-[8px] rounded-full" style={{ background: z.color }} />
-                          {z.name}
+                          {`${z.key.toUpperCase()} · ${t(`zoneName.${z.key}`)}`}
                         </span>
                       </td>
                       <td className="text-right font-mono">
@@ -255,9 +255,7 @@ export default async function ModelesPage() {
           </>
         ) : (
           <p className="py-6 text-sm text-ink3">
-            Pas encore assez de kilomètres avec FC pour lire tes seuils (20 km-splits
-            minimum, et une vitesse critique calculable). Continue à courir avec la
-            ceinture — les zones se recaleront toutes seules.
+            {t("notEnoughHr")}
           </p>
         )}
       </Section>

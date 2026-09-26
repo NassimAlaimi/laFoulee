@@ -60,3 +60,17 @@ describe("rétrospective", () => {
     assert.equal(monthlyKm(runs, 2026)[8], 27);
   });
 });
+
+describe("comparaisons traduisibles", () => {
+  it("mêmes seuils que les phrases françaises", async () => {
+    const { distanceComparison, distanceComparisonParts, elevationComparison, elevationComparisonParts } = await import("../src/lib/recap.ts");
+    assert.deepEqual(distanceComparisonParts(240), { ref: "tours", ratio: 240 / 237, equivalent: true });
+    assert.equal(distanceComparison(240), "l'équivalent de Paris → Tours");
+    assert.equal(distanceComparisonParts(80)?.ref, "marathon");
+    assert.equal(distanceComparisonParts(80)?.equivalent, false);
+    assert.equal(distanceComparisonParts(5), null);
+    assert.equal(elevationComparisonParts(1150)?.ref, "eiffel");
+    assert.equal(elevationComparison(1150), "3,5 fois la tour Eiffel");
+    assert.equal(elevationComparisonParts(4900)?.equivalent, true);
+  });
+});

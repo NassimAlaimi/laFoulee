@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import {
   Area,
   CartesianGrid,
@@ -25,6 +26,7 @@ type Row = {
 /** Charge aiguë (7 j) vs chronique (28 j). */
 export function LoadChart({ data }: { data: Row[] }) {
   const t = useChartTheme();
+  const tt = useTranslations("common");
 
   return (
     <ResponsiveContainer width="100%" height={220}>
@@ -86,6 +88,7 @@ export function LoadChart({ data }: { data: Row[] }) {
 /** Ratio ACWR. Une seule bande verte matérialise la zone saine. */
 export function AcwrChart({ data }: { data: Row[] }) {
   const t = useChartTheme();
+  const tt = useTranslations("common");
 
   const values = data.filter((d) => d.ready !== false).map((d) => d.ratio);
   const top = Math.min(3, Math.max(2, Math.ceil(Math.max(0, ...values) * 2) / 2));
@@ -123,12 +126,12 @@ export function AcwrChart({ data }: { data: Row[] }) {
               d.ready === false
                 ? "Historique insuffisant"
                 : d.ratio < 0.8
-                  ? "Sous-charge"
+                  ? tt("underLoad")
                   : d.ratio <= 1.3
-                    ? "Zone optimale"
+                    ? tt("optimal")
                     : d.ratio <= 1.5
-                      ? "Prudence"
-                      : "Risque élevé";
+                      ? tt("caution")
+                      : tt("riskHigh");
             return (
               <Tip
                 label={label as string}

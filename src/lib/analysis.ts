@@ -137,7 +137,7 @@ export type PaceZonePoint = {
 export function paceByIntensity(
   activities: ActivityLike[],
   vdot: number,
-  opts: { months?: number; now?: Date } = {}
+  opts: { months?: number; now?: Date; locale?: string } = {}
 ): PaceZonePoint[] {
   const months = opts.months ?? 12;
   const now = opts.now ?? new Date();
@@ -160,7 +160,7 @@ export function paceByIntensity(
     }
 
     out.push({
-      label: start.toLocaleDateString("fr-FR", { month: "short" }),
+      label: start.toLocaleDateString(opts.locale ?? "fr-FR", { month: "short" }),
       easy: easy.length >= 2 ? round(avg(easy), 0) : null,
       quality: quality.length >= 2 ? round(avg(quality), 0) : null,
     });
@@ -193,7 +193,7 @@ export type ConsistencyGrid = {
 /** Grille jour × semaine, façon carte de chaleur. */
 export function consistencyGrid(
   activities: ActivityLike[],
-  opts: { weeks?: number; now?: Date } = {}
+  opts: { weeks?: number; now?: Date; locale?: string } = {}
 ): ConsistencyGrid {
   const weeks = opts.weeks ?? 26;
   const now = opts.now ?? new Date();
@@ -215,7 +215,7 @@ export function consistencyGrid(
 
     out.push({
       weekStart,
-      label: weekStart.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" }),
+      label: weekStart.toLocaleDateString(opts.locale ?? "fr-FR", { day: "2-digit", month: "short" }),
       days,
       km: round(days.reduce((a, d) => a + d.km, 0), 1),
     });
@@ -263,7 +263,7 @@ export type RecordTimelinePoint = {
  */
 export function recordTimeline(
   efforts: Array<{ name: string; distance: number; movingTime: number; startDate: Date }>,
-  opts: { minMeters?: number } = {}
+  opts: { minMeters?: number; locale?: string } = {}
 ): RecordTimelinePoint[] {
   const minMeters = opts.minMeters ?? 1000;
   const best = new Map<string, number>();
@@ -280,7 +280,7 @@ export function recordTimeline(
       if (prev !== undefined) {
         out.push({
           date: e.startDate,
-          label: e.startDate.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "2-digit" }),
+          label: e.startDate.toLocaleDateString(opts.locale ?? "fr-FR", { day: "2-digit", month: "short", year: "2-digit" }),
           distance: key,
           seconds: e.movingTime,
           improvementSeconds: Math.round(prev - e.movingTime),

@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { Section, SectionHead } from "@/components/ui/Layout";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Sparkline } from "@/components/ui/Spark";
 import { fmtDateShort, fmtDuration, fmtPace, fmtSigned } from "@/lib/format";
 import { requireUserId } from "@/lib/auth";
 import {
-  INTERVAL_CLASS_LABEL,
   type IntervalClass,
 } from "@/lib/intervals";
 import { AnalysisHead, loadSeances } from "../_shared";
@@ -18,6 +17,7 @@ export const dynamic = "force-dynamic";
  */
 export default async function SeancesPage() {
   const t = await getTranslations("analysis");
+  const locale = await getLocale();
   const now = new Date();
   const userId = await requireUserId();
   const { intervalList, longStreams, efTrend, classProgression, intervalClass } =
@@ -37,7 +37,7 @@ export default async function SeancesPage() {
         <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
           <div>
             <div className="text-micro font-medium uppercase tracking-[0.16em] text-ink3">
-              Ton efficience aérobie
+              {t("yourEf")}
             </div>
             <div className="mt-2 flex items-baseline gap-4">
               <span className="display text-d4">{ef ?? "—"}</span>
@@ -91,7 +91,7 @@ export default async function SeancesPage() {
                   <div key={cls} className="border-t border-hair pt-5">
                     <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
                       <div>
-                        <div className="eyebrow">{INTERVAL_CLASS_LABEL[cls]}</div>
+                        <div className="eyebrow">{t(`intervalClass.${cls}`)}</div>
                         <div className="mt-1 flex items-baseline gap-3">
                           {gain !== null ? (
                             <span
@@ -103,7 +103,7 @@ export default async function SeancesPage() {
                             <span className="text-xl font-semibold tracking-tight text-ink3">—</span>
                           )}
                           <span className="text-micro text-ink3">
-                            sur les {prog.length} dernières séances
+                            {t("overLastSessions", { n: prog.length })}
                           </span>
                         </div>
                       </div>
@@ -120,18 +120,18 @@ export default async function SeancesPage() {
                       <table className="data-table">
                         <thead>
                           <tr>
-                            <th>Date</th>
-                            <th>Séance</th>
-                            <th className="text-right">Fractions</th>
-                            <th className="text-right">Allure moyenne</th>
-                            <th className="text-right">Régularité</th>
-                            <th className="text-right">Fatigue</th>
+                            <th>{t("colDate")}</th>
+                            <th>{t("colSession")}</th>
+                            <th className="text-right">{t("colReps")}</th>
+                            <th className="text-right">{t("colAvgPace")}</th>
+                            <th className="text-right">{t("colRegularity")}</th>
+                            <th className="text-right">{t("colFatigue")}</th>
                           </tr>
                         </thead>
                         <tbody>
                           {sessions.map((s) => (
                             <tr key={s.id}>
-                              <td className="text-ink3">{fmtDateShort(s.date)}</td>
+                              <td className="text-ink3">{fmtDateShort(s.date, locale)}</td>
                               <td>
                                 <Link
                                   href={`/activities/${s.id}`}
@@ -163,9 +163,7 @@ export default async function SeancesPage() {
               })}
           </div>
           <p className="mt-4 border-t border-hair pt-4 font-mono text-micro leading-relaxed tabular-nums text-ink3">
-            Repérage sur les kilomètres Strava : les distances sont arrondies, une fraction
-            de 800 m apparaît comme 1 000 m. La fatigue négative signale une fin de séance
-            plus rapide que le début.
+            {t("intervalFootnote")}
           </p>
         </Section>
       )}
@@ -185,25 +183,25 @@ export default async function SeancesPage() {
                 width={160}
                 height={30}
               />
-              <span className="text-micro text-ink3">tendance de l'EF</span>
+              <span className="text-micro text-ink3">{t("efTrend")}</span>
             </div>
           )}
           <div className="overflow-x-auto">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Séance</th>
-                  <th className="text-right">Durée</th>
-                  <th className="text-right">FC moy</th>
+                  <th>{t("colDate")}</th>
+                  <th>{t("colSession")}</th>
+                  <th className="text-right">{t("colDuration")}</th>
+                  <th className="text-right">{t("colAvgHr")}</th>
                   <th className="text-right">EF</th>
-                  <th className="text-right">Découplage</th>
+                  <th className="text-right">{t("colDecoupling")}</th>
                 </tr>
               </thead>
               <tbody>
                 {longStreams.slice(0, 10).map((s) => (
                   <tr key={s.id}>
-                    <td className="text-ink3">{fmtDateShort(s.date)}</td>
+                    <td className="text-ink3">{fmtDateShort(s.date, locale)}</td>
                     <td>
                       <Link href={`/activities/${s.id}`} className="text-clay hover:underline">
                         {s.name}
@@ -230,10 +228,7 @@ export default async function SeancesPage() {
           </div>
 
           <p className="mt-4 border-t border-hair pt-4 font-mono text-micro leading-relaxed tabular-nums text-ink3">
-            Découplage = perte d&apos;efficience entre la première et la seconde moitié
-            (vitesse ÷ FC). Sous 5 % sur les sorties longues, l&apos;endurance tient la
-            distance ; au-dessus de 10 %, la base aérobie est le chantier prioritaire.
-            L&apos;EF monte quand le même cœur produit plus de vitesse.
+            {t("decouplingFootnote")}
           </p>
         </Section>
       )}
@@ -242,22 +237,22 @@ export default async function SeancesPage() {
       {intervalList.length === 0 && longStreams.length === 0 && (
         <div className="border-t-2 border-hair pt-4">
           <p className="text-sm text-ink2">
-            Rien à montrer pour l'instant — cette page se remplit toute seule avec trois habitudes :
+            {t("seancesEmpty")}
           </p>
           <ol className="mt-3 space-y-2">
             <li className="flex items-baseline gap-2.5 text-sm text-ink2">
               <span className="font-mono text-clay">1.</span>
-              Une séance de fractions par semaine : les intervalles se repèrent tout seuls.
+              {t("seancesStep1")}
             </li>
             <li className="flex items-baseline gap-2.5 text-sm text-ink2">
               <span className="font-mono text-clay">2.</span>
-              Des sorties longues avec ta ceinture cardio : elles alimentent la dérive et l'efficience.
+              {t("seancesStep2")}
             </li>
             <li className="flex items-baseline gap-2.5 text-sm text-ink2">
               <span className="font-mono text-clay">3.</span>
               <span>
-                Des idées de fractions dans la{" "}
-                <Link href="/workouts" className="text-clay hover:underline">bibliothèque de séances →</Link>
+                {t("seancesStep3")}{" "}
+                <Link href="/workouts" className="text-clay hover:underline">{t("seancesLibrary")} →</Link>
               </span>
             </li>
           </ol>

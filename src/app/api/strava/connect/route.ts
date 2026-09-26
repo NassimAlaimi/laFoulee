@@ -17,18 +17,14 @@ export async function GET(req: NextRequest) {
 
   if (!isStravaConfigured()) {
     return NextResponse.redirect(
-      new URL(
-        `${target}?error=` +
-          encodeURIComponent("STRAVA_CLIENT_ID / STRAVA_CLIENT_SECRET manquants dans .env"),
-        APP_URL
-      )
+      new URL(`${target}?error=strava-unconfigured`, APP_URL)
     );
   }
 
   const invite = req.nextUrl.searchParams.get("invite")?.trim() ?? "";
   if (!user && inviteCode() && !invite) {
     return NextResponse.redirect(
-      new URL("/login?error=" + encodeURIComponent("Code d'invitation requis"), APP_URL)
+      new URL("/login?error=invite-required", APP_URL)
     );
   }
 
