@@ -134,7 +134,9 @@
     "confirmQuestion": "¿Confirmar?",
     "yes": "Sí",
     "disconnect": "Desconectar",
-    "kick": "Cuenta y preferencias"
+    "kick": "Cuenta y preferencias",
+    "disconnectWarn": "Tus actividades de Strava y tu equipamiento se borrarán de Foulée (tus archivos importados, tu diario y tus planes se conservan). ¿Confirmar?",
+    "disconnectDone": "Strava desconectado. {n, plural, =0 {No había actividades de Strava guardadas} one {Se ha borrado # actividad de Strava} other {Se han borrado # actividades de Strava}}, junto con el equipamiento y los tokens de acceso."
   },
   "help": {
     "today": {

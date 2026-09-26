@@ -10,19 +10,31 @@ export function DisconnectButton() {
   const tc = useTranslations("common");
   const [loading, setLoading] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [done, setDone] = useState<number | null>(null);
 
   async function disconnect() {
     setLoading(true);
-    await fetch("/api/strava/disconnect", { method: "POST" });
+    const res = await fetch("/api/strava/disconnect", { method: "POST" }).catch(() => null);
+    const j = res?.ok ? await res.json().catch(() => null) : null;
     setLoading(false);
     setConfirming(false);
+    // Confirmation écrite de l'effacement (politique API Strava §2.5).
+    if (j?.ok) setDone(j.purged?.activities ?? 0);
     router.refresh();
+  }
+
+  if (done !== null) {
+    return (
+      <p role="status" className="max-w-sm text-micro text-ink2">
+        {t("disconnectDone", { n: done })}
+      </p>
+    );
   }
 
   if (confirming) {
     return (
-      <span className="flex items-center gap-2">
-        <span className="text-micro text-ink2">{t("confirmQuestion")}</span>
+      <span className="flex max-w-md flex-wrap items-center gap-2">
+        <span className="text-micro text-ink2">{t("disconnectWarn")}</span>
         <button onClick={disconnect} disabled={loading} className="btn btn-sm border border-hairStrong text-rust">
           {loading ? "…" : t("yes")}
         </button>

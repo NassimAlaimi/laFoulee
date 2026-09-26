@@ -103,6 +103,34 @@ Complément : le service (`deploy/foulee.service`) force déjà
 `HOSTNAME=127.0.0.1`, donc l'app n'écoute que sur localhost — le firewall est
 la deuxième barrière.
 
+## 4. Webhook Strava (une fois)
+
+La politique API Strava impose d'effacer les données d'un athlète qui révoque
+l'accès depuis strava.com (§7.4) et de refléter une activité supprimée sous
+48 h (§6.3). L'app reçoit ces événements sur `/api/strava/webhook` ; il faut
+déclarer l'abonnement **une seule fois**, app démarrée et joignable en HTTPS :
+
+```bash
+# 1. Dans /opt/foulee/.env : STRAVA_WEBHOOK_VERIFY_TOKEN="$(openssl rand -hex 16)"
+#    puis : sudo systemctl restart foulee
+# 2. Créer l'abonnement (Strava appelle aussitôt l'URL pour la valider)
+curl -X POST https://www.strava.com/api/v3/push_subscriptions \
+  -F client_id=TON_CLIENT_ID \
+  -F client_secret=TON_CLIENT_SECRET \
+  -F callback_url=https://dcimer.swagman.fr/api/strava/webhook \
+  -F verify_token=LE_MEME_JETON
+# → {"id": 123456}
+# 3. Reporter cet id dans .env : STRAVA_WEBHOOK_SUBSCRIPTION_ID="123456", redémarrer.
+
+# Vérifier / supprimer l'abonnement :
+curl -G https://www.strava.com/api/v3/push_subscriptions \
+  -d client_id=TON_CLIENT_ID -d client_secret=TON_CLIENT_SECRET
+```
+
+Les événements ne sont pas signés par Strava : l'app ne supprime rien sans
+avoir vérifié auprès de l'API que l'accès est réellement révoqué (ou
+l'activité réellement supprimée).
+
 ## Mise à jour
 
 ```bash

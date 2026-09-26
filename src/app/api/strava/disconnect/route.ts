@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { currentUserId } from "@/lib/auth";
 import { deauthorize } from "@/lib/strava";
+import { purgeStravaData } from "@/lib/strava-purge";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Détache le compte Strava de l'utilisateur. Les activités importées restent.
+ * Détache le compte Strava de l'utilisateur et efface ses données Strava
+ * (politique API Strava §7.4). Les fichiers importés, le carnet, les objectifs
+ * et les plans restent.
  *
  * La révocation côté Strava vient *avant* la suppression locale : une fois les
  * tokens effacés, plus aucun appel authentifié n'est possible et l'athlète
@@ -18,7 +20,7 @@ export async function POST() {
   if (!userId) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
 
   const revoked = await deauthorize(userId);
-  await prisma.stravaAccount.deleteMany({ where: { userId } });
+  const purged = await purgeStravaData(userId);
 
-  return NextResponse.json({ ok: true, revoked });
+  return NextResponse.json({ ok: true, revoked, purged });
 }

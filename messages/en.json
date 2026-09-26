@@ -134,7 +134,9 @@
     "confirmQuestion": "Confirm?",
     "yes": "Yes",
     "disconnect": "Disconnect",
-    "kick": "Account & preferences"
+    "kick": "Account & preferences",
+    "disconnectWarn": "Your activities from Strava and your gear will be erased from Foulée (imported files, log and plans stay). Confirm?",
+    "disconnectDone": "Strava disconnected. {n, plural, =0 {No Strava activity was stored} one {# Strava activity was erased} other {# Strava activities were erased}}, along with gear and access tokens."
   },
   "help": {
     "today": {

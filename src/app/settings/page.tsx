@@ -1,4 +1,5 @@
 import { revalidatePath } from "next/cache";
+import { ConnectWithStrava } from "@/components/StravaBrand";
 import { getTranslations } from "next-intl/server";
 import { PageHead, Section, SectionHead } from "@/components/ui/Layout";
 import { DisconnectButton } from "@/components/DisconnectButton";
@@ -256,9 +257,10 @@ export default async function SettingsPage({
         ) : (
           <a
             href="/api/strava/connect"
-            className={`btn-solid ${configured ? "" : "pointer-events-none opacity-40"}`}
+            aria-label="Connect with Strava"
+            className={`inline-block rounded-[6px] ${configured ? "hover:opacity-90" : "pointer-events-none opacity-40"}`}
           >
-            Se connecter avec Strava
+            <ConnectWithStrava />
           </a>
         )}
       </Section>

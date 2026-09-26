@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { currentUser, inviteCode } from "@/lib/auth";
 import { safeNextPath } from "@/lib/locale";
 import { isStravaConfigured } from "@/lib/strava";
+import { ConnectWithStrava } from "@/components/StravaBrand";
 
 export const dynamic = "force-dynamic";
 
@@ -143,9 +144,12 @@ export default async function LoginPage({
               />
             </div>
           )}
-          <button type="submit" className="btn-solid w-full justify-center gap-2">
-            <StravaMark />
-            {t("withStrava")}
+          <button
+            type="submit"
+            aria-label={t("withStrava")}
+            className="mx-auto block rounded-[6px] transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-clay"
+          >
+            <ConnectWithStrava />
           </button>
           <p className="text-center text-micro text-ink3">{t("stravaNote")}</p>
         </form>
@@ -273,14 +277,5 @@ function Field({
         </p>
       )}
     </div>
-  );
-}
-
-function StravaMark() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M13.8 10.1 11.5 5.6 6.9 14.6h2.8l1.8-3.5 1.8 3.5h2.7l-1.9-4.5h-.3Z" />
-      <path d="m15.4 14.6-1.5 3-1.5-3h-2.2l3.7 7.3 3.7-7.3h-2.2Z" />
-    </svg>
   );
 }

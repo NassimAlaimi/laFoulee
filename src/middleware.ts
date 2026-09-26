@@ -16,6 +16,7 @@ const PUBLIC_PREFIXES = [
   "/login",
   "/api/strava/connect",
   "/api/strava/callback",
+  "/api/strava/webhook",
   "/api/calendar",
   "/api/auth/signin",
   "/api/auth/signup",
