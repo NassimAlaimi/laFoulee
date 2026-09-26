@@ -22,6 +22,9 @@ const PUBLIC_PREFIXES = [
   "/api/auth/signin",
   "/api/auth/signup",
   "/api/lang-sync",
+  // Pages légales : lisibles sans compte (avant de s'inscrire, justement).
+  "/legal",
+  "/privacy",
 ];
 
 /**
@@ -65,6 +68,9 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  // Tout sauf les ressources statiques et le manifeste.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg|apple-icon.png|manifest.webmanifest).*)"],
+  // Tout sauf les ressources statiques (dont les logos Strava de /public,
+  // affichés sur l'écran de connexion, donc avant toute session).
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|icon.svg|apple-icon.png|manifest.webmanifest|strava/).*)",
+  ],
 };

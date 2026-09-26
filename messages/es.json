@@ -1710,9 +1710,12 @@
       "name-missing": "Indica tu nombre.",
       "not-allowed": "Esta instancia es privada: el registro está cerrado.",
       "bad-invite": "Código de invitación no válido.",
-      "origin": "Solicitud rechazada. Recarga la página e inténtalo de nuevo."
+      "origin": "Solicitud rechazada. Recarga la página e inténtalo de nuevo.",
+      "consent": "Marca la casilla de consentimiento para crear tu cuenta."
     },
-    "deleted": "Tu cuenta y todos tus datos se han eliminado definitivamente de esta instancia."
+    "deleted": "Tu cuenta y todos tus datos se han eliminado definitivamente de esta instancia.",
+    "consent": "He leído la <link>política de privacidad</link> y acepto que se traten mis datos de salud (frecuencia cardiaca, sueño, peso…) para analizar mi entrenamiento.",
+    "stravaConsent": "Al continuar, aceptas la <link>política de privacidad</link>, incluido el tratamiento de tus datos de salud (frecuencia cardiaca…) para analizar tu entrenamiento."
   },
   "gear": {
     "title": "Material",
@@ -2176,5 +2179,10 @@
     "errorsNote": "{n, plural, =0 {Ningún error en los últimos 7 días} one {# error en los últimos 7 días} other {# errores en los últimos 7 días}} — agrupados por causa, conservados 30 días",
     "errorsNone": "Ningún error registrado. Todo funciona.",
     "errorsClear": "Vaciar el registro"
+  },
+  "footer": {
+    "label": "Información legal",
+    "legal": "Aviso legal",
+    "privacy": "Privacidad"
   }
 }

@@ -7,6 +7,7 @@ import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { TopNav } from "@/components/Nav";
+import { SiteFooter } from "@/components/SiteFooter";
 import { CommandPalette } from "@/components/CommandPalette";
 import { AutoSync } from "@/components/AutoSync";
 import { GuidedTour } from "@/components/tour/GuidedTour";
@@ -93,9 +94,10 @@ export default async function RootLayout({
               <TourLauncher />
             </>
           )}
-          <main className="mx-auto max-w-[1240px] px-gutter pb-28 pt-8 md:pb-24">
+          <main className="mx-auto max-w-[1240px] px-gutter pb-12 pt-8 md:pb-16">
             {children}
           </main>
+          <SiteFooter />
         </NextIntlClientProvider>
       </body>
     </html>

@@ -1710,9 +1710,12 @@
       "name-missing": "Indique ton prénom.",
       "not-allowed": "Cette instance est privée : l'inscription y est fermée.",
       "bad-invite": "Code d'invitation invalide.",
-      "origin": "Requête refusée. Recharge la page et réessaie."
+      "origin": "Requête refusée. Recharge la page et réessaie.",
+      "consent": "Coche la case de consentement pour créer ton compte."
     },
-    "deleted": "Ton compte et toutes tes données ont été définitivement supprimés de cette instance."
+    "deleted": "Ton compte et toutes tes données ont été définitivement supprimés de cette instance.",
+    "consent": "J'ai lu la <link>politique de confidentialité</link> et j'accepte que mes données de santé (fréquence cardiaque, sommeil, poids…) soient traitées pour analyser mon entraînement.",
+    "stravaConsent": "En continuant, tu acceptes la <link>politique de confidentialité</link>, y compris le traitement de tes données de santé (fréquence cardiaque…) pour analyser ton entraînement."
   },
   "gear": {
     "title": "Matériel",
@@ -2176,5 +2179,10 @@
     "errorsNote": "{n, plural, =0 {Aucune erreur ces 7 derniers jours} one {# erreur ces 7 derniers jours} other {# erreurs ces 7 derniers jours}} — regroupées par cause, conservées 30 jours",
     "errorsNone": "Aucune erreur enregistrée. Tout tourne.",
     "errorsClear": "Vider le journal"
+  },
+  "footer": {
+    "label": "Informations légales",
+    "legal": "Mentions légales",
+    "privacy": "Confidentialité"
   }
 }

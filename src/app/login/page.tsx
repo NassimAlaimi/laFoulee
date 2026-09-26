@@ -33,6 +33,7 @@ const KNOWN_ERRORS = new Set([
   "not-allowed",
   "bad-invite",
   "origin",
+  "consent",
 ]);
 
 /**
@@ -158,6 +159,15 @@ export default async function LoginPage({
             <ConnectWithStrava />
           </button>
           <p className="text-center text-micro text-ink3">{t("stravaNote")}</p>
+          <p className="text-center text-micro text-ink3">
+            {t.rich("stravaConsent", {
+              link: (chunks) => (
+                <a href="/privacy" className="underline underline-offset-2 hover:text-ink2">
+                  {chunks}
+                </a>
+              ),
+            })}
+          </p>
         </form>
       ) : (
         <div className="mt-8 rounded-card border border-caution/30 bg-caution/8 p-4 text-sm">
@@ -219,6 +229,18 @@ export default async function LoginPage({
             minLength={10}
             hint={t("passwordHint")}
           />
+          <label className="flex items-start gap-2.5 text-[0.8125rem] leading-relaxed text-ink2">
+            <input type="checkbox" name="consent" required className="mt-1 accent-[rgb(var(--clay))]" />
+            <span>
+              {t.rich("consent", {
+                link: (chunks) => (
+                  <a href="/privacy" target="_blank" className="underline underline-offset-2 hover:text-ink">
+                    {chunks}
+                  </a>
+                ),
+              })}
+            </span>
+          </label>
           {needsInvite && (
             <Field
               id="invite"

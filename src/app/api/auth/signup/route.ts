@@ -27,6 +27,7 @@ const Body = z.object({
   email: z.string().max(254),
   password: z.string().max(400),
   invite: z.string().max(200).optional(),
+  consent: z.literal("on").optional(),
 });
 
 /** Création d'un compte sans Strava. */
@@ -42,6 +43,8 @@ export async function POST(req: NextRequest) {
   const firstname = parsed.data.firstname.trim();
   const email = normalizeEmail(parsed.data.email);
 
+  // Consentement explicite au traitement des données de santé (RGPD art. 9).
+  if (parsed.data.consent !== "on") return backToLogin("signup", "consent");
   const access = canRegisterLocal(invite?.trim() ?? null);
   if (!access.ok) return backToLogin("signup", access.reason);
   if (!firstname) return backToLogin("signup", "name-missing");

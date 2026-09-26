@@ -15,7 +15,8 @@ export type CredentialError =
   | "name-missing"
   | "not-allowed"
   | "bad-invite"
-  | "origin";
+  | "origin"
+  | "consent";
 
 /** Retour à l'écran de connexion (303 : le POST devient un GET). */
 export function backToLogin(mode: "signin" | "signup", error: CredentialError) {

@@ -1710,9 +1710,12 @@
       "name-missing": "Please enter your first name.",
       "not-allowed": "This instance is private: sign-ups are closed.",
       "bad-invite": "Invalid invite code.",
-      "origin": "Request refused. Reload the page and try again."
+      "origin": "Request refused. Reload the page and try again.",
+      "consent": "Tick the consent box to create your account."
     },
-    "deleted": "Your account and all your data have been permanently deleted from this instance."
+    "deleted": "Your account and all your data have been permanently deleted from this instance.",
+    "consent": "I have read the <link>privacy policy</link> and agree that my health data (heart rate, sleep, weight…) is processed to analyse my training.",
+    "stravaConsent": "By continuing, you accept the <link>privacy policy</link>, including the processing of your health data (heart rate…) to analyse your training."
   },
   "gear": {
     "title": "Gear",
@@ -2176,5 +2179,10 @@
     "errorsNote": "{n, plural, =0 {No errors in the last 7 days} one {# error in the last 7 days} other {# errors in the last 7 days}} — grouped by cause, kept 30 days",
     "errorsNone": "No errors recorded. All good.",
     "errorsClear": "Clear the log"
+  },
+  "footer": {
+    "label": "Legal information",
+    "legal": "Legal notice",
+    "privacy": "Privacy"
   }
 }
