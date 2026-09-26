@@ -2709,7 +2709,11 @@
     "lastUsed": "Last activity",
     "expires": "Expires",
     "agent": "Browser",
-    "noSessions": "No active session."
+    "noSessions": "No active session.",
+    "errorsTitle": "Server errors",
+    "errorsNote": "{n} errors in the last 7 days.",
+    "errorsNone": "No errors recorded.",
+    "errorsClear": "Clear the log"
   },
   "footer": {
     "label": "Legal information",

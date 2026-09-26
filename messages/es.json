@@ -2709,7 +2709,11 @@
     "lastUsed": "Última actividad",
     "expires": "Caduca",
     "agent": "Navegador",
-    "noSessions": "Ninguna sesión activa."
+    "noSessions": "Ninguna sesión activa.",
+    "errorsTitle": "Errores del servidor",
+    "errorsNote": "{n} errores en los últimos 7 días.",
+    "errorsNone": "Ningún error registrado.",
+    "errorsClear": "Borrar el registro"
   },
   "footer": {
     "label": "Información legal",
