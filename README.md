@@ -412,7 +412,7 @@ sur tous ses appareils) et ne change jamais les URLs.
 | **Import de fichiers** | FIT, GPX, TCX et export complet Garmin (.zip) — décodeur FIT maison, fusion avec Strava sans doublon, carnet complété (sommeil, FC de repos, VFC) |
 | **Plan de course** | Du GPX à la ligne d'arrivée : tronçons, allures à effort constant (GAP + facteur de pente personnel + chaleur), scénarios A/B/C avec signal de bascule, nutrition calée sur le temps, bracelet, débrief |
 | **Conseil du jour** | Un seul conseil priorisé (douleur, surcharge, course proche, affûtage, carnet, forme) |
-| **Agent** | Le brief de la semaine (bilan, semaine à venir, objectif, conseil), calculé par règles, rédigé par un LLM (DeepSeek) si configuré — agrégats uniquement, jamais de tracé |
+| **Agent** *(en pause)* | Le brief de la semaine (bilan, semaine à venir, objectif, conseil), calculé par règles, rédigé par un LLM si configuré. **Désactivé** : la politique API Strava (§5.3) interdit toute IA sur des données Strava, même agrégées. Code conservé, `FEATURE_AGENT_BRIEF=1` pour le rallumer en dev |
 | **Backyard ultra** | Calculateur boucle par boucle (course/marche, repos, sommeil emprunté) et volume en heures |
 | **Analyse** | PMC (condition/fatigue/fraîcheur), potentiel vs réaliste, courbe allure-durée, vitesse critique, polarisation, comparatif annuel, régularité, barres passées |
 | **Performance** | Records, niveau de forme VDOT, prédictions potentiel/réaliste, allures d'entraînement |

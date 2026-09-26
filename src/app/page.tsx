@@ -37,6 +37,7 @@ import { prisma } from "@/lib/prisma";
 import { ZoneSplit } from "@/components/analysis/ZoneSplit";
 import { NudgeLine } from "@/components/home/NudgeLine";
 import { BriefCard } from "@/components/home/BriefCard";
+import { agentBriefEnabled } from "@/lib/features";
 import { RaceEdition } from "@/components/home/RaceEdition";
 import { editionFor } from "@/lib/edition";
 import { pickNudges } from "@/lib/nudges";
@@ -98,7 +99,9 @@ export default async function SummaryPage() {
     }),
     prisma.raceGoal.count({ where: { userId } }),
     prisma.dailyLog.count({ where: { userId } }),
-    prisma.agentBrief.findFirst({ where: { userId }, orderBy: { createdAt: "desc" } }),
+    agentBriefEnabled()
+      ? prisma.agentBrief.findFirst({ where: { userId }, orderBy: { createdAt: "desc" } })
+      : null,
   ]);
   const gettingStarted = (
     <GettingStarted
@@ -684,15 +687,17 @@ export default async function SummaryPage() {
           </div>
         </Section>
 
-        <Section title={t("ui.briefTitle")} note={t("ui.briefNote")}>
-          <BriefCard
-            latest={
-              lastBrief
-                ? { content: lastBrief.content, usedLlm: lastBrief.usedLlm, createdAt: lastBrief.createdAt.toISOString() }
-                : null
-            }
-          />
-        </Section>
+        {agentBriefEnabled() && (
+          <Section title={t("ui.briefTitle")} note={t("ui.briefNote")}>
+            <BriefCard
+              latest={
+                lastBrief
+                  ? { content: lastBrief.content, usedLlm: lastBrief.usedLlm, createdAt: lastBrief.createdAt.toISOString() }
+                  : null
+              }
+            />
+          </Section>
+        )}
 
         <Section
           title={t("ui.recent")}

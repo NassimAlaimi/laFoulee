@@ -7,6 +7,7 @@ import { periodStats } from "@/lib/stats";
 import { composeBrief, sanitizeBrief, BRIEF_SYSTEM } from "@/lib/agent";
 import { isLlmConfigured, provider } from "@/lib/llm";
 import { adviceOfTheDay } from "@/lib/coach";
+import { agentBriefEnabled } from "@/lib/features";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -29,6 +30,8 @@ function frenchAdvice(key: string): string {
 export async function POST() {
   const { userId, error } = await authed();
   if (error) return error;
+  // Fonctionnalité en pause (voir lib/features.ts).
+  if (!agentBriefEnabled()) return NextResponse.json({ ok: false, error: "unavailable" }, { status: 404 });
   const now = new Date();
 
   const [ctx, settings, planned, todayLog, nextRace] = await Promise.all([
