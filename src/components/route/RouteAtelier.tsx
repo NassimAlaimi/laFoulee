@@ -8,6 +8,7 @@ import { NetworkMap } from "./NetworkMap";
 import { polylinePath } from "@/lib/route-view";
 
 type Loop = { polyline: string; meters: number; score: number; novelty: number };
+type Route = { id: string; d: string; name: string; meters: number };
 type View = {
   viewBox: readonly [number, number];
   bbox: { minLat: number; maxLat: number; minLon: number; maxLon: number };
@@ -30,6 +31,7 @@ export function RouteAtelier({
   startLat,
   startLng,
   emptyGraph,
+  routes = [],
 }: {
   view: View;
   kinds: Array<[string, string]>;
@@ -37,6 +39,7 @@ export function RouteAtelier({
   startLat: number | null;
   startLng: number | null;
   emptyGraph: string;
+  routes?: Route[];
 }) {
   const t = useTranslations("routes");
   const router = useRouter();
@@ -89,7 +92,7 @@ export function RouteAtelier({
   return (
     <>
       <Section title={t("territory")} note={t("territoryNote")}>
-        <NetworkMap view={view} kinds={kinds} loops={projected} />
+        <NetworkMap view={view} kinds={kinds} loops={projected} routes={routes} />
       </Section>
 
       <Section title={t("build")} note={t("buildNote")}>

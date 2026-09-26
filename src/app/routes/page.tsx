@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { pageMeta } from "@/lib/page-meta";
 import { PageHead, Section } from "@/components/ui/Layout";
 import { RouteGlyph } from "@/components/route/RouteGlyph";
 import { RouteAtelier } from "@/components/route/RouteAtelier";
@@ -23,31 +23,29 @@ import { encodePolyline } from "@/lib/polyline";
 
 export const dynamic = "force-dynamic";
 
+export async function generateMetadata() {
+  return pageMeta("routes");
+}
+
 /** Atelier de parcours — dessiner sur son propre réseau, sans tuiles. */
-export default async function RoutesPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ sector?: string }>;
-}) {
+export default async function RoutesPage() {
   const t = await getTranslations("routes");
   const userId = await requireUserId();
-  const params = await searchParams;
   const got = await getRouteGraph(userId);
   const graph = got?.graph ?? null;
   const [routes, pois] = await Promise.all([listRoutes(userId), listPois(userId)]);
   const totalKm = graph ? await graphTotalKm(userId) : 0;
 
-  // Le réseau peut couvrir plusieurs villes (composantes connexes séparées de
-  // centaines de km) : on n'en affiche qu'une à la fois, sinon tout est écrasé.
-  const sectors = graph ? graphSectors(graph) : [];
-  const sectorIdx = Math.max(0, Math.min((Number(params.sector) || 0), sectors.length - 1));
-  const sector = sectors[sectorIdx] ?? null;
+  // Un seul point de vue, simple et logique : le cœur du territoire (le
+  // cluster le plus couru). Plus de sélecteur de « secteurs » : on affiche
+  // directement la zone où l'on s'entraîne le plus.
+  const focus = graph ? (graphSectors(graph)[0] ?? null) : null;
 
-  // Fond OSM : les rues autour du secteur sélectionné (borné), en cache 24 h.
+  // Fond OSM : les rues autour du cœur (borné), en cache 24 h.
   let osm: string[] | null = null;
-  let view = sector ? sectorView(sector) : null;
-  if (sector) {
-    const b = sectorBbox(sector);
+  let view = focus ? sectorView(focus) : null;
+  if (focus) {
+    const b = sectorBbox(focus);
     const centerLat = (b.minLat + b.maxLat) / 2;
     const centerLon = (b.minLon + b.maxLon) / 2;
     const spanKm =
@@ -59,14 +57,19 @@ export default async function RoutesPage({
     const roads = await getOsmRoads(userId, osmBbox);
     if (roads && roads.length) {
       osm = roads.map((r) => polylinePath(r, osmBbox)).filter((d) => d);
-      view = sectorView(sector, osmBbox);
+      view = sectorView(focus, osmBbox);
     }
   }
   const straights = graph ? straightSegments(graph, 400).slice(0, 12) : [];
-  const start = sector ? mostUsedStartPoint(sector.nodes) : null;
+  const start = focus ? mostUsedStartPoint(focus.nodes) : null;
 
-  const sectorHref = (i: number) =>
-    i === 0 ? "/routes" : `/routes?sector=${i}`;
+  // Parcours enregistrés, projetés sur la carte (même bbox que le réseau).
+  let savedOnMap: Array<{ id: string; name: string; meters: number; d: string }> = [];
+  if (view) {
+    savedOnMap = routes
+      .map((r) => ({ id: r.id, name: r.name, meters: r.distance, d: polylinePath(r.polyline, view.bbox) }))
+      .filter((r) => r.d);
+  }
 
   return (
     <div className="space-y-14">
@@ -76,23 +79,17 @@ export default async function RoutesPage({
         meta={graph ? t("metaSome", { km: Math.round(totalKm), roads: graph.edges.length }) : t("metaNone")}
       />
 
-      {sectors.length > 1 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-micro uppercase tracking-[0.08em] text-ink3">{t("sector")}</span>
-          {sectors.map((s, i) => (
-            <Link
-              key={i}
-              href={sectorHref(i)}
-              className={`rounded-[6px] border px-2.5 py-1 text-[0.8125rem] transition-colors ${
-                i === sectorIdx
-                  ? "border-clay/40 bg-clay/10 font-medium text-clay"
-                  : "border-hair text-ink2 hover:text-ink"
-              }`}
-            >
-              {i === 0 ? t("main") : t("sectorN", { n: i + 1 })}
-              <span className="ml-1.5 font-mono text-micro text-ink3">{s.nodes.size}</span>
-            </Link>
-          ))}
+      {graph && (
+        <div className="rise mb-10 flex flex-wrap items-end justify-between gap-x-12 gap-y-6 border-b border-hair pb-10">
+          <div className="flex items-baseline gap-3">
+            <span className="display text-[clamp(3.5rem,8vw,5.5rem)] leading-[0.85] tracking-[-0.05em] text-clay">
+              {Math.round(totalKm)}
+            </span>
+            <span className="text-[0.9375rem] text-ink3">km</span>
+          </div>
+          <p className="max-w-md text-[clamp(1.05rem,2vw,1.375rem)] font-medium leading-snug tracking-[-0.01em]">
+            {t("territoryLead")}
+          </p>
         </div>
       )}
 
@@ -107,6 +104,7 @@ export default async function RoutesPage({
           hasGraph={Boolean(graph)}
           startLat={start?.[0] ?? null}
           startLng={start?.[1] ?? null}
+          routes={savedOnMap}
           emptyGraph={t("emptyGraph")}
         />
       ) : (

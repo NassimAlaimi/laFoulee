@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type View = {
   viewBox: readonly [number, number];
@@ -13,6 +13,7 @@ type View = {
 };
 
 type Loop = { id: string; d: string; meters: number };
+type Route = { id: string; d: string; name: string; meters: number };
 
 const POI_COLOR: Record<string, string> = {
   fountain: "rgb(var(--slate))",
@@ -24,10 +25,11 @@ const POI_COLOR: Record<string, string> = {
   track: "rgb(var(--sage))",
 };
 
-const LOOP_COLOR = ["rgb(var(--clay))", "rgb(var(--sage))", "rgb(var(--slate))"];
+const LOOP_COLOR = ["rgb(var(--sage))", "rgb(var(--slate))", "rgb(var(--ochre))"];
 
 /**
  * Le territoire : le réseau des rues déjà courues (épaisseur = fréquence),
+ * les parcours enregistrés (trait plein) et les boucles proposées (pointillés),
  * les points d'intérêt, et un clic pour poser un point. Zoomable (molette,
  * boutons, pincement natif) et déplaçable (glisser).
  */
@@ -35,15 +37,18 @@ export function NetworkMap({
   view,
   kinds,
   loops = [],
+  routes = [],
 }: {
   view: View;
   kinds: Array<[string, string]>;
   loops?: Loop[];
+  routes?: Route[];
 }) {
   const t = useTranslations("routes");
   const router = useRouter();
   const [mode, setMode] = useState<"view" | "add">("view");
   const [showStreets, setShowStreets] = useState(true);
+  const [onlyProposed, setOnlyProposed] = useState(false);
   const [kind, setKind] = useState("fountain");
   const [pending, setPending] = useState<{ x: number; y: number } | null>(null);
   const [W, H] = view.viewBox;
@@ -51,6 +56,17 @@ export function NetworkMap({
   // Fenêtre de vue (dans l'espace de coordonnées 0..W / 0..H).
   const [vb, setVb] = useState({ x: 0, y: 0, w: W, h: H });
   const drag = useRef<{ startX: number; startY: number; vbX: number; vbY: number; moved: boolean } | null>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+
+  // La molette sur la carte ne doit pas faire défiler la page : React pose
+  // ses écouteurs « wheel » en passif, on en ajoute un natif non passif.
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el) return;
+    const blockScroll = (e: WheelEvent) => e.preventDefault();
+    el.addEventListener("wheel", blockScroll, { passive: false });
+    return () => el.removeEventListener("wheel", blockScroll);
+  }, []);
 
   const maxPasses = Math.max(1, ...view.edges.map((e) => e.passes));
 
@@ -109,10 +125,22 @@ export function NetworkMap({
     drag.current = null;
   };
 
+  // Échelle pixel/unité de la fenêtre affichée : garde les points d'intérêt
+  // à taille constante à l'écran quel que soit le niveau de zoom.
+  const pxScale = vb.w / W;
+
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        {view.osm.length > 0 && (
+        <button
+          type="button"
+          className={`btn-quiet btn-sm ${onlyProposed ? "text-clay" : "text-ink3"}`}
+          aria-pressed={onlyProposed}
+          onClick={() => setOnlyProposed(!onlyProposed)}
+        >
+          {t("onlyProposed")}
+        </button>
+        {!onlyProposed && view.osm.length > 0 && (
           <button
             type="button"
             className={`btn-quiet btn-sm ${showStreets ? "text-clay" : "text-ink3"}`}
@@ -156,8 +184,10 @@ export function NetworkMap({
 
       <div className="relative overflow-hidden rounded-[14px] border border-hair bg-panel">
         <svg
+          ref={svgRef}
           viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`}
           className={`block w-full ${mode === "add" ? "cursor-crosshair" : drag.current ? "cursor-grabbing" : "cursor-grab"}`}
+          style={{ touchAction: "none" }}
           role="img"
           aria-label={t("mapAria")}
           onClick={click}
@@ -173,32 +203,55 @@ export function NetworkMap({
           onPointerLeave={() => (drag.current = null)}
         >
           <rect x={vb.x} y={vb.y} width={vb.w} height={vb.h} fill="transparent" />
-          {showStreets &&
+          {!onlyProposed && showStreets &&
             view.osm.map((d, i) => (
-              <path key={`o${i}`} d={d} fill="none" stroke="rgb(var(--ink) / 0.14)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+              <path key={`o${i}`} d={d} fill="none" stroke="rgb(var(--ink) / 0.14)" strokeWidth={1} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
             ))}
-          {view.edges.map((e, i) => {
-            const o = 0.12 + 0.55 * Math.sqrt(e.passes / maxPasses);
-            return <line key={i} x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} stroke={`rgb(var(--clay) / ${o.toFixed(2)})`} strokeWidth="2" strokeLinecap="round" />;
-          })}
+          {!onlyProposed &&
+            view.edges.map((e, i) => {
+              const o = 0.1 + 0.5 * Math.sqrt(e.passes / maxPasses);
+              return <line key={i} x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} stroke={`rgb(var(--clay) / ${o.toFixed(2)})`} strokeWidth={1.5} strokeLinecap="round" vectorEffect="non-scaling-stroke" />;
+            })}
+          {routes.map((r) => (
+            <path key={r.id} d={r.d} fill="none" stroke="rgb(var(--clay))" strokeWidth={3.5} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke">
+              <title>{`${r.name} · ${(r.meters / 1000).toFixed(1)} km`}</title>
+            </path>
+          ))}
           {loops.map((l, i) => (
-            <path key={l.id} d={l.d} fill="none" stroke={LOOP_COLOR[i % LOOP_COLOR.length]} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="6 4">
+            <path key={l.id} d={l.d} fill="none" stroke={LOOP_COLOR[i % LOOP_COLOR.length]} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" strokeDasharray="6 4" vectorEffect="non-scaling-stroke">
               <title>{`${t("loopName")} ${(l.meters / 1000).toFixed(1)} km`}</title>
             </path>
           ))}
           {view.pois.map((p) => (
             <g key={p.id} onClick={(e) => e.stopPropagation()}>
-              <circle cx={p.x} cy={p.y} r="7" fill={POI_COLOR[p.kind]} stroke="rgb(var(--bg))" strokeWidth="2">
+              <circle cx={p.x} cy={p.y} r={7 * pxScale} fill={POI_COLOR[p.kind]} stroke="rgb(var(--bg))" strokeWidth="2" vectorEffect="non-scaling-stroke">
                 <title>{`${t(`poi_${p.kind}`)}${p.note ? ` — ${p.note}` : ""}`}</title>
               </circle>
-              <text x={p.x + 11} y={p.y + 4} fontSize="16" fill={POI_COLOR[p.kind]} onClick={() => remove(p.id)} className="cursor-pointer">
+              <text x={p.x + 11 * pxScale} y={p.y + 4 * pxScale} fontSize={16 * pxScale} fill={POI_COLOR[p.kind]} onClick={() => remove(p.id)} className="cursor-pointer">
                 ✕
               </text>
             </g>
           ))}
-          {pending && <circle cx={pending.x} cy={pending.y} r="8" fill="none" stroke="rgb(var(--rust))" strokeWidth="2" />}
+          {pending && <circle cx={pending.x} cy={pending.y} r={8 * pxScale} fill="none" stroke="rgb(var(--rust))" strokeWidth="2" vectorEffect="non-scaling-stroke" />}
         </svg>
       </div>
+
+      {(routes.length > 0 || loops.length > 0) && (
+        <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-micro text-ink3">
+          {routes.length > 0 && (
+            <span className="inline-flex items-center gap-1.5">
+              <span className="inline-block h-[3px] w-5 rounded-full bg-clay" />
+              {t("legendSaved")}
+            </span>
+          )}
+          {loops.length > 0 && (
+            <span className="inline-flex items-center gap-1.5">
+              <span className="inline-block w-5 border-t-2 border-dashed" style={{ borderColor: "rgb(var(--sage))" }} />
+              {t("legendLoops")}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }

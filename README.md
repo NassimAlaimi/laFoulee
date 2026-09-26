@@ -408,7 +408,7 @@ sur tous ses appareils) et ne change jamais les URLs.
 | **Activités** | Liste filtrable avec vignettes de tracé, vues **Mosaïque** et **Carte** (chaleur + parcours récurrents), fiche détaillée par séance |
 | **Entraînement** | Plan séance par séance (avec le « pourquoi » de chaque séance), point hebdo, réadaptation, trajectoire de volume, **saisons multi-objectifs** (courses A/B/C, blocs, affûtage) |
 | **Séances personnalisées** | Saisie rapide en texte (`20' EF + 3×(6×400 @VMA r=1'30)`), cibles relatives, profil et charge en direct, planification et export `.fit` vers la montre |
-| **Atelier de parcours** | Dessiner sur son propre réseau (les rues déjà courues, sans tuiles) : boucles générées, lignes droites pour le fractionné, points d'intérêt, export GPX |
+| **Atelier de parcours** | Dessiner sur son propre réseau (les rues déjà courues, sans tuiles) : boucles générées, lignes droites pour le fractionné, points d'intérêt, export GPX. Les **parcours enregistrés** s'affichent sur la carte (trait plein), avec une bascule « parcours uniquement » |
 | **Import de fichiers** | FIT, GPX, TCX et export complet Garmin (.zip) — décodeur FIT maison, fusion avec Strava sans doublon, carnet complété (sommeil, FC de repos, VFC) |
 | **Plan de course** | Du GPX à la ligne d'arrivée : tronçons, allures à effort constant (GAP + facteur de pente personnel + chaleur), scénarios A/B/C avec signal de bascule, nutrition calée sur le temps, bracelet, débrief |
 | **Conseil du jour** | Un seul conseil priorisé (douleur, surcharge, course proche, affûtage, carnet, forme) |
@@ -437,7 +437,7 @@ dessine en SVG pur : aucune clé d'API, aucune tuile, rien qui sorte de l'instan
 | **Fiche séance** | Tracé sur papier millimétré, **coloré kilomètre par kilomètre selon l'allure** (vert = plus vite que la moyenne, terre cuite = plus lent), bornes kilométriques, nord, barre d'échelle. Survoler un kilomètre sur la carte le met en évidence dans la bande d'allure, et inversement (flèches ← → au clavier) |
 | **Liste** | Silhouette du tracé en tête de ligne |
 | **Mosaïque** | Une vignette par sortie : on reconnaît ses boucles habituelles d'un coup d'œil |
-| **Carte** | Toutes les sorties d'un secteur superposées en traits translucides sur fond nuit : les rues les plus courues s'illuminent. Secteurs regroupés par point de départ (25 km) |
+| **Carte** | Toutes les sorties superposées en traits translucides sur fond nuit : les rues les plus courues s'illuminent. Centrée sur la zone la plus courue (plus de sélecteur de secteurs) |
 | **Parcours récurrents** | Sorties reconnues comme le même parcours, avec leur record |
 
 **Même parcours** : chaque tracé est rééchantillonné en 16 points équidistants ;

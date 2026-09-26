@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export type OverlayPath = {
   id: string;
@@ -42,6 +42,16 @@ export function RouteOverlay({
   // Fenêtre de vue (zoom / déplacement), dans l'espace 0..w / 0..h.
   const [vb, setVb] = useState({ x: 0, y: 0, w, h });
   const drag = useRef<{ startX: number; startY: number; vbX: number; vbY: number } | null>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+
+  // Même blocage du défilement que NetworkMap (écouteur natif non passif).
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el) return;
+    const blockScroll = (e: WheelEvent) => e.preventDefault();
+    el.addEventListener("wheel", blockScroll, { passive: false });
+    return () => el.removeEventListener("wheel", blockScroll);
+  }, []);
 
   const zoom = (factor: number, cx = w / 2, cy = h / 2) => {
     setVb((cur) => {
@@ -69,8 +79,10 @@ export function RouteOverlay({
 
       <div className="heat-canvas relative overflow-hidden rounded-card">
         <svg
+          ref={svgRef}
           viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`}
           className="block h-auto w-full"
+          style={{ touchAction: "none" }}
           role="img"
           aria-label={t("tracksOverlaid", { n: paths.length })}
           onMouseLeave={() => setHover(null)}

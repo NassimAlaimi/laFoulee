@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { pageMeta } from "@/lib/page-meta";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Empty, Hint, PageHead } from "@/components/ui/Layout";
 import { Metric, MetricBand } from "@/components/ui/Metric";
@@ -18,13 +19,16 @@ import { RouteOverlay } from "@/components/route/RouteOverlay";
 
 export const dynamic = "force-dynamic";
 
+export async function generateMetadata() {
+  return pageMeta("activities");
+}
+
 type Filters = {
   q?: string;
   type?: string;
   sort?: string;
   period?: string;
   view?: string;
-  zone?: string;
 };
 
 const VIEWS = [
@@ -126,7 +130,7 @@ export default async function ActivitiesPage({
 
   const qs = (patch: Partial<Filters>) => {
     const next = new URLSearchParams();
-    const merged = { q: params.q, type, sort, period, view, zone: params.zone, ...patch };
+    const merged = { q: params.q, type, sort, period, view, ...patch };
     for (const [k, v] of Object.entries(merged)) {
       if (v && v !== "all" && !(k === "sort" && v === "date") && !(k === "view" && v === "list")) {
         next.set(k, String(v));
@@ -168,6 +172,7 @@ export default async function ActivitiesPage({
             name="q"
             defaultValue={params.q}
             placeholder={t("searchPlaceholder")}
+            aria-label={t("searchPlaceholder")}
             className="field w-full sm:w-64"
           />
           {type !== "all" && <input type="hidden" name="type" value={type} />}
@@ -189,7 +194,7 @@ export default async function ActivitiesPage({
           <FilterGroup label={t("filterType")} ns="types" options={TYPES} active={type} href={(k) => qs({ type: k })} t={t} />
           <FilterGroup label={t("filterSort")} ns="sorts" options={SORTS} active={sort} href={(k) => qs({ sort: k })} t={t} />
           <div className="ml-auto">
-            <FilterGroup label={t("filterView")} ns="views" options={VIEWS} active={view} href={(k) => qs({ view: k, zone: undefined })} t={t} />
+            <FilterGroup label={t("filterView")} ns="views" options={VIEWS} active={view} href={(k) => qs({ view: k })} t={t} />
           </div>
         </div>
       </section>
@@ -200,7 +205,7 @@ export default async function ActivitiesPage({
       ) : view === "mosaic" ? (
         <Mosaic runs={runs} poly={poly} locale={locale} t={t} />
       ) : view === "map" ? (
-        <MapView runs={runs} poly={poly} zone={Number(params.zone ?? 0) || 0} qs={(z) => qs({ zone: String(z) })} locale={locale} t={t} userId={userId} />
+        <MapView runs={runs} poly={poly} locale={locale} t={t} userId={userId} />
       ) : (
         <div className="mt-6">
           <div className="overflow-x-auto">
@@ -361,16 +366,12 @@ function Mosaic({
 async function MapView({
   runs,
   poly,
-  zone,
-  qs,
   locale,
   t,
   userId,
 }: {
   runs: Run[];
   poly: Map<string, string | null>;
-  zone: number;
-  qs: (zone: number) => string;
   locale: string;
   t: (key: string, params?: Record<string, string | number>) => string;
   userId: string;
@@ -388,7 +389,9 @@ async function MapView({
   }
 
   const clusters = clusterByStart(located, 25);
-  const active = clusters[Math.min(zone, clusters.length - 1)];
+  // Le cluster le plus couru (trié par nombre de sorties), sans sélecteur de
+  // secteurs : on affiche d'emblée la zone où l'on s'entraîne le plus.
+  const active = clusters[0];
   const W = 1200;
   const H = 700;
 
@@ -419,25 +422,6 @@ async function MapView({
   return (
     <div className="mt-8 space-y-10">
       {fav && <FavoriteRoute items={fav.items} polyline={fav.lead.polyline} />}
-      {clusters.length > 1 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-micro uppercase tracking-[0.08em] text-ink3">{t("sector")}</span>
-          {clusters.map((c, i) => (
-            <Link
-              key={i}
-              href={qs(i)}
-              className={`rounded-[6px] border px-2.5 py-1 text-[0.8125rem] transition-colors ${
-                c === active ? "border-clay/40 bg-clay/10 font-medium text-clay" : "border-hair text-ink2 hover:text-ink"
-              }`}
-            >
-              {i === 0 ? t("main") : t("sectorN", { n: i + 1 })}
-              <span className="ml-1.5 font-mono text-micro text-ink3">
-                {c.items.length}
-              </span>
-            </Link>
-          ))}
-        </div>
-      )}
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
         <RouteOverlay paths={paths} osm={osm} w={W} h={H} />
