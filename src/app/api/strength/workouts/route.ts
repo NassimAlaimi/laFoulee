@@ -12,10 +12,9 @@ export async function POST(req: NextRequest) {
 
   const parsed = WorkoutInput.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json(
-      { ok: false, error: parsed.error.issues[0]?.message ?? "Données invalides" },
-      { status: 400 }
-    );
+    // Le détail zod (noms de champs, contraintes internes) reste côté serveur.
+    console.error("[strength] séance invalide", parsed.error.issues.slice(0, 3));
+    return NextResponse.json({ ok: false, error: "Données invalides" }, { status: 400 });
   }
   const body = parsed.data;
   const date = new Date(body.date);
