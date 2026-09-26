@@ -372,6 +372,66 @@ export function mostUsedStart(g: RouteGraph, ref: LatLng): string | null {
   return best;
 }
 
+/**
+ * Secteur géographique du réseau : une composante connexe du graphe (les
+ * villes où l'on a couru sont séparées par des centaines de km). Regroupe les
+ * nœuds et arêtes d'un même secteur, avec son centre et son poids (nombre de
+ * passages) pour choisir le secteur « maison ».
+ */
+export type GraphSector = {
+  nodes: Map<string, RouteNode>;
+  edges: RouteEdge[];
+  center: LatLng;
+  passes: number;
+};
+
+export function graphSectors(g: RouteGraph): GraphSector[] {
+  // Union-find sur les arêtes : deux nœuds reliés sont dans le même secteur.
+  const parent = new Map<string, string>();
+  const find = (x: string): string => {
+    let root = x;
+    while (parent.get(root) !== root) root = parent.get(root)!;
+    while (parent.get(x) !== root) {
+      const next = parent.get(x)!;
+      parent.set(x, root);
+      x = next;
+    }
+    return root;
+  };
+  for (const n of g.nodes.keys()) parent.set(n, n);
+  for (const e of g.edges) {
+    const ra = find(e.a);
+    const rb = find(e.b);
+    if (ra !== rb) parent.set(ra, rb);
+  }
+
+  const groups = new Map<string, GraphSector>();
+  for (const n of g.nodes.values()) {
+    const root = find(n.id);
+    let s = groups.get(root);
+    if (!s) {
+      s = { nodes: new Map(), edges: [], center: [0, 0], passes: 0 };
+      groups.set(root, s);
+    }
+    s.nodes.set(n.id, n);
+  }
+  for (const e of g.edges) groups.get(find(e.a))!.edges.push(e);
+  for (const s of groups.values()) {
+    let lat = 0;
+    let lon = 0;
+    let passes = 0;
+    for (const n of s.nodes.values()) {
+      lat += n.lat;
+      lon += n.lon;
+      passes += n.edges.reduce((a, e) => a + e.passes, 0);
+    }
+    s.center = [lat / s.nodes.size, lon / s.nodes.size];
+    // Chaque arête compte deux extrémités : diviser par 2 pour un poids honnête.
+    s.passes = Math.round(passes / 2);
+  }
+  return [...groups.values()].sort((a, b) => b.passes - a.passes);
+}
+
 /** Plus court chemin entre deux points (dessin guidé). */
 export function shortestPath(g: RouteGraph, ref: LatLng, a: LatLng, b: LatLng): { points: LatLng[]; meters: number } | null {
   const na = nearestNode(g, ref, a, 120);

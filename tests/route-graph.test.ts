@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { buildGraph, findLoops, nearestNode, shortestPath, straightSegments, serializeGraph, deserializeGraph, MAX_EDGE_METERS } from "../src/lib/route-graph.ts";
+import { buildGraph, findLoops, nearestNode, shortestPath, straightSegments, serializeGraph, deserializeGraph, graphSectors, MAX_EDGE_METERS } from "../src/lib/route-graph.ts";
 import { encodePolyline, decodePolyline } from "../src/lib/polyline.ts";
 
 // Grille 5×5 d'intersections espacées de 100 m, autour de (48.0, 2.0).
@@ -58,6 +58,23 @@ describe("buildGraph", () => {
     // Sans distance (ancienne donnée), le saut est quand même coupé (pas d'arête géante).
     const g3 = buildGraph([{ polyline: big, startDate: new Date(2026, 0, 5) }]);
     assert.ok(Math.max(...g3.edges.map((e) => e.meters)) <= MAX_EDGE_METERS);
+  });
+});
+
+describe("graphSectors", () => {
+  it("sépare les composantes connexes et trie par poids", () => {
+    // Deux grilles distinctes (deux villes), la seconde plus courue.
+    const a = grid().map((x) => ({ ...x }));
+    const far: [number, number] = [48.5, 2.0];
+    const other = [
+      encodePolyline([far, [far[0] - 0.001, far[1]], [far[0] - 0.001, far[1] - 0.001]]),
+      encodePolyline([far, [far[0] - 0.001, far[1]], [far[0] - 0.001, far[1] - 0.001]]),
+    ];
+    const g = buildGraph([...a, ...other.map((polyline) => ({ polyline, startDate: new Date(2026, 0, 2) }))]);
+    const sectors = graphSectors(g);
+    assert.equal(sectors.length, 2);
+    assert.ok(sectors[0].nodes.size >= 25, "grille principale");
+    assert.equal(sectors[1].nodes.size, 3, "secteur isolé");
   });
 });
 

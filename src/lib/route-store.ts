@@ -5,7 +5,8 @@
 
 import { prisma } from "./prisma";
 import { decodePolyline } from "./polyline";
-import { buildGraph, deserializeGraph, findLoops, serializeGraph, type RouteGraph, type LoopOptions } from "./route-graph";
+import { buildGraph, deserializeGraph, findLoops, serializeGraph, type RouteGraph, type LoopOptions, type RouteNode, type RouteEdge, type GraphSector } from "./route-graph";
+import { viewFor, polylinePath, type ViewBbox } from "./route-view";
 import { fetchOverpassRoads } from "./osm";
 import { sameRoute } from "./polyline";
 
@@ -137,52 +138,54 @@ export function polylineToGpx(name: string, polyline: string): string {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Foulée">\n <trk><name>${name.replace(/[<>&]/g, "")}</name><trkseg>\n${body}\n </trkseg></trk>\n</gpx>\n`;
 }
 
-export type ViewBbox = { minLat: number; maxLat: number; minLon: number; maxLon: number };
-
 /** Bbox du réseau personnel. */
 export function networkBbox(graph: RouteGraph): ViewBbox {
+  return bboxOfNodes(graph.nodes.values());
+}
+
+function bboxOfNodes(nodes: Iterable<RouteNode>): ViewBbox {
   let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
-  for (const n of graph.nodes.values()) {
+  for (const n of nodes) {
     minLat = Math.min(minLat, n.lat); maxLat = Math.max(maxLat, n.lat);
     minLon = Math.min(minLon, n.lon); maxLon = Math.max(maxLon, n.lon);
   }
   return { minLat, maxLat, minLon, maxLon };
 }
 
-function viewFor(bbox: ViewBbox) {
-  const W = 1000;
-  const pad = 30;
-  const spanLat = Math.max(0.0001, bbox.maxLat - bbox.minLat);
-  const spanLon = Math.max(0.0001, bbox.maxLon - bbox.minLon);
-  const scale = (W - 2 * pad) / Math.max(spanLon, spanLat * 1.4);
-  const x = (lon: number) => pad + (lon - bbox.minLon) * scale;
-  const y = (lat: number) => pad + (bbox.maxLat - lat) * scale;
-  const H = Math.round((bbox.maxLat - bbox.minLat) * scale + 2 * pad);
-  return { W, H, scale, x, y, bbox };
+/** Bbox d'un secteur (composante connexe du réseau). */
+export function sectorBbox(sector: GraphSector): ViewBbox {
+  return bboxOfNodes(sector.nodes.values());
 }
 
 /** Projection du réseau dans une boîte de dessin (équirectangulaire locale). */
 export function networkView(graph: RouteGraph, bboxOverride?: ViewBbox) {
   const bbox = bboxOverride ?? networkBbox(graph);
+  return buildView(graph.nodes.values(), graph.edges, graph.nodes, bbox);
+}
+
+/** Projection d'un secteur dans une boîte de dessin. */
+export function sectorView(sector: GraphSector, bboxOverride?: ViewBbox) {
+  const bbox = bboxOverride ?? sectorBbox(sector);
+  return buildView(sector.nodes.values(), sector.edges, sector.nodes, bbox);
+}
+
+function buildView(
+  nodeIter: Iterable<RouteNode>,
+  edges: RouteEdge[],
+  nodeMap: Map<string, RouteNode>,
+  bbox: ViewBbox
+) {
   const v = viewFor(bbox);
-  const nodes = [...graph.nodes.values()];
+  const nodes = [...nodeIter];
   return {
     viewBox: [v.W, v.H] as const,
     bbox: v.bbox,
     scale: v.scale,
     nodes: nodes.map((n) => ({ id: n.id, x: Math.round(v.x(n.lon)), y: Math.round(v.y(n.lat)) })),
-    edges: graph.edges.map((e) => {
-      const a = graph.nodes.get(e.a)!;
-      const b = graph.nodes.get(e.b)!;
+    edges: edges.map((e) => {
+      const a = nodeMap.get(e.a)!;
+      const b = nodeMap.get(e.b)!;
       return { x1: Math.round(v.x(a.lon)), y1: Math.round(v.y(a.lat)), x2: Math.round(v.x(b.lon)), y2: Math.round(v.y(b.lat)), passes: e.passes, id: e.id };
     }),
   };
-}
-
-/** Polyline → chemin SVG « d » dans la boîte. */
-export function polylinePath(polyline: string, bbox: ViewBbox): string {
-  const v = viewFor(bbox);
-  const pts = decodePolyline(polyline);
-  if (pts.length < 2) return "";
-  return pts.map((p, i) => `${i ? "L" : "M"}${v.x(p[1]).toFixed(1)},${v.y(p[0]).toFixed(1)}`).join("");
 }
