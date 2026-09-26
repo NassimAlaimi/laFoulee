@@ -912,7 +912,8 @@
     "typeToConfirm": "Type {name} to confirm",
     "deleting": "Deleting…",
     "deleteFinal": "Delete permanently",
-    "see": "View"
+    "see": "View",
+    "adminLink": "Admin"
   },
   "palette": {
     "aria": "Command palette",
@@ -2677,10 +2678,34 @@
     }
   },
   "admin": {
-    "errorsTitle": "Server errors",
-    "errorsNote": "{n, plural, =0 {No errors in the last 7 days} one {# error in the last 7 days} other {# errors in the last 7 days}} — grouped by cause, kept 30 days",
-    "errorsNone": "No errors recorded. All good.",
-    "errorsClear": "Clear the log"
+    "kicker": "Administration",
+    "title": "Admin",
+    "meta": "Who is signed up, who is connected, and when.",
+    "overview": "Overview",
+    "users": "Accounts",
+    "activities": "Activities",
+    "activeSessions": "Active sessions",
+    "stravaLinked": "Linked to Strava",
+    "usersTitle": "Accounts",
+    "usersNote": "Every account, its role, language and last activity.",
+    "name": "Name",
+    "email": "Email",
+    "role": "Role",
+    "language": "Language",
+    "strava": "Strava",
+    "created": "Created",
+    "lastSeen": "Last seen",
+    "role_admin": "admin",
+    "role_user": "user",
+    "yes": "yes",
+    "no": "no",
+    "sessionsTitle": "Active sessions",
+    "sessionsNote": "Who is connected right now, and since when.",
+    "who": "Who",
+    "lastUsed": "Last activity",
+    "expires": "Expires",
+    "agent": "Browser",
+    "noSessions": "No active session."
   },
   "footer": {
     "label": "Legal information",

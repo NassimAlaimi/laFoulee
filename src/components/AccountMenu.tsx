@@ -88,6 +88,16 @@ export function AccountMenu({ user }: { user: AccountInfo }) {
           >
             {t("settingsLink")}
           </Link>
+          {user.admin && (
+            <Link
+              href="/admin"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="block rounded px-2.5 py-2 text-[0.8125rem] text-ink2 transition-colors hover:bg-sunken hover:text-ink"
+            >
+              {t("adminLink")}
+            </Link>
+          )}
           <button
             type="button"
             role="menuitem"

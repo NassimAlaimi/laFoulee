@@ -912,7 +912,8 @@
     "typeToConfirm": "Escribe {name} para confirmar",
     "deleting": "Eliminando…",
     "deleteFinal": "Eliminar definitivamente",
-    "see": "Ver"
+    "see": "Ver",
+    "adminLink": "Administración"
   },
   "palette": {
     "aria": "Paleta de comandos",
@@ -2677,10 +2678,34 @@
     }
   },
   "admin": {
-    "errorsTitle": "Errores del servidor",
-    "errorsNote": "{n, plural, =0 {Ningún error en los últimos 7 días} one {# error en los últimos 7 días} other {# errores en los últimos 7 días}} — agrupados por causa, conservados 30 días",
-    "errorsNone": "Ningún error registrado. Todo funciona.",
-    "errorsClear": "Vaciar el registro"
+    "kicker": "Administración",
+    "title": "Admin",
+    "meta": "Quién está inscrito, quién está conectado y cuándo.",
+    "overview": "Resumen",
+    "users": "Cuentas",
+    "activities": "Actividades",
+    "activeSessions": "Sesiones activas",
+    "stravaLinked": "Vinculadas a Strava",
+    "usersTitle": "Cuentas",
+    "usersNote": "Cada cuenta, su rol, idioma y última actividad.",
+    "name": "Nombre",
+    "email": "Email",
+    "role": "Rol",
+    "language": "Idioma",
+    "strava": "Strava",
+    "created": "Creado",
+    "lastSeen": "Última visita",
+    "role_admin": "admin",
+    "role_user": "usuario",
+    "yes": "sí",
+    "no": "no",
+    "sessionsTitle": "Sesiones activas",
+    "sessionsNote": "Quién está conectado ahora y desde cuándo.",
+    "who": "Quién",
+    "lastUsed": "Última actividad",
+    "expires": "Caduca",
+    "agent": "Navegador",
+    "noSessions": "Ninguna sesión activa."
   },
   "footer": {
     "label": "Información legal",
