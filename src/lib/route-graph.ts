@@ -19,11 +19,21 @@
  * Fonctions pures, testées dans tests/route-graph.test.ts.
  */
 
-import { decodePolyline, encodePolyline, haversine, type LatLng } from "./polyline";
+import { decodePolyline, encodePolyline, haversine, polylineLength, type LatLng } from "./polyline";
 
 export const CELL = 15; // m
 
-export type GraphActivity = { polyline: string | null; startDate: Date };
+/**
+ * Longueur maximale d'une arête. Les polylignes résumées peuvent sauter
+ * quelques centaines de mètres (décrochage GPS légitime) — mais au-delà de
+ * ~2 km, deux points consécutifs ne peuvent pas être reliés à la course :
+ * c'est un point aberrant (GPS qui bascule de ville). On coupe alors le tracé
+ * au lieu de créer une arête géante qui fausse le territoire, le compteur de
+ * km et les boucles générées.
+ */
+export const MAX_EDGE_METERS = 2000;
+
+export type GraphActivity = { polyline: string | null; startDate: Date; distance?: number | null };
 
 export type RouteEdge = {
   id: string;
@@ -95,18 +105,30 @@ export function buildGraph(activities: GraphActivity[], ref?: LatLng): RouteGrap
   for (const act of activities) {
     const pts = polylinePoints(act.polyline);
     if (pts.length < 2) continue;
+    // Tracé corrompu : la polyligne résumée est censée être *plus courte*
+    // que la distance réelle (simplification). Si elle la dépasse très
+    // largement, c'est un GPS qui a basculé de ville (points aberrants) —
+    // on écarte toute l'activité plutôt que de polluer le territoire.
+    if (act.distance && act.distance > 0 && polylineLength(act.polyline) > act.distance * 2 + 1000) {
+      continue;
+    }
     const t = act.startDate.getTime();
     let prevKey: string | null = null;
     let prevPt: LatLng | null = null;
-    const seen = new Set<string>();
     for (const p of pts) {
       const { x, y } = project(p[0], p[1], reference);
       const key = cellKey(x, y);
       if (prevKey && key !== prevKey) {
+        const m = haversine(prevPt!, p);
+        // Discontinuité (point aberrant) : on coupe le tracé, sans arête.
+        if (m > MAX_EDGE_METERS) {
+          prevKey = null;
+          prevPt = null;
+          continue;
+        }
         const a = getNode(prevKey, prevPt![0], prevPt![1]);
         const b = getNode(key, p[0], p[1]);
         const id = edgeId(prevKey, key);
-        const m = haversine(prevPt!, p);
         let e = edgeMap.get(id);
         if (!e) {
           e = { id, a: prevKey, b: key, meters: m, passes: 0, lastPassed: 0, points: [] };
@@ -119,9 +141,6 @@ export function buildGraph(activities: GraphActivity[], ref?: LatLng): RouteGrap
         e.passes++;
         e.lastPassed = Math.max(e.lastPassed, t);
         e.meters = m;
-        if (!seen.has(id)) {
-          seen.add(id);
-        }
       }
       prevKey = key;
       prevPt = p;

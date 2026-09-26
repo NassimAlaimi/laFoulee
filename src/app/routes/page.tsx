@@ -6,7 +6,7 @@ import { RouteWorkshop } from "@/components/route/RouteWorkshop";
 import { DeleteRouteButton } from "@/components/route/DeleteRouteButton";
 import { requireUserId } from "@/lib/auth";
 import { fmtPace } from "@/lib/format";
-import { getRouteGraph, getOsmRoads, listPois, listRoutes, networkBbox, networkView, polylinePath } from "@/lib/route-store";
+import { getRouteGraph, getOsmRoads, listPois, listRoutes, networkBbox, networkView, polylinePath, graphTotalKm } from "@/lib/route-store";
 import { bboxAround } from "@/lib/osm";
 import { straightSegments } from "@/lib/route-graph";
 import { encodePolyline } from "@/lib/polyline";
@@ -20,7 +20,7 @@ export default async function RoutesPage() {
   const got = await getRouteGraph(userId);
   const graph = got?.graph ?? null;
   const [routes, pois] = await Promise.all([listRoutes(userId), listPois(userId)]);
-  const totalKm = graph ? graph.edges.reduce((a, e) => a + e.meters * e.passes, 0) / 1000 : 0;
+  const totalKm = graph ? await graphTotalKm(userId) : 0;
 
   // Fond OSM : les rues autour du territoire (borné), en cache 24 h.
   let osm: string[] | null = null;

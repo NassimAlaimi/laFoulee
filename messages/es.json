@@ -2527,7 +2527,7 @@
   "routes": {
     "kicker": "Actividades",
     "title": "Taller de recorridos",
-    "metaSome": "{km} km de calles ya corridas, {roads} tramos — tu territorio.",
+    "metaSome": "{km} km corridos, {roads} tramos de calle — tu territorio.",
     "metaNone": "Aún no hay trazos: sincroniza Strava o importa archivos para dibujar tu red.",
     "territory": "Tu territorio",
     "territoryNote": "Cada trazo terracota es una calle ya corrida; cuanto más marcado, más la usas. El fondo gris (OpenStreetMap) muestra las calles de alrededor, para explorar más allá. Haz clic para colocar puntos de interés.",

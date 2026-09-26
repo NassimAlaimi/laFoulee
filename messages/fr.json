@@ -2527,7 +2527,7 @@
   "routes": {
     "kicker": "Activités",
     "title": "Atelier de parcours",
-    "metaSome": "{km} km de rues déjà courues, {roads} tronçons — ton territoire.",
+    "metaSome": "{km} km courus, {roads} tronçons de rue — ton territoire.",
     "metaNone": "Aucun tracé pour l'instant : synchronise Strava ou importe des fichiers pour dessiner ton réseau.",
     "territory": "Ton territoire",
     "territoryNote": "Chaque trait terre cuite est une rue déjà courue ; plus il est marqué, plus tu l'empruntes. Le fond gris (OpenStreetMap) montre les rues environnantes, pour explorer au-delà. Clique pour poser des points d'intérêt.",

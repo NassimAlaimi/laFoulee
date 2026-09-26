@@ -25,7 +25,7 @@ export async function getRouteGraph(userId: string, now = new Date()): Promise<{
   }
   const acts = await prisma.activity.findMany({
     where: { userId, polyline: { not: null } },
-    select: { polyline: true, startDate: true },
+    select: { polyline: true, startDate: true, distance: true },
     orderBy: { startDate: "asc" },
   });
   const graph = buildGraph(acts);
@@ -80,6 +80,15 @@ export async function getOsmRoads(userId: string, bbox: ViewBbox, now = new Date
     update: { data: JSON.stringify(roads), builtAt: now },
   });
   return roads;
+}
+
+/** Distance totale réellement courue (somme des activités tracées), en km. */
+export async function graphTotalKm(userId: string): Promise<number> {
+  const agg = await prisma.activity.aggregate({
+    where: { userId, polyline: { not: null } },
+    _sum: { distance: true },
+  });
+  return (agg._sum.distance ?? 0) / 1000;
 }
 
 /** Parcours enregistrés + combien de fois courus (rapprochement par tracé). */

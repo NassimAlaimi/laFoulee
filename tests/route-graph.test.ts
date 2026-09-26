@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { buildGraph, findLoops, nearestNode, shortestPath, straightSegments, serializeGraph, deserializeGraph } from "../src/lib/route-graph.ts";
+import { buildGraph, findLoops, nearestNode, shortestPath, straightSegments, serializeGraph, deserializeGraph, MAX_EDGE_METERS } from "../src/lib/route-graph.ts";
 import { encodePolyline, decodePolyline } from "../src/lib/polyline.ts";
 
 // Grille 5×5 d'intersections espacées de 100 m, autour de (48.0, 2.0).
@@ -39,6 +39,25 @@ describe("buildGraph", () => {
     const g2 = deserializeGraph(s)!;
     assert.equal(g2.nodes.size, g.nodes.size);
     assert.equal(g2.edges.length, g.edges.length);
+  });
+  it("coupe le tracé sur un saut GPS aberrant au lieu de créer une arête géante", () => {
+    // Un tracé propre, puis un point à ~50 km (GPS qui bascule de ville).
+    const ok = [pt(0, 0), pt(0, 1), pt(0, 2)];
+    const glitch: [number, number] = [ok[ok.length - 1][0] + 0.5, ok[ok.length - 1][1]];
+    const act = encodePolyline([...ok, glitch, [glitch[0] - 0.001, glitch[1] - 0.001]]);
+    const g2 = buildGraph([{ polyline: act, startDate: new Date(2026, 0, 5) }]);
+    const maxEdge = Math.max(...g2.edges.map((e) => e.meters));
+    assert.ok(maxEdge <= MAX_EDGE_METERS, `arête de ${maxEdge} m`);
+    assert.ok(g2.edges.length >= 1, "la partie propre reste connectée");
+  });
+  it("écarte une activité dont la polyligne est bien plus longue que la distance enregistrée", () => {
+    // Distance enregistrée : 400 m ; la polyligne saute à ~55 km (GPS corrompu).
+    const big = encodePolyline([pt(0, 0), pt(0, 1), [48.5, 2.0]]);
+    const g2 = buildGraph([{ polyline: big, startDate: new Date(2026, 0, 5), distance: 400 }]);
+    assert.equal(g2.nodes.size, 0, "activité corrompue écartée");
+    // Sans distance (ancienne donnée), le saut est quand même coupé (pas d'arête géante).
+    const g3 = buildGraph([{ polyline: big, startDate: new Date(2026, 0, 5) }]);
+    assert.ok(Math.max(...g3.edges.map((e) => e.meters)) <= MAX_EDGE_METERS);
   });
 });
 

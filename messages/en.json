@@ -2527,7 +2527,7 @@
   "routes": {
     "kicker": "Activities",
     "title": "Route workshop",
-    "metaSome": "{km} km of already-run streets, {roads} segments — your territory.",
+    "metaSome": "{km} km run, {roads} street segments — your territory.",
     "metaNone": "No track yet: sync Strava or import files to draw your network.",
     "territory": "Your territory",
     "territoryNote": "Each clay stroke is a street you've run; the bolder, the more often you use it. The grey background (OpenStreetMap) shows surrounding streets, to explore further. Click to drop points of interest.",
