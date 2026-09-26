@@ -106,7 +106,11 @@
     "weekNum": "Semana {n}",
     "doneWeek": "{week} — {done}/{planned} sesiones · {km}/{plannedKm} km · {zone}",
     "qualitySessions": "Sesiones rápidas",
-    "heatmapMax": "más · {km} km máx. en un día"
+    "heatmapMax": "más · {km} km máx. en un día",
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar",
+    "resetZoom": "Restablecer zoom",
+    "hoverIdentify": "{n} trazados · pasa el cursor para identificar"
   },
   "nav": {
     "today": "Hoy",

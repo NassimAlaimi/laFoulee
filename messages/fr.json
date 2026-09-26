@@ -106,7 +106,11 @@
     "weekNum": "Semaine {n}",
     "doneWeek": "{week} — {done}/{planned} séances · {km}/{plannedKm} km · {zone}",
     "qualitySessions": "Séances rapides",
-    "heatmapMax": "plus · {km} km max sur une journée"
+    "heatmapMax": "plus · {km} km max sur une journée",
+    "zoomIn": "Zoomer",
+    "zoomOut": "Dézoomer",
+    "resetZoom": "Réinitialiser le zoom",
+    "hoverIdentify": "{n} tracés · survole pour identifier"
   },
   "nav": {
     "today": "Aujourd'hui",

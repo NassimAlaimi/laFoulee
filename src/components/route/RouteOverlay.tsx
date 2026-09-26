@@ -56,13 +56,13 @@ export function RouteOverlay({
   return (
     <div>
       <div className="mb-2 flex justify-end gap-1">
-        <button type="button" className="btn-quiet px-2" onClick={() => zoom(0.7)} aria-label="Zoomer en arrière">
+        <button type="button" className="btn-quiet px-2" onClick={() => zoom(0.7)} aria-label={t("zoomOut")}>
           −
         </button>
-        <button type="button" className="btn-quiet px-2" onClick={() => setVb({ x: 0, y: 0, w, h })} aria-label="Réinitialiser le zoom">
+        <button type="button" className="btn-quiet px-2" onClick={() => setVb({ x: 0, y: 0, w, h })} aria-label={t("resetZoom")}>
           ⤢
         </button>
-        <button type="button" className="btn-quiet px-2" onClick={() => zoom(1 / 0.7)} aria-label="Zoomer">
+        <button type="button" className="btn-quiet px-2" onClick={() => zoom(1 / 0.7)} aria-label={t("zoomIn")}>
           +
         </button>
       </div>
@@ -146,7 +146,7 @@ export function RouteOverlay({
             </div>
           ) : (
             <div className="font-mono text-micro uppercase tracking-[0.14em] text-[rgb(var(--heat-ink)/0.55)]">
-              {paths.length} tracés · survole pour identifier
+              {t("hoverIdentify", { n: paths.length })}
             </div>
           )}
         </div>
