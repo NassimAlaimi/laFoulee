@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { bboxAround, overpassQuery, MAX_SPAN_KM, bboxKey, parseOsmZones, findOsmZone, putOsmZone, MAX_ZONES, rankWays, bboxSpanKm, MINOR_WAYS_MAX_KM, tileBbox, zoneKey, OSM_FMT, formatRoad, parseRoad, downsample, roadsInCache } from "../src/lib/osm.ts";
+import { bboxAround, overpassQuery, MAX_SPAN_KM, bboxKey, parseOsmZones, findOsmZone, putOsmZone, MAX_ZONES, rankWays, bboxSpanKm, MINOR_WAYS_MAX_KM, tileBbox, zoneKey, OSM_FMT, formatRoad, parseRoad, downsample, roadsInCache, gridTiles } from "../src/lib/osm.ts";
 
 describe("osm", () => {
   it("bbox centré et borné", () => {
@@ -148,5 +148,22 @@ describe("voies en cache : classe et carrefours", () => {
     z = putOsmZone(z, { key: "3", bbox: far, builtAt: 3, fmt: OSM_FMT, roads: ["1:loin"] });
     const got = roadsInCache(z, { minLat: 47.04, maxLat: 47.06, minLon: -1.52, maxLon: -1.48 }, 10, 100).sort();
     assert.deepEqual(got, ["1:a", "1:b", "1:shared"]);
+  });
+});
+
+describe("gridTiles", () => {
+  it("deux cadres qui se chevauchent partagent les mêmes tuiles (cache commun)", () => {
+    const a = gridTiles({ minLat: 47.19, maxLat: 47.24, minLon: -1.8, maxLon: -1.65 });
+    const b = gridTiles({ minLat: 47.2, maxLat: 47.23, minLon: -1.76, maxLon: -1.7 });
+    const keys = new Set(a.map(bboxKey));
+    assert.ok(b.every((t) => keys.has(bboxKey(t))));
+  });
+  it("couvre la zone et commence par le centre", () => {
+    const z = { minLat: 47.12, maxLat: 47.31, minLon: -1.9, maxLon: -1.45 };
+    const tiles = gridTiles(z);
+    assert.ok(tiles.some((t) => t.minLat <= z.minLat) && tiles.some((t) => t.maxLat >= z.maxLat));
+    assert.ok(tiles.some((t) => t.minLon <= z.minLon) && tiles.some((t) => t.maxLon >= z.maxLon));
+    const c = (t: typeof z) => Math.hypot((t.minLat + t.maxLat) / 2 - 47.215, ((t.minLon + t.maxLon) / 2 + 1.675) * 0.68);
+    assert.ok(c(tiles[0]) <= c(tiles[tiles.length - 1]));
   });
 });

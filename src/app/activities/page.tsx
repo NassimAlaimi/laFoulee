@@ -9,10 +9,9 @@ import { getRuns } from "@/lib/queries";
 import { periodStats, weeklyVolume } from "@/lib/stats";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
-import { clusterByStart, decodePolyline, groupRoutes, overlayPaths, overlayRoads, polylineLength, privatePolyline, startOf } from "@/lib/polyline";
+import { clusterByStart, groupRoutes, polylineLength, privatePolyline, startOf } from "@/lib/polyline";
 import { getPrivacyZone } from "@/lib/queries";
-import { getOsmRoads } from "@/lib/route-store";
-import { parseRoad } from "@/lib/osm";
+import { buildMapFrame, projectPolyline, tracesBbox, tracesCore } from "@/lib/route-view";
 import { favoriteRoute } from "@/lib/favorite-route";
 import { FavoriteRoute } from "@/components/route/FavoriteRoute";
 import { RouteGlyph } from "@/components/route/RouteGlyph";
@@ -393,29 +392,29 @@ async function MapView({
   // Le cluster le plus couru (trié par nombre de sorties), sans sélecteur de
   // secteurs : on affiche d'emblée la zone où l'on s'entraîne le plus.
   const active = clusters[0];
-  const W = 1200;
-  const H = 700;
-
-  // Fond de rues OpenStreetMap autour du secteur (mêmes bornes que les
-  // tracés, pour qu'on reconnaisse où l'on court).
-  const osm: string[] = [];
-  const bbox = traceBbox(active.items);
-  if (bbox) {
-    // Jamais d'attente sur Overpass pendant le rendu : cache seulement. En cas
-    // d'absence, la zone est préchargée en tâche de fond pour la prochaine visite.
-    const roads = await getOsmRoads(userId, bbox, new Date(), { cacheOnly: true });
-    if (roads && roads.length) osm.push(...overlayRoads(active.items, roads.map((r) => parseRoad(r).polyline), W, H, 28));
-    else void getOsmRoads(userId, bbox).catch(() => null);
-  }
-  const paths = overlayPaths(active.items, W, H, 28).map((p) => ({
-    id: p.id,
-    d: p.d,
-    name: p.item.name,
-    date: fmtDate(p.item.startDate, locale),
-    km: p.item.distance / 1000,
-    pace: fmtPace(pacePerKm(p.item.distance, p.item.movingTime)),
-    race: p.item.isRace,
-  }));
+  // Carte : cadre sur tout le secteur (on peut dézoomer), ouverture sur la
+  // zone où les tracés se concentrent ; le fond de rues est chargé par la
+  // carte elle-même, tuile par tuile (jamais d'attente sur Overpass ici).
+  const polys = active.items.map((r) => r.polyline);
+  const core = tracesCore(polys);
+  const extent = tracesBbox(polys)!;
+  const mf = buildMapFrame(extent, core?.bbox ?? null);
+  const paths = active.items.flatMap((r) => {
+    const pr = projectPolyline(r.polyline!, mf.bbox);
+    if (!pr) return [];
+    return [
+      {
+        id: r.id,
+        d: pr.d,
+        name: r.name,
+        date: fmtDate(r.startDate, locale),
+        km: r.distance / 1000,
+        pace: fmtPace(pacePerKm(r.distance, r.movingTime)),
+        race: r.isRace,
+      },
+    ];
+  });
+  const overlay = { viewBox: mf.viewBox, bbox: mf.bbox, pxPerMeter: mf.pxPerMeter, core: mf.core, tiles: mf.tiles };
 
   const groups = groupRoutes(active.items).filter((g) => g.items.length >= 2);
   const zoneKm = active.items.reduce((a, r) => a + r.distance, 0) / 1000;
@@ -428,7 +427,7 @@ async function MapView({
       {fav && <FavoriteRoute items={fav.items} polyline={fav.lead.polyline} />}
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
-        <RouteOverlay paths={paths} osm={osm} w={W} h={H} />
+        <RouteOverlay paths={paths} map={overlay} />
         <div>
           <div className="eyebrow">{t("onSector")}</div>
           <div className="mt-3 flex items-baseline gap-1.5">
@@ -489,17 +488,3 @@ async function MapView({
 }
 
 /** Bornes lat/lon d'un ensemble de tracés (extrémités rognées à 1 %). */
-function traceBbox(items: Array<{ polyline: string | null }>): { minLat: number; maxLat: number; minLon: number; maxLon: number } | null {
-  const pts = items.flatMap((r) => decodePolyline(r.polyline));
-  if (pts.length < 2) return null;
-  const lats = pts.map((p) => p[0]).sort((a, b) => a - b);
-  const lons = pts.map((p) => p[1]).sort((a, b) => a - b);
-  const q = (arr: number[], p: number) => arr[Math.min(arr.length - 1, Math.floor(p * arr.length))];
-  const trim = pts.length > 400 ? 0.01 : 0;
-  return {
-    minLat: q(lats, trim),
-    maxLat: q(lats, 1 - trim),
-    minLon: q(lons, trim),
-    maxLon: q(lons, 1 - trim),
-  };
-}

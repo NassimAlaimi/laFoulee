@@ -110,8 +110,9 @@
     "heatmapMax": "more · {km} km max in one day",
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
-    "resetZoom": "Reset zoom",
-    "hoverIdentify": "{n} tracks · hover to identify"
+    "resetZoom": "Back to my zone",
+    "hoverIdentify": "{n} tracks · hover to identify",
+    "streetsLoading": "Loading streets…"
   },
   "nav": {
     "today": "Today",

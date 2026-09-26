@@ -61,6 +61,31 @@ export function tileBbox(b: Bbox, maxKm = 6): Bbox[] {
   return out;
 }
 
+/** Pas de la grille de tuiles (~5,5 × 5,7 km vers 47° N). */
+export const GRID_LAT = 0.05;
+export const GRID_LON = 0.075;
+
+/**
+ * Tuiles d'une grille **fixe** qui couvrent la zone, du centre vers les
+ * bords. Contrairement à `tileBbox` (découpe propre à chaque cadre), deux
+ * cartes différentes (atelier, activités) demandent exactement les mêmes
+ * tuiles pour un même quartier : le cache est partagé, Overpass appelé une
+ * seule fois.
+ */
+export function gridTiles(b: Bbox, dLat = GRID_LAT, dLon = GRID_LON): Bbox[] {
+  const snap = (v: number, d: number) => Number((Math.round(v / d) * d).toFixed(6));
+  const i0 = Math.floor(b.minLat / dLat), i1 = Math.ceil(b.maxLat / dLat);
+  const j0 = Math.floor(b.minLon / dLon), j1 = Math.ceil(b.maxLon / dLon);
+  const cLat = (b.minLat + b.maxLat) / 2;
+  const cLon = (b.minLon + b.maxLon) / 2;
+  const out: Bbox[] = [];
+  for (let i = i0; i < i1; i++)
+    for (let j = j0; j < j1; j++)
+      out.push({ minLat: snap(i * dLat, dLat), maxLat: snap((i + 1) * dLat, dLat), minLon: snap(j * dLon, dLon), maxLon: snap((j + 1) * dLon, dLon) });
+  const d = (t: Bbox) => Math.hypot((t.minLat + t.maxLat) / 2 - cLat, ((t.minLon + t.maxLon) / 2 - cLon) * 0.68);
+  return out.sort((x, y) => d(x) - d(y));
+}
+
 /** `minor` : trottoirs et sentiers inclus (par défaut : selon la taille de la zone). */
 export function overpassQuery(bbox: Bbox, minor = bboxSpanKm(bbox) <= MINOR_WAYS_MAX_KM): string {
   const kinds = minor ? `${STREETS}|${MINOR}` : STREETS;
@@ -176,7 +201,7 @@ export function zoneKey(b: Bbox, detail?: OsmDetail): string {
 }
 
 /** Nombre de zones gardées en cache (les plus récentes). */
-export const MAX_ZONES = 24; // tuiles de l'atelier + carte des activités
+export const MAX_ZONES = 64; // tuiles de la grille partagées par toutes les cartes
 
 export function bboxKey(b: Bbox): string {
   return [b.minLat, b.maxLat, b.minLon, b.maxLon].map((n) => n.toFixed(4)).join(",");

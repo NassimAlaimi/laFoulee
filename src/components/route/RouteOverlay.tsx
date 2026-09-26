@@ -1,8 +1,10 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import { scaleBar, type ViewBbox, type ViewWindow } from "@/lib/route-view";
+import { MapControls, ScaleBar, StreetLayer, useMapViewport, useOsmTiles, type MapTile } from "./map-kit";
 
 export type OverlayPath = {
   id: string;
@@ -14,155 +16,102 @@ export type OverlayPath = {
   race: boolean;
 };
 
+export type OverlayMap = {
+  viewBox: readonly [number, number];
+  bbox: ViewBbox;
+  pxPerMeter: number;
+  /** fenêtre d'ouverture : là où les sorties se concentrent */
+  core: ViewWindow;
+  tiles: MapTile[];
+};
+
 /**
- * Toutes les sorties d'un secteur, superposées, sur un fond de rues OSM.
- * Chaque tracé est dessiné en trait fin semi-transparent : là où tu cours
- * souvent, les traits s'accumulent et la couleur se densifie — une carte de
- * chaleur vectorielle, zoomable et déplaçable.
+ * Toutes les sorties d'un secteur, superposées, sur un fond de rues OSM
+ * hiérarchisé. Chaque tracé est un trait fin semi-transparent : là où tu
+ * cours souvent, les traits s'accumulent et la couleur se densifie — une
+ * carte de chaleur vectorielle. S'ouvre sur la zone la plus courue ;
+ * molette, pincement et glisser, sans faire défiler la page.
  */
-export function RouteOverlay({
-  paths,
-  osm = [],
-  w,
-  h,
-}: {
-  paths: OverlayPath[];
-  osm?: string[];
-  w: number;
-  h: number;
-}) {
+export function RouteOverlay({ paths, map: m }: { paths: OverlayPath[]; map: OverlayMap }) {
   const router = useRouter();
+  const locale = useLocale();
   const [hover, setHover] = useState<string | null>(null);
   const t = useTranslations("common");
   const current = paths.find((p) => p.id === hover);
   // L'opacité de base baisse quand les tracés sont nombreux, pour que la
   // densité reste lisible au lieu de saturer immédiatement.
-  const base = Math.max(0.16, Math.min(0.55, 5 / Math.sqrt(paths.length + 1) / 3));
+  const base = Math.max(0.2, Math.min(0.6, 5 / Math.sqrt(paths.length + 1) / 2.6));
 
-  // Fenêtre de vue (zoom / déplacement), dans l'espace 0..w / 0..h.
-  const [vb, setVb] = useState({ x: 0, y: 0, w, h });
-  const drag = useRef<{ startX: number; startY: number; vbX: number; vbY: number } | null>(null);
-  const svgRef = useRef<SVGSVGElement | null>(null);
-
-  // Même blocage du défilement que NetworkMap (écouteur natif non passif).
-  useEffect(() => {
-    const el = svgRef.current;
-    if (!el) return;
-    const blockScroll = (e: WheelEvent) => e.preventDefault();
-    el.addEventListener("wheel", blockScroll, { passive: false });
-    return () => el.removeEventListener("wheel", blockScroll);
-  }, []);
-
-  const zoom = (factor: number, cx = w / 2, cy = h / 2) => {
-    setVb((cur) => {
-      const nw = Math.max(w / 40, Math.min(w, cur.w * factor));
-      const nh = Math.max(h / 40, Math.min(h, cur.h * factor));
-      const kx = nw / cur.w;
-      const ky = nh / cur.h;
-      return { x: cx - (cx - cur.x) * kx, y: cy - (cy - cur.y) * ky, w: nw, h: nh };
-    });
-  };
+  const [W, H] = m.viewBox;
+  const map = useMapViewport({ W, H, core: m.core, aspects: { wide: 1.5, narrow: 0.85 } });
+  const { roads, pending } = useOsmTiles(m.tiles, m.bbox, map.vb);
+  const metersAcross = map.vb.w / m.pxPerMeter;
+  const bar = scaleBar(map.unit / m.pxPerMeter, 100);
+  const fmtLen = (x: number) => (x >= 1000 ? `${(x / 1000).toLocaleString(locale)} km` : `${x} m`);
 
   return (
-    <div>
-      <div className="mb-2 flex justify-end gap-1">
-        <button type="button" className="btn-quiet px-2" onClick={() => zoom(1 / 0.7)} aria-label={t("zoomOut")} title={t("zoomOut")}>
-          −
-        </button>
-        <button type="button" className="btn-quiet px-2" onClick={() => setVb({ x: 0, y: 0, w, h })} aria-label={t("resetZoom")}>
-          ⤢
-        </button>
-        <button type="button" className="btn-quiet px-2" onClick={() => zoom(0.7)} aria-label={t("zoomIn")} title={t("zoomIn")}>
-          +
-        </button>
-      </div>
-
-      <div className="heat-canvas relative overflow-hidden rounded-card">
-        <svg
-          ref={svgRef}
-          viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`}
-          className="block h-auto w-full"
-          style={{ touchAction: "none" }}
-          role="img"
-          aria-label={t("tracksOverlaid", { n: paths.length })}
-          onMouseLeave={() => setHover(null)}
-          onWheel={(e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            const cx = ((e.clientX - rect.left) / rect.width) * vb.w + vb.x;
-            const cy = ((e.clientY - rect.top) / rect.height) * vb.h + vb.y;
-            zoom(e.deltaY < 0 ? 0.82 : 1 / 0.82, cx, cy);
-          }}
-          onPointerDown={(e) => {
-            drag.current = { startX: e.clientX, startY: e.clientY, vbX: vb.x, vbY: vb.y };
-            (e.currentTarget as SVGSVGElement).setPointerCapture(e.pointerId);
-          }}
-          onPointerMove={(e) => {
-            const d = drag.current;
-            if (!d) return;
-            const rect = e.currentTarget.getBoundingClientRect();
-            const dx = ((e.clientX - d.startX) / rect.width) * vb.w;
-            const dy = ((e.clientY - d.startY) / rect.height) * vb.h;
-            setVb((cur) => ({ ...cur, x: d.vbX - dx, y: d.vbY - dy }));
-          }}
-          onPointerUp={() => (drag.current = null)}
-          onPointerLeave={() => (drag.current = null)}
-        >
-          <rect x={vb.x} y={vb.y} width={vb.w} height={vb.h} fill="transparent" />
-          {osm.map((d, i) => (
-            <path key={`o${i}`} d={d} fill="none" stroke="rgb(var(--heat-street))" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-          ))}
-          <g fill="none" strokeLinecap="round" strokeLinejoin="round" className="heat-lines">
-            {paths.map((p) => (
-              <path
-                key={p.id}
-                d={p.d}
-                stroke="rgb(var(--heat))"
-                strokeWidth={1.6}
-                opacity={hover ? (hover === p.id ? 0 : base * 0.45) : base}
-                style={{ transition: "opacity .25s" }}
-              />
-            ))}
-          </g>
-          {current && (
+    <div ref={map.wrapRef} className="heat-canvas relative overflow-hidden rounded-card">
+      <svg {...map.svgProps} className="block w-full select-none cursor-grab active:cursor-grabbing" role="img" aria-label={t("tracksOverlaid", { n: paths.length })} onMouseLeave={() => setHover(null)}>
+        <StreetLayer roads={roads} color="var(--heat-street)" strength={2.6} showPaths={metersAcross < 7000} />
+        <g fill="none" strokeLinecap="round" strokeLinejoin="round" className="heat-lines">
+          {paths.map((p) => (
             <path
-              d={current.d}
-              fill="none"
-              stroke="rgb(var(--heat-hi))"
-              strokeWidth={3}
-              strokeLinecap="round"
-              strokeLinejoin="round"
+              key={p.id}
+              d={p.d}
+              stroke="rgb(var(--heat))"
+              strokeWidth={1.8}
+              vectorEffect="non-scaling-stroke"
+              opacity={hover ? (hover === p.id ? 0 : base * 0.4) : base}
+              style={{ transition: "opacity .25s" }}
             />
-          )}
-          <g fill="none">
-            {paths.map((p) => (
-              <path
-                key={`h${p.id}`}
-                d={p.d}
-                stroke="transparent"
-                strokeWidth={10}
-                onMouseEnter={() => setHover(p.id)}
-                onClick={() => router.push(`/activities/${p.id}`)}
-                style={{ cursor: "pointer" }}
-              />
-            ))}
-          </g>
-        </svg>
+          ))}
+        </g>
+        {current && (
+          <path d={current.d} fill="none" stroke="rgb(var(--heat-hi))" strokeWidth={3.2} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+        )}
+        <g fill="none">
+          {paths.map((p) => (
+            <path
+              key={`h${p.id}`}
+              d={p.d}
+              stroke="transparent"
+              strokeWidth={12}
+              vectorEffect="non-scaling-stroke"
+              onMouseEnter={() => setHover(p.id)}
+              onClick={() => !map.dragged() && router.push(`/activities/${p.id}`)}
+              style={{ cursor: "pointer" }}
+            />
+          ))}
+        </g>
+      </svg>
 
-        <div className="pointer-events-none absolute left-4 top-4 max-w-[60%]">
-          {current ? (
-            <div className="rounded-[7px] border border-hair bg-[rgb(var(--heat-bg)/0.82)] px-3 py-2 backdrop-blur-sm">
-              <div className="text-[0.8125rem] font-medium text-[rgb(var(--heat-ink))]">{current.name}</div>
-              <div className="mt-0.5 font-mono text-micro text-[rgb(var(--heat-ink)/0.65)]">
-                {current.date} · {current.km.toFixed(1)} km · {current.pace}
-              </div>
+      <MapControls
+        onZoomIn={() => map.zoom(0.7)}
+        onZoomOut={() => map.zoom(1 / 0.7)}
+        onHome={() => map.setVb(map.home)}
+        labels={{ zoomIn: t("zoomIn"), zoomOut: t("zoomOut"), home: t("resetZoom") }}
+      />
+      <ScaleBar label={fmtLen(bar.meters)} px={bar.px} className="text-[rgb(var(--heat-ink)/0.65)]" />
+
+      <div className="pointer-events-none absolute left-4 top-4 max-w-[60%]">
+        {current ? (
+          <div className="rounded-[7px] border border-hair bg-[rgb(var(--heat-bg)/0.82)] px-3 py-2 backdrop-blur-sm">
+            <div className="text-[0.8125rem] font-medium text-[rgb(var(--heat-ink))]">{current.name}</div>
+            <div className="mt-0.5 font-mono text-micro text-[rgb(var(--heat-ink)/0.65)]">
+              {current.date} · {current.km.toLocaleString(locale, { maximumFractionDigits: 1 })} km · {current.pace}
             </div>
-          ) : (
-            <div className="font-mono text-micro uppercase tracking-[0.14em] text-[rgb(var(--heat-ink)/0.55)]">
-              {t("hoverIdentify", { n: paths.length })}
-            </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="font-mono text-micro uppercase tracking-[0.14em] text-[rgb(var(--heat-ink)/0.55)]">
+            {t("hoverIdentify", { n: paths.length })}
+          </div>
+        )}
       </div>
+      {pending > 0 && (
+        <span className="pointer-events-none absolute bottom-3 left-3 font-mono text-micro text-[rgb(var(--heat-ink)/0.55)]" role="status">
+          {t("streetsLoading")}
+        </span>
+      )}
     </div>
   );
 }

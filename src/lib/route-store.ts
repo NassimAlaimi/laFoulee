@@ -8,7 +8,7 @@ import { decodePolyline } from "./polyline";
 import { buildGraph, deserializeGraph, findLoops, serializeGraph, type GeneratedLoop, type RouteGraph, type LoopOptions, type RouteNode, type RouteEdge, type GraphSector } from "./route-graph";
 import { buildStreetGraph, knownPoints } from "./street-graph";
 import { viewFor, polylinePath, type ViewBbox } from "./route-view";
-import { bboxAround, fetchOverpassRoads, findOsmZone, OSM_FMT, parseOsmZones, putOsmZone, roadsInCache, tileBbox, zoneKey, type OsmDetail } from "./osm";
+import { bboxAround, fetchOverpassRoads, findOsmZone, OSM_FMT, parseOsmZones, putOsmZone, roadsInCache, gridTiles, zoneKey, type OsmDetail } from "./osm";
 import { sameRoute } from "./polyline";
 
 const DAY = 86400000;
@@ -61,7 +61,7 @@ export async function generateLoops(
       // Rien en cache (carte jamais ouverte) : on charge la zone, tuile par
       // tuile, dans une limite de temps raisonnable.
       const deadline = Date.now() + 25_000;
-      for (const tile of tileBbox(bbox, 5)) {
+      for (const tile of gridTiles(bbox)) {
         if (Date.now() > deadline) break;
         await getOsmRoads(userId, tile, new Date(), { detail: "all" }).catch(() => null);
       }

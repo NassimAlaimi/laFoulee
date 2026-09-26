@@ -1,6 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { coverWindow, fitWindow, framedBbox, scaleBar, unionBox, viewFor, zoomWindow } from "../src/lib/route-view.ts";
+import { coverWindow, densityCore, fitWindow, framedBbox, scaleBar, tracesBbox, tracesCore, unionBox, viewFor, zoomWindow } from "../src/lib/route-view.ts";
+import { encodePolyline } from "../src/lib/polyline.ts";
 
 const km = (b: { minLat: number; maxLat: number; minLon: number; maxLon: number }) => {
   const lat = (b.minLat + b.maxLat) / 2;
@@ -104,5 +105,38 @@ describe("coverWindow / unionBox / scaleBar", () => {
     const s = scaleBar(10, 110); // 10 m par pixel
     assert.equal(s.meters, 1000);
     assert.equal(s.px, 100);
+  });
+});
+
+describe("tracesCore", () => {
+  const k = 1 / (111_320 * Math.cos((47.2 * Math.PI) / 180));
+  const line = (x0: number, len: number, step: number) =>
+    encodePolyline(Array.from({ length: Math.round(len / step) + 1 }, (_, i) => [47.2, -1.7 + (x0 + i * step) * k] as [number, number]));
+  it("s'ouvre sur les sorties répétées, pas sur la sortie isolée", () => {
+    const home = Array.from({ length: 30 }, () => line(0, 2000, 50));
+    const trip = line(0, 20000, 100);
+    const c = tracesCore([...home, trip])!;
+    const width = (c.bbox.maxLon - c.bbox.minLon) / k / 1000;
+    assert.ok(width < 5, `cœur de ${width.toFixed(1)} km`);
+    assert.ok(c.bbox.minLon <= -1.7 && c.bbox.maxLon >= -1.7 + 2000 * k);
+  });
+  it("tracesBbox couvre tout", () => {
+    const b = tracesBbox([line(0, 1000, 100), line(5000, 1000, 100)])!;
+    assert.ok(Math.abs((b.maxLon - b.minLon) / k - 6000) < 1);
+    assert.equal(tracesBbox([null]), null);
+  });
+});
+
+describe("densityCore : groupe contigu", () => {
+  it("un second quartier souvent couru, relié par une liaison, reste hors de l'ouverture", () => {
+    const k = 1 / (111_320 * Math.cos((47.2 * Math.PI) / 180));
+    const pts: Array<{ lat: number; lon: number; w: number }> = [];
+    // Maison : 2 km de rues, très courues ; quartier à 8 km : courues aussi ; liaison : une fois.
+    for (let x = 0; x <= 2000; x += 50) pts.push({ lat: 47.2, lon: -1.7 + x * k, w: 50 * 40 });
+    for (let x = 8000; x <= 9500; x += 50) pts.push({ lat: 47.2, lon: -1.7 + x * k, w: 50 * 25 });
+    for (let x = 2000; x <= 8000; x += 50) pts.push({ lat: 47.2, lon: -1.7 + x * k, w: 50 });
+    const c = densityCore(pts)!;
+    const east = (c.bbox.maxLon + 1.7) / k;
+    assert.ok(east < 4000, `l'ouverture va jusqu'à ${Math.round(east)} m à l'est`);
   });
 });

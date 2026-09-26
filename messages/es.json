@@ -110,8 +110,9 @@
     "heatmapMax": "más · {km} km máx. en un día",
     "zoomIn": "Acercar",
     "zoomOut": "Alejar",
-    "resetZoom": "Restablecer zoom",
-    "hoverIdentify": "{n} trazados · pasa el cursor para identificar"
+    "resetZoom": "Volver a mi zona",
+    "hoverIdentify": "{n} trazados · pasa el cursor para identificar",
+    "streetsLoading": "Cargando calles…"
   },
   "nav": {
     "today": "Hoy",

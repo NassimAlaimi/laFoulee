@@ -20,6 +20,7 @@
  */
 
 import { decodePolyline, haversine, polylineLength, type LatLng } from "./polyline";
+import { densityCore, type DensityCoreOptions } from "./route-view";
 
 export const CELL = 15; // m
 
@@ -524,69 +525,20 @@ export function graphSectors(g: RouteGraph): GraphSector[] {
 }
 
 /**
- * Le cœur d'un secteur : là où l'on court vraiment. Le secteur est découpé en
- * mailles de `cellKm` ; chaque maille pèse longueur × passages de ses
- * tronçons. On garde les mailles les plus lourdes jusqu'à `share` du poids :
- * une sortie isolée vers la ville voisine (1 passage étalé sur 20 km) ne pèse
- * presque rien par maille et reste dehors, alors qu'une médiane ou un
- * quantile se laissaient tirer par elle. Bornée entre `minKm` et `maxKm`.
+ * Le cœur d'un secteur : là où l'on court vraiment (voir `densityCore`).
+ * Chaque tronçon pèse longueur × passages.
  */
 export function sectorCore(
   sector: Pick<GraphSector, "nodes" | "edges">,
-  { share = 0.72, cellKm = 0.5, minKm = 2, maxKm = 9, padKm = 0.5 }: { share?: number; cellKm?: number; minKm?: number; maxKm?: number; padKm?: number } = {}
+  opts: DensityCoreOptions = {}
 ): { center: LatLng; bbox: { minLat: number; maxLat: number; minLon: number; maxLon: number } } | null {
-  const cells = new Map<string, { w: number; lat: number; lon: number }>();
-  let total = 0;
-  let refLat: number | null = null;
+  const pts: Array<{ lat: number; lon: number; w: number }> = [];
   for (const e of sector.edges) {
     const a = sector.nodes.get(e.a);
     const b = sector.nodes.get(e.b);
-    if (!a || !b) continue;
-    const lat = (a.lat + b.lat) / 2;
-    const lon = (a.lon + b.lon) / 2;
-    refLat ??= lat;
-    const w = Math.max(1, e.meters) * e.passes;
-    const kx = 111.32 * Math.cos((refLat * Math.PI) / 180);
-    const key = `${Math.floor((lat * 111.32) / cellKm)}:${Math.floor((lon * kx) / cellKm)}`;
-    const c = cells.get(key);
-    if (c) {
-      c.w += w;
-      c.lat += lat * w;
-      c.lon += lon * w;
-    } else cells.set(key, { w, lat: lat * w, lon: lon * w });
-    total += w;
+    if (a && b) pts.push({ lat: (a.lat + b.lat) / 2, lon: (a.lon + b.lon) / 2, w: Math.max(1, e.meters) * e.passes });
   }
-  if (!cells.size || refLat === null) return null;
-  const sorted = [...cells.values()].sort((x, y) => y.w - x.w);
-  const kept: typeof sorted = [];
-  let acc = 0;
-  for (const c of sorted) {
-    kept.push(c);
-    acc += c.w;
-    if (acc >= share * total) break;
-  }
-  let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity, sw = 0, slat = 0, slon = 0;
-  for (const c of kept) {
-    const lat = c.lat / c.w;
-    const lon = c.lon / c.w;
-    minLat = Math.min(minLat, lat); maxLat = Math.max(maxLat, lat);
-    minLon = Math.min(minLon, lon); maxLon = Math.max(maxLon, lon);
-    sw += c.w; slat += c.lat; slon += c.lon;
-  }
-  const kmLat = 111.32;
-  const kmLon = 111.32 * Math.cos((refLat * Math.PI) / 180);
-  // Marge d'une demi-maille (les centres de maille ne sont pas les bords) + padKm.
-  const pad = cellKm / 2 + padKm;
-  let w = (maxLon - minLon) * kmLon + 2 * pad;
-  let h = (maxLat - minLat) * kmLat + 2 * pad;
-  const cLat = (minLat + maxLat) / 2;
-  const cLon = (minLon + maxLon) / 2;
-  w = Math.min(maxKm, Math.max(minKm, w));
-  h = Math.min(maxKm, Math.max(minKm, h));
-  return {
-    center: [slat / sw, slon / sw],
-    bbox: { minLat: cLat - h / 2 / kmLat, maxLat: cLat + h / 2 / kmLat, minLon: cLon - w / 2 / kmLon, maxLon: cLon + w / 2 / kmLon },
-  };
+  return densityCore(pts, opts);
 }
 
 /**

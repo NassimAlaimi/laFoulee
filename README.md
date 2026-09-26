@@ -437,7 +437,7 @@ dessine en SVG pur : aucune clé d'API, aucune tuile, rien qui sorte de l'instan
 | **Fiche séance** | Tracé sur papier millimétré, **coloré kilomètre par kilomètre selon l'allure** (vert = plus vite que la moyenne, terre cuite = plus lent), bornes kilométriques, nord, barre d'échelle. Survoler un kilomètre sur la carte le met en évidence dans la bande d'allure, et inversement (flèches ← → au clavier) |
 | **Liste** | Silhouette du tracé en tête de ligne |
 | **Mosaïque** | Une vignette par sortie : on reconnaît ses boucles habituelles d'un coup d'œil |
-| **Carte** | Toutes les sorties superposées en traits translucides sur fond nuit : les rues les plus courues s'illuminent. Centrée sur la zone la plus courue (plus de sélecteur de secteurs) |
+| **Carte** | Toutes les sorties superposées en traits translucides : les rues les plus courues s'illuminent. À l'échelle, ouverte sur la zone où les tracés se concentrent (on dézoome jusqu'au secteur entier), fond de rues OpenStreetMap hiérarchisé chargé par tuiles, échelle graphique, molette/pincement sans faire défiler la page. Même socle que l'atelier de parcours |
 | **Parcours récurrents** | Sorties reconnues comme le même parcours, avec leur record |
 
 **Même parcours** : chaque tracé est rééchantillonné en 16 points équidistants ;

@@ -8,8 +8,7 @@ import { requireUserId } from "@/lib/auth";
 import { fmtPace } from "@/lib/format";
 import { graphSectors, sectorCore, straightSegments, territoryStats, usualStart } from "@/lib/route-graph";
 import { activityStarts, getRouteGraph, listPois, listRoutes, sectorBbox, sectorView, graphTotalKm } from "@/lib/route-store";
-import { framedBbox, projectPolyline, viewFor, type AtelierView, type ViewBbox } from "@/lib/route-view";
-import { intersects, tileBbox } from "@/lib/osm";
+import { buildMapFrame, projectPolyline, type AtelierView } from "@/lib/route-view";
 import { encodePolyline, haversine } from "@/lib/polyline";
 
 export const dynamic = "force-dynamic";
@@ -39,24 +38,21 @@ export default async function RoutesPage() {
   const core = focus ? sectorCore(focus) : null;
   const start = focus ? (usualStart(await activityStarts(userId), core?.center) ?? mostUsedStartPoint(focus.nodes)) : null;
   if (focus) {
-    const frame = framedBbox(sectorBbox(focus), { maxKm: 26, padKm: 2 });
-    const sv = sectorView(focus, frame);
-    const v = viewFor(sv.bbox);
-    const box = (b: ViewBbox) => ({ x: v.x(b.minLon), y: v.y(b.maxLat), w: v.x(b.maxLon) - v.x(b.minLon), h: v.y(b.minLat) - v.y(b.maxLat) });
+    const mf = buildMapFrame(sectorBbox(focus), core?.bbox ?? null);
+    const sv = sectorView(focus, mf.bbox);
+    const v = mf.v;
     if (core) {
       const k = 111.32 * Math.cos((core.center[0] * Math.PI) / 180);
       zoneKm = { w: Math.round((core.bbox.maxLon - core.bbox.minLon) * k), h: Math.round((core.bbox.maxLat - core.bbox.minLat) * 111.32) };
     }
-    // Tuiles du fond : chemins et trottoirs dans le cœur, rues seules autour.
-    const tiles = tileBbox(frame, 5).map((b) => ({ bbox: b, box: box(b), detail: (core && intersects(b, core.bbox) ? "all" : "streets") as "all" | "streets" }));
     view = {
       viewBox: sv.viewBox,
       bbox: sv.bbox,
       pxPerMeter: v.pxPerMeter,
       edges: sv.edges.map(({ x1, y1, x2, y2, passes }) => ({ x1, y1, x2, y2, passes })),
-      core: core ? box(core.bbox) : { x: 0, y: 0, w: sv.viewBox[0], h: sv.viewBox[1] },
+      core: mf.core,
       start: start ? { x: v.x(start[1]), y: v.y(start[0]) } : null,
-      tiles,
+      tiles: mf.tiles,
       pois: pois.map((p) => ({ id: p.id, kind: p.kind, x: v.x(p.lng), y: v.y(p.lat), note: p.note })),
     };
     straights = straightSegments(focus, 400, { near: start }).flatMap((s) => {
