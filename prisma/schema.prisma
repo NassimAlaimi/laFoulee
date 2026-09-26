@@ -101,6 +101,9 @@ model StravaAccount {
   scope        String?
 
   lastSyncAt DateTime?
+  /// Verrou de synchronisation (bail) : posé par un UPDATE conditionnel
+  /// atomique, levé en fin de synchro, périmé au-delà de 6 minutes.
+  syncingSince DateTime?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 }

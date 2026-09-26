@@ -17,6 +17,10 @@ import { UpstreamError, UserFacingError, toSafeMessage } from "@/lib/http-error"
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
+/** Durée du bail de synchro : au-delà de maxDuration, un verrou orphelin
+ *  (processus tué en pleine synchro) se libère de lui-même. */
+const SYNC_LEASE_MS = 6 * 60_000;
+
 /**
  * POST /api/strava/sync
  * body: { full?: boolean, detailLimit?: number }
@@ -30,12 +34,21 @@ export async function POST(req: NextRequest) {
   if (!userId) return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
 
   // Une synchro déjà en cours pour ce compte (autre onglet, synchro auto) :
-  // on n'en lance pas une seconde, le quota Strava est partagé par l'instance.
-  const running = await prisma.syncLog.findFirst({
-    where: { userId, status: "running", startedAt: { gt: new Date(Date.now() - 3 * 60_000) } },
-    select: { id: true },
+  // on n'en lance pas une seconde. Le verrou est pris par un seul UPDATE
+  // conditionnel — atomique : deux requêtes simultanées ne peuvent pas toutes
+  // deux le prendre (l'ancien « lire puis écrire » laissait passer les deux,
+  // qui rafraîchissaient alors le jeton Strava en même temps et le cassaient).
+  const now = new Date();
+  const claimed = await prisma.stravaAccount.updateMany({
+    where: {
+      userId,
+      OR: [{ syncingSince: null }, { syncingSince: { lt: new Date(now.getTime() - SYNC_LEASE_MS) } }],
+    },
+    data: { syncingSince: now },
   });
-  if (running) {
+  if (claimed.count === 0) {
+    const hasAccount = await prisma.stravaAccount.count({ where: { userId } });
+    if (!hasAccount) return NextResponse.json({ ok: false, error: "Aucun compte Strava connecté." }, { status: 400 });
     return NextResponse.json({ ok: false, busy: true, error: "Synchronisation déjà en cours" }, { status: 409 });
   }
 
@@ -318,6 +331,11 @@ export async function POST(req: NextRequest) {
       data: { finishedAt: new Date(), status: "error", message },
     });
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
+  } finally {
+    // Levée du verrou (seulement le nôtre : `syncingSince` inchangé).
+    await prisma.stravaAccount
+      .updateMany({ where: { userId, syncingSince: now }, data: { syncingSince: null } })
+      .catch(() => undefined);
   }
 }
 

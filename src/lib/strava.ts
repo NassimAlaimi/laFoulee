@@ -104,6 +104,10 @@ export async function exchangeCodeForToken(
  * nécessaire. Chaque utilisateur a ses propres tokens : le quota Strava de
  * l'application est partagé, mais les identités ne le sont jamais.
  */
+/** Rafraîchissements en cours, par utilisateur : un seul à la fois par
+ *  processus (les appels concurrents attendent le même résultat). */
+const refreshing = new Map<string, Promise<string>>();
+
 export async function getValidAccessToken(userId: string): Promise<string> {
   const account = await prisma.stravaAccount.findUnique({ where: { userId } });
   if (!account) {
@@ -115,6 +119,17 @@ export async function getValidAccessToken(userId: string): Promise<string> {
   // Marge de 2 minutes avant expiration
   if (account.expiresAt > now + 120) return decryptIfNeeded(account.accessToken, key);
 
+  const pending = refreshing.get(userId);
+  if (pending) return pending;
+  const p = refreshAccessToken(account, key).finally(() => refreshing.delete(userId));
+  refreshing.set(userId, p);
+  return p;
+}
+
+async function refreshAccessToken(
+  account: { id: number; userId: string; refreshToken: string },
+  key: ReturnType<typeof secretKeyFromEnv>
+): Promise<string> {
   const { clientId, clientSecret } = stravaConfig();
   const res = await fetch(`${STRAVA_OAUTH}/token`, {
     method: "POST",
@@ -129,6 +144,17 @@ export async function getValidAccessToken(userId: string): Promise<string> {
   });
 
   if (!res.ok) {
+    // Un autre processus a peut-être rafraîchi entre-temps avec ce même
+    // refresh token (qui n'est alors plus valable) : on relit la base avant
+    // de conclure à une session morte.
+    const fresh = await prisma.stravaAccount.findUnique({ where: { userId: account.userId } });
+    if (
+      fresh &&
+      fresh.refreshToken !== account.refreshToken &&
+      fresh.expiresAt > Math.floor(Date.now() / 1000) + 120
+    ) {
+      return decryptIfNeeded(fresh.accessToken, key);
+    }
     console.error("[strava] refresh token", res.status, await res.text().catch(() => ""));
     throw new UpstreamError(res.status, "Session Strava expirée — reconnecte-toi dans les réglages.");
   }
