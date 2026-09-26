@@ -91,11 +91,13 @@ Retour d'expérience accumulé sur ce projet, pour ne pas refaire les mêmes err
    → Récupérer les PID dans une commande, les tuer dans une autre, ou utiliser
    `/tmp/restart.sh clean`.
 
-2. **Prétendre « voir » les captures d'écran.** Le modèle ne reçoit pas les
-   images : lire un PNG ne montre rien. Vérifier le rendu **via le DOM**
-   (`page.evaluate` : textes, layout, erreurs JS console/pageerror), jamais
-   affirmer qu'on a « vu » un écran. Un faux positif a failli faire corriger
-   des barres de polarisation qui étaient déjà correctes.
+2. **Juger un écran sans le regarder.** Selon l'outillage, les images
+   peuvent ou non parvenir au modèle : vérifier d'abord (lire un PNG avec
+   l'outil de lecture — une image jointe apparaît, ou rien). Si elles
+   arrivent, **regarder vraiment** les captures (`.verify/shot.mts`) : la
+   carte de l'atelier était « horrible » (étirée, zone utile minuscule, fond
+   gris uniforme) alors que toutes les sondes DOM passaient. Sinon, vérifier
+   via le DOM et ne jamais affirmer avoir « vu » un écran.
 
 3. **Fuseaux horaires sur les regroupements.** `toISOString()` (UTC) décale
    d'un jour/mois l'axe des graphiques. Toujours des clés **en heure locale**

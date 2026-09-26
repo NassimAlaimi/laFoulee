@@ -6,19 +6,11 @@ import { RouteAtelier } from "@/components/route/RouteAtelier";
 import { DeleteRouteButton } from "@/components/route/DeleteRouteButton";
 import { requireUserId } from "@/lib/auth";
 import { fmtPace } from "@/lib/format";
-import { graphSectors } from "@/lib/route-graph";
-import {
-  getRouteGraph,
-  listPois,
-  listRoutes,
-  sectorBbox,
-  sectorView,
-  graphTotalKm,
-} from "@/lib/route-store";
-import { framedBbox, polylinePath } from "@/lib/route-view";
-import { bboxSpanKm, MINOR_WAYS_MAX_KM, tileBbox } from "@/lib/osm";
-import { straightSegments } from "@/lib/route-graph";
-import { encodePolyline } from "@/lib/polyline";
+import { graphSectors, sectorCore, straightSegments, territoryStats, usualStart } from "@/lib/route-graph";
+import { activityStarts, getRouteGraph, listPois, listRoutes, sectorBbox, sectorView, graphTotalKm } from "@/lib/route-store";
+import { framedBbox, projectPolyline, viewFor, type AtelierView, type ViewBbox } from "@/lib/route-view";
+import { intersects, tileBbox } from "@/lib/osm";
+import { encodePolyline, haversine } from "@/lib/polyline";
 
 export const dynamic = "force-dynamic";
 
@@ -35,33 +27,48 @@ export default async function RoutesPage() {
   const [routes, pois] = await Promise.all([listRoutes(userId), listPois(userId)]);
   const totalKm = graph ? await graphTotalKm(userId) : 0;
 
-  // Un seul point de vue, simple et logique : le cœur du territoire (le
-  // cluster le plus couru). Plus de sélecteur de « secteurs » : on affiche
-  // directement la zone où l'on s'entraîne le plus.
+  // Un seul point de vue : le secteur le plus couru, ouvert sur son cœur (là
+  // où l'on court vraiment) — on peut dézoomer jusqu'au secteur entier.
   const focus = graph ? (graphSectors(graph)[0] ?? null) : null;
+  const stats = graph ? territoryStats(graph) : null;
 
-  // Fond OSM : les rues autour du cœur (borné), en cache 24 h.
-  // Le cadre couvre tout le cœur (marge + proportions lisibles) : plus de bande
-  // écrasée ni de réseau rogné. Le fond de rues est chargé par la carte elle-même,
-  // tuile par tuile : la page ne bloque jamais sur Overpass.
-  let view: ReturnType<typeof sectorView> | null = null;
-  let osmTiles: ReturnType<typeof tileBbox> = [];
-  let osmDetail: "streets" | "all" = "all";
-  if (focus) {
-    const frame = framedBbox(sectorBbox(focus));
-    view = sectorView(focus, frame);
-    osmTiles = tileBbox(frame);
-    osmDetail = bboxSpanKm(frame) <= MINOR_WAYS_MAX_KM ? "all" : "streets";
-  }
-  const straights = graph ? straightSegments(graph, 400).slice(0, 12) : [];
-  const start = focus ? mostUsedStartPoint(focus.nodes) : null;
-
-  // Parcours enregistrés, projetés sur la carte (même bbox que le réseau).
+  let view: AtelierView | null = null;
+  let straights: Array<{ d: string; box: AtelierView["core"]; meters: number; passes: number; fromStart: number | null }> = [];
   let savedOnMap: Array<{ id: string; name: string; meters: number; d: string }> = [];
-  if (view) {
-    savedOnMap = routes
-      .map((r) => ({ id: r.id, name: r.name, meters: r.distance, d: polylinePath(r.polyline, view.bbox) }))
-      .filter((r) => r.d);
+  let zoneKm: { w: number; h: number } | null = null;
+  const core = focus ? sectorCore(focus) : null;
+  const start = focus ? (usualStart(await activityStarts(userId), core?.center) ?? mostUsedStartPoint(focus.nodes)) : null;
+  if (focus) {
+    const frame = framedBbox(sectorBbox(focus), { maxKm: 26, padKm: 2 });
+    const sv = sectorView(focus, frame);
+    const v = viewFor(sv.bbox);
+    const box = (b: ViewBbox) => ({ x: v.x(b.minLon), y: v.y(b.maxLat), w: v.x(b.maxLon) - v.x(b.minLon), h: v.y(b.minLat) - v.y(b.maxLat) });
+    if (core) {
+      const k = 111.32 * Math.cos((core.center[0] * Math.PI) / 180);
+      zoneKm = { w: Math.round((core.bbox.maxLon - core.bbox.minLon) * k), h: Math.round((core.bbox.maxLat - core.bbox.minLat) * 111.32) };
+    }
+    // Tuiles du fond : chemins et trottoirs dans le cœur, rues seules autour.
+    const tiles = tileBbox(frame, 5).map((b) => ({ bbox: b, box: box(b), detail: (core && intersects(b, core.bbox) ? "all" : "streets") as "all" | "streets" }));
+    view = {
+      viewBox: sv.viewBox,
+      bbox: sv.bbox,
+      pxPerMeter: v.pxPerMeter,
+      edges: sv.edges.map(({ x1, y1, x2, y2, passes }) => ({ x1, y1, x2, y2, passes })),
+      core: core ? box(core.bbox) : { x: 0, y: 0, w: sv.viewBox[0], h: sv.viewBox[1] },
+      start: start ? { x: v.x(start[1]), y: v.y(start[0]) } : null,
+      tiles,
+      pois: pois.map((p) => ({ id: p.id, kind: p.kind, x: v.x(p.lng), y: v.y(p.lat), note: p.note })),
+    };
+    straights = straightSegments(focus, 400, { near: start }).flatMap((s) => {
+      const pr = projectPolyline(encodePolyline(s.points), sv.bbox);
+      if (!pr) return [];
+      const mid = s.points[Math.floor(s.points.length / 2)];
+      return [{ ...pr, meters: s.meters, passes: Math.round(s.passes), fromStart: start ? haversine(start, mid) : null }];
+    });
+    savedOnMap = routes.flatMap((r) => {
+      const pr = projectPolyline(r.polyline, sv.bbox);
+      return pr ? [{ id: r.id, name: r.name, meters: r.distance, d: pr.d }] : [];
+    });
   }
 
   return (
@@ -69,55 +76,34 @@ export default async function RoutesPage() {
       <PageHead
         kicker={t("kicker")}
         title={t("title")}
-        meta={graph ? t("metaSome", { km: Math.round(totalKm), roads: graph.edges.length }) : t("metaNone")}
+        meta={graph ? (zoneKm ? t("metaZone", zoneKm) : null) : t("metaNone")}
       />
 
-      {graph && (
-        <div className="rise mb-10 flex flex-wrap items-end justify-between gap-x-12 gap-y-6 border-b border-hair pb-10">
-          <div className="flex items-baseline gap-3">
-            <span className="display text-[clamp(3.5rem,8vw,5.5rem)] leading-[0.85] tracking-[-0.05em] text-clay">
-              {Math.round(totalKm)}
-            </span>
-            <span className="text-[0.9375rem] text-ink3">km</span>
+      {stats && (
+        <div className="rise flex flex-wrap items-end gap-x-14 gap-y-5 border-b border-hair pb-10">
+          <div>
+            <div className="display text-[clamp(3.75rem,9vw,6.5rem)] leading-[0.82] tracking-[-0.055em] text-clay">
+              {Math.round(stats.uniqueKm)}
+            </div>
+            <div className="mt-3 text-micro font-medium uppercase tracking-[0.14em] text-ink3">{t("uniqueKm")}</div>
           </div>
-          <p className="max-w-md text-[clamp(1.05rem,2vw,1.375rem)] font-medium leading-snug tracking-[-0.01em]">
-            {t("territoryLead")}
+          <p className="max-w-xl pb-1 text-[clamp(1.15rem,2.2vw,1.55rem)] font-medium leading-[1.25] tracking-[-0.015em] text-ink">
+            {t("halfLead", { total: Math.round(totalKm), half: Math.round(stats.halfKm) })}
           </p>
         </div>
       )}
 
       {view ? (
         <RouteAtelier
-          view={{
-            ...view,
-            osm: [],
-            osmTiles,
-            osmDetail,
-            pois: pois.map((p) => ({ id: p.id, kind: p.kind, x: xOf(view, p.lng), y: yOf(view, p.lat), note: p.note })),
-          }}
+          view={view}
           kinds={(["fountain", "toilet", "car", "bakery", "lit", "danger", "track"] as const).map((k) => [k, t(`poi_${k}`)])}
-          hasGraph={Boolean(graph)}
           startLat={start?.[0] ?? null}
           startLng={start?.[1] ?? null}
           routes={savedOnMap}
-          emptyGraph={t("emptyGraph")}
+          straights={straights}
         />
       ) : (
         <p className="max-w-2xl text-[0.8125rem] leading-relaxed text-ink2">{t("emptyGraph")}</p>
-      )}
-
-      {straights.length > 0 && (
-        <Section title={t("straights")} note={t("straightsNote")}>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {straights.slice(0, 9).map((s, i) => (
-              <div key={i} className="flex items-center gap-3 border-b border-hair py-2">
-                <span className="num w-16 shrink-0 text-[1.2rem] font-semibold">{(s.meters / 1000).toFixed(2)}</span>
-                <span className="text-micro text-ink2">{t("straightKm")}</span>
-                <RouteGlyph polyline={encodePolyline(s.points)} size={72} className="ml-auto text-sage" dot={false} />
-              </div>
-            ))}
-          </div>
-        </Section>
       )}
 
       <Section title={t("savedRoutes")} note={t("savedNote")}>
@@ -154,12 +140,6 @@ export default async function RoutesPage() {
   );
 }
 
-function xOf(v: { bbox: { minLon: number; maxLon: number }; scale: number }, lon: number) {
-  return Math.round(30 + (lon - v.bbox.minLon) * v.scale);
-}
-function yOf(v: { bbox: { minLat: number; maxLat: number }; scale: number }, lat: number) {
-  return Math.round(30 + (v.bbox.maxLat - lat) * v.scale);
-}
 function mostUsedStartPoint(nodes: Map<string, { lat: number; lon: number; edges: Array<{ passes: number }> }>) {
   let best: { passes: number; lat: number; lon: number } | null = null;
   for (const n of nodes.values()) {

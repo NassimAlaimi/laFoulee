@@ -45,15 +45,28 @@ export function framedBbox(
   };
 }
 
-/** Boîte de dessin : largeur fixe, hauteur déduite, échelle en px/degré. */
+/**
+ * Boîte de dessin : largeur fixe, hauteur déduite. Projection conforme à
+ * l'échelle locale : un degré de longitude vaut cos(latitude) degré de
+ * latitude (0,68 à Nantes). Sans ce facteur, la carte était étirée de ~50 %
+ * en largeur — des rues déformées et une carte en bandeau.
+ */
 export function viewFor(bbox: ViewBbox) {
   const spanLat = Math.max(0.0001, bbox.maxLat - bbox.minLat);
   const spanLon = Math.max(0.0001, bbox.maxLon - bbox.minLon);
-  const scale = (MAP_W - 2 * MAP_PAD) / Math.max(spanLon, spanLat * 1.4);
-  const x = (lon: number) => MAP_PAD + (lon - bbox.minLon) * scale;
+  const k = Math.cos((((bbox.minLat + bbox.maxLat) / 2) * Math.PI) / 180);
+  const scale = (MAP_W - 2 * MAP_PAD) / (spanLon * k); // px par degré de latitude
+  const x = (lon: number) => MAP_PAD + (lon - bbox.minLon) * k * scale;
   const y = (lat: number) => MAP_PAD + (bbox.maxLat - lat) * scale;
-  const H = Math.round((bbox.maxLat - bbox.minLat) * scale + 2 * MAP_PAD);
-  return { W: MAP_W, H, scale, x, y, bbox };
+  const H = Math.round(spanLat * scale + 2 * MAP_PAD);
+  /** Point de la boîte → coordonnées (clic sur la carte). */
+  const unproject = (px: number, py: number) => ({
+    lat: bbox.maxLat - (py - MAP_PAD) / scale,
+    lng: bbox.minLon + (px - MAP_PAD) / (k * scale),
+  });
+  /** Mètres → unités de la boîte (échelle graphique). */
+  const pxPerMeter = scale / 111_320;
+  return { W: MAP_W, H, scale, x, y, unproject, pxPerMeter, bbox };
 }
 
 /** Polyline → chemin SVG « d » dans la boîte. */
@@ -94,3 +107,72 @@ export function zoomWindow(cur: ViewWindow, factor: number, cx: number, cy: numb
   const h = cur.h * k;
   return { x: cx - (cx - cur.x) * k, y: cy - (cy - cur.y) * k, w, h };
 }
+
+/**
+ * Plus petite fenêtre de ratio `aspect` (largeur / hauteur) qui contient le
+ * rectangle `r`, centrée dessus : l'ouverture de la carte sur la zone où l'on
+ * court vraiment, quelle que soit la forme de l'écran.
+ */
+export function coverWindow(r: ViewWindow, aspect: number): ViewWindow {
+  let w = r.w;
+  let h = r.h;
+  if (w / h < aspect) w = h * aspect;
+  else h = w / aspect;
+  return { x: r.x + r.w / 2 - w / 2, y: r.y + r.h / 2 - h / 2, w, h };
+}
+
+/** Tracé projeté : chemin SVG et boîte englobante (pour cadrer dessus). */
+export function projectPolyline(polyline: string, bbox: ViewBbox): { d: string; box: ViewWindow } | null {
+  const v = viewFor(bbox);
+  const pts = decodePolyline(polyline);
+  if (pts.length < 2) return null;
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  const parts: string[] = [];
+  pts.forEach((p, i) => {
+    const x = v.x(p[1]);
+    const y = v.y(p[0]);
+    minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+    minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+    parts.push(`${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`);
+  });
+  return { d: parts.join(""), box: { x: minX, y: minY, w: maxX - minX, h: maxY - minY } };
+}
+
+/** Réunion de boîtes, avec une marge relative (cadrer plusieurs tracés). */
+export function unionBox(boxes: ViewWindow[], pad = 0.12): ViewWindow | null {
+  if (!boxes.length) return null;
+  const minX = Math.min(...boxes.map((b) => b.x));
+  const minY = Math.min(...boxes.map((b) => b.y));
+  const maxX = Math.max(...boxes.map((b) => b.x + b.w));
+  const maxY = Math.max(...boxes.map((b) => b.y + b.h));
+  const w = Math.max(1, maxX - minX);
+  const h = Math.max(1, maxY - minY);
+  return { x: minX - w * pad, y: minY - h * pad, w: w * (1 + 2 * pad), h: h * (1 + 2 * pad) };
+}
+
+/** Longueur « ronde » d'échelle graphique qui tient dans `maxPx` pixels. */
+export function scaleBar(metersPerPx: number, maxPx = 110): { meters: number; px: number } {
+  const steps = [50, 100, 200, 250, 500, 1000, 2000, 2500, 5000, 10000, 20000];
+  let best = steps[0];
+  for (const m of steps) if (m / metersPerPx <= maxPx) best = m;
+  return { meters: best, px: best / metersPerPx };
+}
+
+/** Deux boîtes (coordonnées de la carte) se chevauchent-elles ? */
+export function boxesIntersect(a: ViewWindow, b: ViewWindow): boolean {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+/** Tout ce que la carte de l'atelier reçoit du serveur (coordonnées de la boîte). */
+export type AtelierView = {
+  viewBox: readonly [number, number];
+  bbox: ViewBbox;
+  pxPerMeter: number;
+  edges: Array<{ x1: number; y1: number; x2: number; y2: number; passes: number }>;
+  /** fenêtre d'ouverture : la zone où l'on court vraiment */
+  core: ViewWindow;
+  start: { x: number; y: number } | null;
+  /** tuiles du fond de rues, chargées quand elles entrent dans la fenêtre */
+  tiles: Array<{ bbox: ViewBbox; box: ViewWindow; detail: "streets" | "all" }>;
+  pois: Array<{ id: string; kind: string; x: number; y: number; note: string | null }>;
+};
