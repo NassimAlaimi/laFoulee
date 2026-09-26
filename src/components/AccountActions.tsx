@@ -49,7 +49,7 @@ export function AccountActions({
       setError(t("deleteFail"));
       return;
     }
-    router.replace("/login");
+    router.replace("/login?deleted=1");
     router.refresh();
   }
 

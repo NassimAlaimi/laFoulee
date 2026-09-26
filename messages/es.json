@@ -1705,7 +1705,8 @@
       "not-allowed": "Esta instancia es privada: el registro está cerrado.",
       "bad-invite": "Código de invitación no válido.",
       "origin": "Solicitud rechazada. Recarga la página e inténtalo de nuevo."
-    }
+    },
+    "deleted": "Tu cuenta y todos tus datos se han eliminado definitivamente de esta instancia."
   },
   "gear": {
     "title": "Material",

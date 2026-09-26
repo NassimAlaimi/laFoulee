@@ -1705,7 +1705,8 @@
       "not-allowed": "Cette instance est privée : l'inscription y est fermée.",
       "bad-invite": "Code d'invitation invalide.",
       "origin": "Requête refusée. Recharge la page et réessaie."
-    }
+    },
+    "deleted": "Ton compte et toutes tes données ont été définitivement supprimés de cette instance."
   },
   "gear": {
     "title": "Matériel",

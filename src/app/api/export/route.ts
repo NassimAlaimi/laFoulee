@@ -1,21 +1,22 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authed } from "@/lib/api";
+import { csvCell } from "@/lib/csv";
 
 export const dynamic = "force-dynamic";
 
 /**
  * Export des données de l'athlète — souveraineté des données, zéro dépendance.
  *
- * - `?format=json` (défaut) : tout (activités, objectifs, séances du plan) ;
+ * - `?format=json` (défaut) : **tout** ce que l'instance sait de l'athlète
+ *   (droit à la portabilité, RGPD art. 20) — profil, réglages, activités avec
+ *   courbes, km par km et records, objectifs, plans, carnet, équipement, muscu,
+ *   séances perso, parcours, nutrition, historique d'imports. Seuls les
+ *   secrets (empreinte du mot de passe, jetons Strava, jeton d'agenda,
+ *   sessions) et les caches techniques en sont exclus ;
  * - `?format=csv` : les activités en CSV, prêtes pour un tableur.
  */
 
-function csvCell(v: unknown): string {
-  if (v == null) return "";
-  const s = String(v);
-  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
 
 export async function GET(req: Request) {
   const { userId, error } = await authed();
@@ -24,8 +25,8 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const format = url.searchParams.get("format") ?? "json";
 
-  const [activities, goals, sessions] = await Promise.all([
-    prisma.activity.findMany({
+  if (format === "csv") {
+    const activities = await prisma.activity.findMany({
       where: { userId },
       orderBy: { startDate: "asc" },
       select: {
@@ -58,27 +59,8 @@ export async function GET(req: Request) {
         privateNote: true,
         feeling: true,
       },
-    }),
-    prisma.raceGoal.findMany({ where: { userId }, orderBy: { raceDate: "asc" } }),
-    prisma.plannedSession.findMany({
-      where: { plan: { userId } },
-      orderBy: { date: "asc" },
-      select: {
-        id: true,
-        date: true,
-        weekNumber: true,
-        weekStart: true,
-        phase: true,
-        kind: true,
-        distanceKm: true,
-        durationMin: true,
-        intensity: true,
-        status: true,
-      },
-    }),
-  ]);
+    });
 
-  if (format === "csv") {
     const header = [
       "id",
       "name",
@@ -105,7 +87,9 @@ export async function GET(req: Request) {
       a.feeling ?? "",
       a.privateNote ?? "",
     ]);
-    const csv = [header, ...rows].map((r) => r.map(csvCell).join(",")).join("\n");
+    const csv = [header, ...rows]
+      .map((r) => r.map(csvCell).join(","))
+      .join("\n");
     return new Response(csv, {
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
@@ -114,10 +98,50 @@ export async function GET(req: Request) {
     });
   }
 
-  return NextResponse.json({
-    exportedAt: new Date().toISOString(),
-    activities,
-    goals,
-    sessions,
+  const everything = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      firstname: true,
+      lastname: true,
+      email: true,
+      athleteId: true,
+      language: true,
+      role: true,
+      createdAt: true,
+      settings: true,
+      activities: {
+        orderBy: { startDate: "asc" },
+        include: { splits: true, bestEfforts: true, hrStream: true },
+      },
+      raceGoals: { include: { racePlan: true, weeks: true } },
+      plans: { include: { sessions: true, checkins: true } },
+      gear: true,
+      dailyLogs: { orderBy: { date: "asc" } },
+      strengthWorkouts: { include: { sets: true } },
+      strengthGoals: true,
+      customWorkouts: true,
+      routes: true,
+      routePois: true,
+      nutritionProducts: true,
+      importBatches: true,
+      agentBriefs: true,
+    },
+  });
+
+  // BigInt (identifiants Strava) → texte : JSON ne sait pas les représenter.
+  const body = JSON.stringify(
+    {
+      exportedAt: new Date().toISOString(),
+      format: "foulee-export/2",
+      ...everything,
+    },
+    (_k, v) => (typeof v === "bigint" ? v.toString() : v),
+    2,
+  );
+  return new Response(body, {
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Content-Disposition": 'attachment; filename="foulee-export.json"',
+    },
   });
 }

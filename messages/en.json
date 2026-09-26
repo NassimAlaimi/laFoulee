@@ -1705,7 +1705,8 @@
       "not-allowed": "This instance is private: sign-ups are closed.",
       "bad-invite": "Invalid invite code.",
       "origin": "Request refused. Reload the page and try again."
-    }
+    },
+    "deleted": "Your account and all your data have been permanently deleted from this instance."
   },
   "gear": {
     "title": "Gear",

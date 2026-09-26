@@ -45,11 +45,11 @@ const KNOWN_ERRORS = new Set([
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; next?: string; mode?: string }>;
+  searchParams: Promise<{ error?: string; next?: string; mode?: string; deleted?: string }>;
 }) {
   const t = await getTranslations("login");
   const locale = await getLocale();
-  const { error, next, mode: rawMode } = await searchParams;
+  const { error, next, mode: rawMode, deleted } = await searchParams;
   if (await currentUser()) redirect("/");
 
   const mode = rawMode === "signup" ? "signup" : "signin";
@@ -116,6 +116,12 @@ export default async function LoginPage({
 
       <h1 className="display mt-8 text-d2">{t("tagline")}</h1>
       <p className="mt-3 text-[0.9375rem] leading-relaxed text-ink2">{t("lead")}</p>
+
+      {deleted === "1" && (
+        <p role="status" className="mt-6 border-l-2 border-sage pl-3 text-sm text-ink2">
+          {t("deleted")}
+        </p>
+      )}
 
       {errorText && (
         <div
