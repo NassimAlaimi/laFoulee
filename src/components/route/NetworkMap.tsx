@@ -91,7 +91,7 @@ export function NetworkMap({ view, kinds }: { view: View; kinds: Array<[string, 
           </>
         )}
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} className={`w-full rounded-[14px] border border-hair bg-night ${mode === "add" ? "cursor-crosshair" : ""}`} role="img" aria-label={t("mapAria")} onClick={click}>
+      <svg viewBox={`0 0 ${W} ${H}`} className={`w-full rounded-[14px] border border-hair bg-panel ${mode === "add" ? "cursor-crosshair" : ""}`} role="img" aria-label={t("mapAria")} onClick={click}>
         <rect width={W} height={H} fill="transparent" />
         {showStreets &&
           view.osm.map((d, i) => (

@@ -143,11 +143,34 @@
     margin-right: calc(50% - 50vw);
   }
 
-  /* Bande « nuit » : on redéfinit la palette localement, tout ce qui est
-     posé dedans (texte, filets, graphiques) passe en sombre. Plus chaude et
-     plus claire que le fond du thème sombre pour s'en détacher aussi. */
+  /* Bande « nuit » : son rôle est le relief — un contrepoint au fond de la
+     page. En thème clair elle reste claire (un papier un peu plus chaud,
+     légèrement teinté) ; en thème sombre elle redevient la bande sombre qui
+     se détache du fond. */
   .night {
     scroll-margin-top: 3.5rem;
+    color-scheme: light;
+    --bg: 242 238 230;
+    --panel: 250 247 241;
+    --sunken: 235 231 223;
+    --hair: 222 216 205;
+    --hair-strong: 200 192 180;
+    --ink: 26 25 23;
+    --ink-2: 103 99 92;
+    --ink-3: 150 145 136;
+    --clay: 186 76 42;
+    --ochre: 174 132 38;
+    --sage: 104 133 71;
+    --slate: 79 105 124;
+    --plum: 126 85 116;
+    --rust: 166 61 45;
+    color: rgb(var(--ink));
+    background:
+      radial-gradient(70% 90% at 85% 0%, rgb(var(--clay) / 0.10), transparent 60%),
+      radial-gradient(50% 70% at 0% 100%, rgb(var(--ochre) / 0.05), transparent 65%),
+      rgb(var(--bg));
+  }
+  [data-theme="dark"] .night {
     color-scheme: dark;
     --bg: 24 21 19;
     --panel: 32 29 26;
@@ -168,18 +191,25 @@
       radial-gradient(70% 90% at 85% 0%, rgb(var(--clay) / 0.13), transparent 60%),
       radial-gradient(50% 70% at 0% 100%, rgb(var(--ochre) / 0.06), transparent 65%),
       rgb(var(--bg));
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05), inset 0 -1px 0 rgb(255 255 255 / 0.05);
   }
   .night * {
     border-color: rgb(var(--hair));
   }
-  [data-theme="dark"] .night {
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05), inset 0 -1px 0 rgb(255 255 255 / 0.05);
-  }
 
-  /* Papier millimétré : quadrillage discret sous les tracés GPS */
-  /* Carte de chaleur : toujours sur fond nuit, dans les deux thèmes — les
-     traces lumineuses ne se lisent que sur du sombre. */
+  /* Carte de chaleur des tracés : claire sur papier clair, sombre sur fond
+     sombre — les traits suivent le thème au lieu d'être figés en nuit. */
   .heat-canvas {
+    --heat-bg: 247 245 241;
+    --heat: 186 76 42;
+    --heat-hi: 26 25 23;
+    --heat-ink: 26 25 23;
+    background:
+      radial-gradient(ellipse at 50% 45%, rgb(0 0 0 / 0.03), transparent 70%),
+      rgb(var(--heat-bg));
+    box-shadow: inset 0 0 0 1px rgb(var(--hair));
+  }
+  [data-theme="dark"] .heat-canvas {
     --heat-bg: 17 16 15;
     --heat: 236 118 74;
     --heat-hi: 255 228 176;

@@ -85,7 +85,7 @@ export function RouteOverlay({
 
       <div className="pointer-events-none absolute left-4 top-4 max-w-[60%]">
         {current ? (
-          <div className="rounded-[7px] bg-[rgb(var(--heat-bg)/0.82)] px-3 py-2 backdrop-blur-sm">
+          <div className="rounded-[7px] border border-hair bg-[rgb(var(--heat-bg)/0.82)] px-3 py-2 backdrop-blur-sm">
             <div className="text-[0.8125rem] font-medium text-[rgb(var(--heat-ink))]">{current.name}</div>
             <div className="mt-0.5 font-mono text-micro text-[rgb(var(--heat-ink)/0.65)]">
               {current.date} · {current.km.toFixed(1)} km · {current.pace}
