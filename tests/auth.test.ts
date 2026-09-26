@@ -107,3 +107,31 @@ describe("nom affiché", () => {
     assert.equal(displayName({ firstname: "Nassim", lastname: null }), "Nassim");
   });
 });
+
+describe("inscription par email (sans Strava)", () => {
+  it("ouverte sur une instance ouverte sans code", async () => {
+    process.env.ALLOWED_ATHLETES = "";
+    delete process.env.INVITE_CODE;
+    const { canRegisterLocal } = await policy();
+    assert.deepEqual(canRegisterLocal(null), { ok: true });
+  });
+  it("exige le code d'invitation quand il y en a un", async () => {
+    process.env.ALLOWED_ATHLETES = "";
+    process.env.INVITE_CODE = "foulee";
+    const { canRegisterLocal } = await policy();
+    assert.deepEqual(canRegisterLocal("mauvais"), { ok: false, reason: "bad-invite" });
+    assert.deepEqual(canRegisterLocal("foulee"), { ok: true });
+  });
+  it("fermée sur une instance privée sans code d'invitation", async () => {
+    process.env.ALLOWED_ATHLETES = "123";
+    delete process.env.INVITE_CODE;
+    const { canRegisterLocal } = await policy();
+    assert.deepEqual(canRegisterLocal(null), { ok: false, reason: "not-allowed" });
+  });
+  it("instance privée + code : le code ouvre la porte", async () => {
+    process.env.ALLOWED_ATHLETES = "123";
+    process.env.INVITE_CODE = "foulee";
+    const { canRegisterLocal } = await policy();
+    assert.deepEqual(canRegisterLocal("foulee"), { ok: true });
+  });
+});

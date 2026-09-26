@@ -62,7 +62,7 @@ export default async function RootLayout({
         name: displayName(user),
         avatarUrl: user.avatarUrl,
         initials: initials(displayName(user)),
-        athleteId: String(user.athleteId),
+        athleteId: user.athleteId === null ? null : String(user.athleteId),
         admin: user.role === "admin",
       }
     : null;

@@ -9,7 +9,7 @@ export type AccountInfo = {
   name: string;
   avatarUrl: string | null;
   initials: string;
-  athleteId: string;
+  athleteId: string | null;
   admin: boolean;
 };
 
@@ -72,7 +72,7 @@ export function AccountMenu({ user }: { user: AccountInfo }) {
             <div className="min-w-0">
               <div className="truncate text-[0.8125rem] font-medium">{user.name}</div>
               <div className="text-micro text-ink3">
-                {t("athlete", { id: user.athleteId })}
+                {user.athleteId ? t("athlete", { id: user.athleteId }) : t("emailAccount")}
                 {user.admin && ` · ${t("admin")}`}
               </div>
             </div>

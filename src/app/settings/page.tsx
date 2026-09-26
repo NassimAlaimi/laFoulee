@@ -127,8 +127,18 @@ export default async function SettingsPage({
       )}
       {params.welcome && (
         <div className="rounded-card border border-positive/35 bg-positive/8 px-4 py-3.5 text-sm text-sage">
-          Bienvenue {displayName(user)}. Ton compte est créé : lance une première
-          synchronisation pour importer ton historique Strava.
+          Bienvenue {displayName(user)}. Ton compte est créé :{" "}
+          {account ? (
+            "lance une première synchronisation pour importer ton historique Strava."
+          ) : (
+            <>
+              importe tes fichiers de montre (FIT, GPX, TCX, export Garmin) depuis{" "}
+              <a href="/import" className="underline underline-offset-2">
+                la page Import
+              </a>
+              , saisis tes séances dans le carnet, ou connecte Strava ci-dessous quand tu veux.
+            </>
+          )}
         </div>
       )}
       {params.connected && (
@@ -390,7 +400,7 @@ export default async function SettingsPage({
       <Section>
         <SectionHead
           title="Compte"
-          note={`Connecté en tant que ${displayName(user)} · athlète Strava ${user.athleteId}`}
+          note={`Connecté en tant que ${displayName(user)}${user.athleteId ? ` · athlète Strava ${user.athleteId}` : " · compte email"}`}
         />
         <AccountActions
           firstname={user.firstname?.trim() || displayName(user)}

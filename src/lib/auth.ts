@@ -1,8 +1,9 @@
 /**
- * Authentification — sessions adossées à Strava.
+ * Authentification — sessions adossées à Strava ou à un compte email.
  *
- * L'app n'a de sens qu'avec un compte Strava connecté : c'est donc Strava qui
- * sert d'identité. Aucun mot de passe n'est stocké, aucun email n'est vérifié.
+ * Deux portes d'entrée : Strava (OAuth, aucun secret stocké chez nous) ou un
+ * compte email + mot de passe pour qui n'a pas Strava (empreinte scrypt,
+ * lib/password.ts ; l'email n'est pas vérifié — il sert d'identifiant).
  *
  * Le cookie ne contient qu'un token aléatoire ; la base ne stocke que son
  * empreinte SHA-256. Une fuite de la base ne permet donc pas de rejouer une
@@ -20,6 +21,7 @@ export { SESSION_COOKIE, SESSION_DAYS };
 export {
   allowedAthletes,
   canRegister,
+  canRegisterLocal,
   checkInviteCode,
   displayName,
   inviteCode,
@@ -44,7 +46,7 @@ function useSecureCookie(): boolean {
 
 export type SessionUser = {
   id: string;
-  athleteId: bigint;
+  athleteId: bigint | null;
   firstname: string | null;
   lastname: string | null;
   avatarUrl: string | null;
@@ -52,6 +54,17 @@ export type SessionUser = {
   language: string;
   stravaEvictedAt: Date | null;
 };
+
+const SESSION_USER_SELECT = {
+  id: true,
+  athleteId: true,
+  firstname: true,
+  lastname: true,
+  avatarUrl: true,
+  role: true,
+  language: true,
+  stravaEvictedAt: true,
+} as const;
 
 function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
@@ -125,16 +138,7 @@ export async function currentUser(): Promise<SessionUser | null> {
       expiresAt: true,
       lastUsed: true,
       user: {
-        select: {
-          id: true,
-          athleteId: true,
-          firstname: true,
-          lastname: true,
-          avatarUrl: true,
-          role: true,
-          language: true,
-          stravaEvictedAt: true,
-        },
+        select: SESSION_USER_SELECT,
       },
     },
   });
@@ -200,7 +204,7 @@ export async function upsertUserFromStrava(athlete: {
   firstname?: string | null;
   lastname?: string | null;
   profile?: string | null;
-}): Promise<{ user: SessionUser; created: boolean }> {
+}, language: string = "fr"): Promise<{ user: SessionUser; created: boolean }> {
   const athleteId = BigInt(athlete.id);
   const existing = await prisma.user.findUnique({ where: { athleteId } });
 
@@ -213,16 +217,7 @@ export async function upsertUserFromStrava(athlete: {
         avatarUrl: athlete.profile ?? existing.avatarUrl,
         lastSeenAt: new Date(),
       },
-      select: {
-        id: true,
-        athleteId: true,
-        firstname: true,
-        lastname: true,
-        avatarUrl: true,
-        role: true,
-        language: true,
-        stravaEvictedAt: true,
-      },
+      select: SESSION_USER_SELECT,
     });
     return { user, created: false };
   }
@@ -235,21 +230,58 @@ export async function upsertUserFromStrava(athlete: {
       lastname: athlete.lastname ?? null,
       avatarUrl: athlete.profile ?? null,
       role: isFirst ? "admin" : "user",
+      // La langue choisie sur l'écran de connexion devient celle du profil :
+      // sinon le profil (« fr » par défaut) la réécraserait au premier rendu.
+      language,
       lastSeenAt: new Date(),
       // Les réglages par défaut sont créés tout de suite : aucune page n'a
       // alors à gérer le cas « pas encore de réglages ».
       settings: { create: {} },
     },
-    select: {
-      id: true,
-      athleteId: true,
-      firstname: true,
-      lastname: true,
-      avatarUrl: true,
-      role: true,
-      language: true,
-      stravaEvictedAt: true,
-    },
+    select: SESSION_USER_SELECT,
   });
   return { user, created: true };
+}
+
+/**
+ * Crée un compte email (sans Strava). `null` si l'email est déjà pris.
+ * Mêmes règles que Strava : le premier compte de l'instance est admin.
+ */
+export async function createLocalUser(input: {
+  email: string;
+  passwordHash: string;
+  firstname: string;
+  language: string;
+}): Promise<SessionUser | null> {
+  const taken = await prisma.user.findUnique({ where: { email: input.email }, select: { id: true } });
+  if (taken) return null;
+  const isFirst = (await prisma.user.count()) === 0;
+  try {
+    return await prisma.user.create({
+      data: {
+        email: input.email,
+        passwordHash: input.passwordHash,
+        firstname: input.firstname,
+        language: input.language,
+        role: isFirst ? "admin" : "user",
+        lastSeenAt: new Date(),
+        settings: { create: {} },
+      },
+      select: SESSION_USER_SELECT,
+    });
+  } catch {
+    // Course entre deux inscriptions simultanées : l'index unique tranche.
+    return null;
+  }
+}
+
+/** Identifiants d'un compte email, pour la vérification du mot de passe. */
+export async function findLocalCredentials(
+  email: string
+): Promise<{ id: string; passwordHash: string } | null> {
+  const u = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true, passwordHash: true },
+  });
+  return u?.passwordHash ? { id: u.id, passwordHash: u.passwordHash } : null;
 }

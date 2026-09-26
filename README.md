@@ -78,11 +78,19 @@ Les tokens Strava (`accessToken` / `refreshToken`) sont **chiffrés au repos**
 
 ## Comptes et déploiement
 
-### Un compte = un athlète Strava
+### Deux portes d'entrée : Strava ou email
 
-Il n'y a **ni mot de passe, ni email à vérifier** : l'app n'a de données que via
-Strava, donc Strava sert d'identité. Le retour d'OAuth crée le compte s'il
-n'existe pas, puis ouvre une session.
+- **Strava** (recommandé) : Strava sert d'identité, aucun mot de passe. Le retour
+  d'OAuth crée le compte s'il n'existe pas, puis ouvre une session.
+- **Email + mot de passe**, pour qui n'a pas Strava : les données viennent alors
+  de l'import de fichiers (FIT/GPX/TCX, export Garmin) et du carnet. Le mot de
+  passe est haché en **scrypt** (sel aléatoire, `lib/password.ts`), 10 caractères
+  minimum ; après 5 échecs en 15 minutes l'email est freiné ; un email inconnu
+  prend le même temps qu'un mauvais mot de passe (pas d'énumération) ; les
+  formulaires refusent les requêtes d'une autre origine (CSRF de connexion).
+  L'email n'est pas vérifié et il n'y a **pas de réinitialisation par email**.
+  Un compte email peut connecter Strava plus tard depuis les Réglages : il
+  pourra ensuite entrer par l'une ou l'autre porte.
 
 | Mécanisme | Détail |
 |---|---|
@@ -106,6 +114,10 @@ ALLOWED_ATHLETES="12345678,98765432"
 # Code exigé à la première connexion (vide = aucun code)
 INVITE_CODE="foulee-2026"
 ```
+
+Les comptes email suivent le même code d'invitation. Une instance privée
+(`ALLOWED_ATHLETES` renseigné) **sans** code d'invitation ferme l'inscription
+par email, faute de pouvoir vérifier l'identité.
 
 Restreindre la liste plus tard **n'exclut jamais quelqu'un déjà inscrit** :
 enfermer dehors un utilisateur dont les données sont déjà dans l'instance
@@ -385,8 +397,10 @@ commentaire) et se relie automatiquement à l'activité Strava du même jour.
 ## Fonctionnalités
 
 L'interface est **multilingue** : français (par défaut), anglais et espagnol.
-La langue se choisit dans Réglages, est enregistrée sur le profil (elle suit
-l'utilisateur sur tous ses appareils) et ne change jamais les URLs.
+La langue se choisit **dès l'écran de connexion** (à la première visite, celle
+du navigateur est proposée via `Accept-Language`), puis dans Réglages ; elle
+est enregistrée sur le profil à la création du compte (elle suit l'utilisateur
+sur tous ses appareils) et ne change jamais les URLs.
 
 | Page | Contenu |
 |---|---|
@@ -536,7 +550,7 @@ src/
   middleware.ts                 Garde d'entrée (redirige vers /login)
   app/
     page.tsx                    Dashboard principal
-    login/page.tsx              Connexion Strava
+    login/page.tsx              Connexion Strava ou email, choix de la langue
     activities/page.tsx         Liste + filtres
     records/page.tsx            PB, prédictions potentiel/réaliste, allures cibles
     analysis/page.tsx           PMC, courbe allure-durée, vitesse critique, polarisation

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getLocale } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { exchangeCodeForToken, evictLeastActiveStravaUser } from "@/lib/strava";
 import { encryptSecret, secretKeyFromEnv } from "@/lib/crypto";
@@ -92,7 +93,7 @@ export async function GET(req: NextRequest) {
 
     const { user, created } = session
       ? { user: session, created: false }
-      : await upsertUserFromStrava(athlete);
+      : await upsertUserFromStrava(athlete, await getLocale());
 
     const data = {
       athleteId,
@@ -114,9 +115,14 @@ export async function GET(req: NextRequest) {
       update: data,
     });
     // La connexion est rétablie : on efface l'éventuel marqueur d'éviction.
+    // Un compte email qui rattache Strava adopte cet athlète comme identité :
+    // il pourra ensuite entrer indifféremment par Strava ou par email.
     await prisma.user.update({
       where: { id: user.id },
-      data: { stravaEvictedAt: null },
+      data: {
+        stravaEvictedAt: null,
+        ...(user.athleteId === null ? { athleteId } : {}),
+      },
     });
 
     if (!session) {

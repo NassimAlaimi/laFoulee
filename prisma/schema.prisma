@@ -17,11 +17,15 @@ datasource db {
 model User {
   id        String  @id @default(cuid())
   /// Identifiant athlète Strava — c'est l'identité de connexion
-  athleteId BigInt  @unique
+  /// (absent pour un compte email, rattaché plus tard s'il connecte Strava)
+  athleteId BigInt? @unique
   firstname String?
   lastname  String?
   avatarUrl String?
-  email     String?
+  /// Identifiant des comptes sans Strava (normalisé en minuscules)
+  email     String? @unique
+  /// Empreinte scrypt du mot de passe (lib/password.ts) — null = compte Strava seul
+  passwordHash String?
   /// Rôle applicatif : user | admin (le premier compte créé est admin)
   role      String  @default("user")
 

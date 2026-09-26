@@ -59,11 +59,25 @@ export function canRegister(
   return { ok: true };
 }
 
+/**
+ * Peut-on créer un compte email (sans Strava) ?
+ *
+ * Une liste d'athlètes autorisés rend l'instance privée : sans code
+ * d'invitation pour ouvrir une porte, l'inscription par email y est fermée
+ * (on ne peut pas vérifier l'identité Strava d'un compte qui n'en a pas).
+ */
+export function canRegisterLocal(invite?: string | null): AccessDecision {
+  if (allowedAthletes().length > 0 && !inviteCode()) {
+    return { ok: false, reason: "not-allowed" };
+  }
+  if (!checkInviteCode(invite)) return { ok: false, reason: "bad-invite" };
+  return { ok: true };
+}
 
 export function displayName(user: {
   firstname?: string | null;
   lastname?: string | null;
-  athleteId?: bigint | number;
+  athleteId?: bigint | number | null;
 }): string {
   const name = [user.firstname, user.lastname].filter(Boolean).join(" ").trim();
   return name || `Athlète ${user.athleteId ?? ""}`.trim();

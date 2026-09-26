@@ -11,7 +11,16 @@ import { SESSION_COOKIE } from "@/lib/auth-shared";
  */
 // Le flux agenda est public par nature (un agenda n'envoie pas de cookie) :
 // il est protégé par le jeton secret de son URL, vérifié dans la route.
-const PUBLIC_PREFIXES = ["/login", "/api/strava/connect", "/api/strava/callback", "/api/calendar"];
+// Connexion par email et choix de la langue : accessibles avant toute session.
+const PUBLIC_PREFIXES = [
+  "/login",
+  "/api/strava/connect",
+  "/api/strava/callback",
+  "/api/calendar",
+  "/api/auth/signin",
+  "/api/auth/signup",
+  "/api/lang-sync",
+];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
