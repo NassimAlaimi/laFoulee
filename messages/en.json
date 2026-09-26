@@ -2,6 +2,7 @@
   "common": {
     "appTitle": "Foulée — training analysis",
     "appDescription": "Running and strength training tracking and analysis",
+    "skipToContent": "Skip to content",
     "settings": "Settings",
     "save": "Save",
     "cancel": "Cancel",

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { pageMeta } from "@/lib/page-meta";
 import { getLocale, getTranslations } from "next-intl/server";
 import { confidenceLabel, distanceName, enduranceLabel, paceName, paceUsage, predictionReason } from "@/components/terms";
 import { Empty, Hint, PageHead, Section } from "@/components/ui/Layout";
@@ -19,6 +20,10 @@ import { currentFitness } from "@/lib/training";
 import { danielsPaces, vdotLevel } from "@/lib/vdot";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata() {
+  return pageMeta("records");
+}
 
 
 const CONF_TONE: Record<Confidence, string> = {

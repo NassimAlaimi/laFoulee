@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { pageMeta } from "@/lib/page-meta";
 import { getTranslations } from "next-intl/server";
 import { Empty, PageHead, Section } from "@/components/ui/Layout";
 import { Bar } from "@/components/ui/Metric";
@@ -32,6 +33,10 @@ import {
 } from "@/lib/training";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata() {
+  return pageMeta("training", { description: "meta" });
+}
 
 /**
  * Page d'entraînement : la semaine en cours, séance par séance.

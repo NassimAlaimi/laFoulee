@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { pageMeta } from "@/lib/page-meta";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Empty, Hint, NightBand, PageHead, Section } from "@/components/ui/Layout";
 import { RouteGlyph } from "@/components/route/RouteGlyph";
@@ -73,6 +74,10 @@ import {
 } from "@/lib/stats";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata() {
+  return pageMeta("home", { title: "ui.summary" });
+}
 
 const ZONE_TONE: Record<string, string> = {
   insufficient: "text-ink3",

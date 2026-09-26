@@ -1,4 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
+import { pageMeta } from "@/lib/page-meta";
 import { Section, SectionHead } from "@/components/ui/Layout";
 import { TrainingCalendar } from "@/components/TrainingCalendar";
 import { Legend, Stat } from "@/components/analysis/Bits";import {
@@ -13,6 +14,10 @@ import { ZONE_LABEL, ZONE_TONE } from "@/lib/fitness-model";
 import { AnalysisHead, loadForme, NotEnough } from "./_shared";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata() {
+  return pageMeta("analysis", { description: "meta" });
+}
 
 /**
  * Forme & charge — la page « comment va la machine » : condition/fatigue/

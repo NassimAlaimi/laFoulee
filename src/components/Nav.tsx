@@ -39,6 +39,7 @@ export function TopNav({ user }: { user: AccountInfo | null }) {
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={active ? "page" : undefined}
                 className={`relative whitespace-nowrap px-2.5 py-3.5 text-[0.8125rem] transition-colors ${
                   active ? "text-ink" : "text-ink2 hover:text-ink"
                 }`}
@@ -133,6 +134,7 @@ function MobileTabs({ isActive }: { isActive: (href: string) => boolean }) {
           <Link
             key={tab.href}
             href={tab.href}
+            aria-current={on ? "page" : undefined}
             className={`flex flex-col items-center gap-1 py-2.5 text-[10px] ${on ? "text-clay" : "text-ink2"}`}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>

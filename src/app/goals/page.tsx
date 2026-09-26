@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { pageMeta } from "@/lib/page-meta";
 import { getLocale, getTranslations } from "next-intl/server";
 import { revalidatePath } from "next/cache";
 import { Hint, NightBand, PageHead, Section, SectionHead } from "@/components/ui/Layout";
@@ -17,6 +18,10 @@ import { SeasonTimeline } from "@/components/goals/SeasonTimeline";
 import { athleteContext } from "@/lib/plan-store";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata() {
+  return pageMeta("goals");
+}
 
 const PRIORITY_STYLE: Record<string, string> = {
   A: "bg-clay/15 text-clay",

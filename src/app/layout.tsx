@@ -19,9 +19,19 @@ import { locales } from "@/i18n/routing";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("common");
+  const locale = await getLocale();
+  const base = new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000");
   return {
-    title: t("appTitle"),
+    metadataBase: base,
+    title: { default: t("appTitle"), template: `%s · Foulée` },
     description: t("appDescription"),
+    openGraph: {
+      title: t("appTitle"),
+      description: t("appDescription"),
+      type: "website",
+      locale,
+      siteName: "Foulée",
+    },
   };
 }
 
@@ -36,6 +46,7 @@ export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const locale = await getLocale();
+  const t = await getTranslations("common");
 
   // La langue vit sur le profil (persistante entre appareils) et dans le
   // cookie NEXT_LOCALE (consommé à chaque requête). Le profil fait foi :
@@ -83,6 +94,9 @@ export default async function RootLayout({
       </head>
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
+          <a href="#contenu" className="skip-link">
+            {t("skipToContent")}
+          </a>
           {account && <TopNav user={account} />}
           {account && <CommandPalette />}
           {account && (
@@ -94,7 +108,7 @@ export default async function RootLayout({
               <TourLauncher />
             </>
           )}
-          <main className="mx-auto max-w-[1240px] px-gutter pb-12 pt-8 md:pb-16">
+          <main id="contenu" className="mx-auto max-w-[1240px] px-gutter pb-12 pt-8 md:pb-16">
             {children}
           </main>
           <SiteFooter />

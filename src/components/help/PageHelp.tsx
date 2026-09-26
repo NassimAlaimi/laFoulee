@@ -69,6 +69,8 @@ export function PageHelp() {
             : "border-hair text-ink3 hover:border-clay hover:text-clay"
         }`}
         aria-label={t("pageAria")}
+        aria-expanded={open}
+        aria-haspopup="dialog"
         title={t("pageAria")}
       >
         ?

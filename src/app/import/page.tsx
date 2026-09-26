@@ -1,4 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
+import { pageMeta } from "@/lib/page-meta";
 import { PageHead, Section } from "@/components/ui/Layout";
 import { ImportDrop } from "@/components/import/ImportDrop";
 import { requireUserId } from "@/lib/auth";
@@ -6,6 +7,10 @@ import { prisma } from "@/lib/prisma";
 import { fmtDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata() {
+  return pageMeta("import");
+}
 
 /**
  * Import de fichiers : montres sans Strava, export complet Garmin, archives.

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { pageMeta } from "@/lib/page-meta";
 import { getTranslations } from "next-intl/server";
 import { Empty, PageHead, Section } from "@/components/ui/Layout";
 import { PrintButton } from "@/components/PrintButton";
@@ -20,6 +21,10 @@ import {
 } from "@/lib/workout-library";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata() {
+  return pageMeta("workouts", { description: "meta" });
+}
 
 /**
  * Bibliothèque de séances fondamentales, calibrée sur le VDOT actuel.

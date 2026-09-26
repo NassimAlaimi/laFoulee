@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { pageMeta } from "@/lib/page-meta";
 import { privatePolyline } from "@/lib/polyline";
 import { getPrivacyZone } from "@/lib/queries";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -23,6 +24,10 @@ import {
 } from "@/lib/recap";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata() {
+  return pageMeta("recap");
+}
 
 
 /**

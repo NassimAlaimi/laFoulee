@@ -502,6 +502,37 @@
   }
 }
 
+/* Lien « aller au contenu » : invisible, mais premier au clavier. */
+.skip-link {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.skip-link:focus-visible {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 100;
+  width: auto;
+  height: auto;
+  padding: 0.6rem 0.9rem;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  background: rgb(var(--bg));
+  color: rgb(var(--ink));
+  border: 1px solid rgb(var(--hair-strong));
+  border-radius: 6px;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.12);
+}
+
 ::-webkit-scrollbar {
   width: 12px;
   height: 12px;

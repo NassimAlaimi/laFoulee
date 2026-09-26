@@ -2,6 +2,7 @@
   "common": {
     "appTitle": "Foulée — analyse d'entraînement",
     "appDescription": "Suivi et analyse de course à pied et de musculation",
+    "skipToContent": "Aller au contenu",
     "settings": "Réglages",
     "save": "Enregistrer",
     "cancel": "Annuler",
