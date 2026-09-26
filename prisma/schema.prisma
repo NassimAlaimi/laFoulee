@@ -108,6 +108,22 @@ model StravaAccount {
   updatedAt  DateTime  @updatedAt
 }
 
+/// Journal des erreurs serveur (écran admin). Regroupées par empreinte :
+/// la même panne répétée incrémente `count` au lieu d'inonder la table.
+/// Purgé au-delà de 30 jours.
+model ErrorLog {
+  id          String   @id @default(cuid())
+  fingerprint String   @unique
+  source      String
+  message     String
+  stack       String?
+  count       Int      @default(1)
+  firstAt     DateTime @default(now())
+  lastAt      DateTime @default(now())
+
+  @@index([lastAt])
+}
+
 /// Une activité importée de Strava (ou saisie manuellement)
 model Activity {
   id       String  @id @default(cuid())

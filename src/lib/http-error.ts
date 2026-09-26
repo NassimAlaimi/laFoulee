@@ -35,6 +35,15 @@ export class UpstreamError extends UserFacingError {
 const GENERIC = "Une erreur est survenue. Réessaie dans un instant.";
 
 /**
+ * Rapporteur branché au démarrage du serveur (instrumentation.ts → journal
+ * des erreurs en base). Absent dans les tests : ce module reste pur.
+ */
+let reporter: ((source: string, err: unknown) => void) | null = null;
+export function setErrorReporter(fn: (source: string, err: unknown) => void): void {
+  reporter = fn;
+}
+
+/**
  * Quota Strava « athlètes connectés » atteint (403 « Limit of connected
  * athletes exceeded »). Le message invite à libérer une place ou à importer
  * des fichiers. Le callback OAuth la traite à part (éviction automatique).
@@ -54,8 +63,9 @@ export class AthleteLimitError extends UserFacingError {
  * - toute autre erreur → journalisée en détail côté serveur, remplacée par un
  *   message générique. La cause réelle ne traverse jamais l'API.
  */
-export function toSafeMessage(err: unknown): string {
+export function toSafeMessage(err: unknown, source = "api"): string {
   if (err instanceof UserFacingError) return err.message;
+  reporter?.(source, err);
   if (err instanceof Error) {
     console.error(`[api] ${err.name}: ${err.message}\n${err.stack ?? ""}`);
   } else {

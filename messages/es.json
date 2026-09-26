@@ -2170,5 +2170,11 @@
       "offseason": "Sin carrera por delante: momento de explorar.",
       "daily": "Tu panel del día."
     }
+  },
+  "admin": {
+    "errorsTitle": "Errores del servidor",
+    "errorsNote": "{n, plural, =0 {Ningún error en los últimos 7 días} one {# error en los últimos 7 días} other {# errores en los últimos 7 días}} — agrupados por causa, conservados 30 días",
+    "errorsNone": "Ningún error registrado. Todo funciona.",
+    "errorsClear": "Vaciar el registro"
   }
 }

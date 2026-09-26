@@ -12,6 +12,7 @@ import { displayName, requireUser, requireUserId } from "@/lib/auth";
 import { AccountActions } from "@/components/AccountActions";
 import { CalendarSubscription } from "@/components/CalendarSubscription";
 import { LanguageSwitcher } from "@/components/settings/LanguageSwitcher";
+import { AdminErrors } from "@/components/settings/AdminErrors";
 import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
@@ -319,6 +320,8 @@ export default async function SettingsPage({
           )}
         </Section>
       )}
+
+      {user.role === "admin" && <AdminErrors />}
 
       {/* -------------------------------------------------- Profil */}
       <Section>

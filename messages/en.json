@@ -2170,5 +2170,11 @@
       "offseason": "No race ahead: time to explore.",
       "daily": "Your daily dashboard."
     }
+  },
+  "admin": {
+    "errorsTitle": "Server errors",
+    "errorsNote": "{n, plural, =0 {No errors in the last 7 days} one {# error in the last 7 days} other {# errors in the last 7 days}} — grouped by cause, kept 30 days",
+    "errorsNone": "No errors recorded. All good.",
+    "errorsClear": "Clear the log"
   }
 }

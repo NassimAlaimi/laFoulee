@@ -191,6 +191,14 @@ curl -I https://dcimer.swagman.fr        # doit répondre 200/307, en HTTPS
 curl -I http://dcimer.swagman.fr:3000/   # doit échouer (port fermé)
 ```
 
+## Surveiller
+
+- **Réglages → Erreurs serveur** (visible par l'admin) : toute erreur
+  inattendue d'une page, d'une route ou d'une action, regroupée par cause,
+  avec sa pile. Conservée 30 jours.
+- `sudo journalctl -u foulee --since today` pour le détail brut.
+- Sauvegardes : `systemctl list-timers foulee-backup` et `ls -lh /var/backups/foulee`.
+
 ## Sécurité — rappels
 
 - **Jamais de `3000` exposé** : seul Caddy (localhost) parle à l'app.

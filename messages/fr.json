@@ -2170,5 +2170,11 @@
       "offseason": "Pas de course devant : le moment d'explorer.",
       "daily": "Ton tableau de bord du jour."
     }
+  },
+  "admin": {
+    "errorsTitle": "Erreurs serveur",
+    "errorsNote": "{n, plural, =0 {Aucune erreur ces 7 derniers jours} one {# erreur ces 7 derniers jours} other {# erreurs ces 7 derniers jours}} — regroupées par cause, conservées 30 jours",
+    "errorsNone": "Aucune erreur enregistrée. Tout tourne.",
+    "errorsClear": "Vider le journal"
   }
 }
