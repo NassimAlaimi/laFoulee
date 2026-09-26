@@ -70,8 +70,9 @@ function bboxKey(bbox: ViewBbox): string {
 /** Fond de rues OpenStreetMap autour de la zone, en cache 24 h (par bbox). */
 export async function getOsmRoads(userId: string, bbox: ViewBbox, now = new Date()): Promise<string[] | null> {
   const key = bboxKey(bbox);
-  const cached = await prisma.osmCache.findUnique({ where: { userId_bbox: { userId, bbox: key } } });
-  if (cached && now.getTime() - cached.builtAt.getTime() < 24 * 86400000) {
+  const cached = await prisma.osmCache.findUnique({ where: { userId } });
+  // Le cache n'est valable que pour la même zone : sinon on refait la requête.
+  if (cached && cached.bbox === key && now.getTime() - cached.builtAt.getTime() < 24 * 86400000) {
     try {
       return JSON.parse(cached.data) as string[];
     } catch {
@@ -79,11 +80,11 @@ export async function getOsmRoads(userId: string, bbox: ViewBbox, now = new Date
     }
   }
   const roads = await fetchOverpassRoads(bbox);
-  if (roads === null) return cached ? (JSON.parse(cached.data) as string[]) : null;
+  if (roads === null) return cached && cached.bbox === key ? (JSON.parse(cached.data) as string[]) : null;
   await prisma.osmCache.upsert({
-    where: { userId_bbox: { userId, bbox: key } },
+    where: { userId },
     create: { userId, bbox: key, data: JSON.stringify(roads), builtAt: now },
-    update: { data: JSON.stringify(roads), builtAt: now },
+    update: { bbox: key, data: JSON.stringify(roads), builtAt: now },
   });
   return roads;
 }

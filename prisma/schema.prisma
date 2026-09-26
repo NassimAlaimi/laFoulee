@@ -738,13 +738,13 @@ model AgentBrief {
 
 /// Cache du fond de rues OpenStreetMap (lib/osm) autour du territoire.
 model OsmCache {
-  userId  String
-  /// clé de la bbox (minLat,minLon,maxLat,maxLon) — le cache est par zone
-  bbox    String
+  userId  String   @id
+  /// clé de la bbox (minLat,minLon,maxLat,maxLon) — permet de savoir si le
+  /// cache correspond bien à la zone demandée (colonne simple, pas de clé
+  /// composite : l'ajout de colonne reste non destructif pour db push)
+  bbox    String   @default("")
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   /// polylines encodées (JSON string[])
   data    String
   builtAt DateTime @default(now())
-
-  @@id([userId, bbox])
 }
