@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { revalidatePath } from "next/cache";
 import { Empty, PageHead, Section } from "@/components/ui/Layout";
 import { Bar, Metric, MetricBand } from "@/components/ui/Metric";
@@ -57,6 +57,8 @@ const STRENGTH_ACWR_TONE: Record<string, string> = {
  */
 export default async function StrengthPage() {
   const t = await getTranslations("strengthPage");
+  const ts = await getTranslations("strength");
+  const locale = await getLocale();
   const userId = await requireUserId();
   const now = new Date();
   const [workouts, strava, settings, goals] = await Promise.all([
@@ -96,7 +98,7 @@ export default async function StrengthPage() {
             </Link>
           }
         />
-        <Templates />
+        <Templates ts={ts} />
       </>
     );
   }
@@ -227,37 +229,36 @@ export default async function StrengthPage() {
       {/* ---------------------------------------------- Garde-fou de charge */}
       <Section
         title={t("guardrail")}
-        note="Comme en course, la blessure vient de la montée trop rapide, pas du volume : séries dures de la semaine contre la moyenne des 4 dernières semaines."
+        note={ts("guardrailNote")}
       >
         <div className="flex flex-wrap items-baseline gap-x-12 gap-y-5">
           <div>
-            <div className="eyebrow">Ratio aiguë / chronique</div>
+            <div className="eyebrow">{ts("acwrRatio")}</div>
             <div className="mt-2 flex items-baseline gap-2.5">
               <span className={`display text-d2 ${acwr.ratio != null ? STRENGTH_ACWR_TONE[acwr.zone] : ""}`}>
                 {acwr.ratio != null ? acwr.ratio.toFixed(2) : "—"}
               </span>
               <span className="text-sm text-ink2">
-                {acwr.ratio != null ? STRENGTH_ACWR_LABEL[acwr.zone] : "pas encore assez de recul"}
+                {acwr.ratio != null ? STRENGTH_ACWR_LABEL[acwr.zone] : ts("notEnough")}
               </span>
             </div>
           </div>
           <div>
-            <div className="eyebrow">Aiguë · 7 j</div>
+            <div className="eyebrow">{ts("acute7")}</div>
             <div className="mt-2 text-xl font-semibold tabular-nums">
-              {acwr.acute} <span className="text-sm font-normal text-ink3">séries dures</span>
+              {acwr.acute} <span className="text-sm font-normal text-ink3">{ts("hardSetsShort")}</span>
             </div>
           </div>
           <div>
-            <div className="eyebrow">Chronique · 28 j</div>
+            <div className="eyebrow">{ts("chronic28")}</div>
             <div className="mt-2 text-xl font-semibold tabular-nums">
-              {acwr.chronic} <span className="text-sm font-normal text-ink3">/ semaine</span>
+              {acwr.chronic} <span className="text-sm font-normal text-ink3">{ts("perWeek")}</span>
             </div>
           </div>
         </div>
         {(acwr.zone === "danger" || acwr.zone === "caution") && (
           <p className="mt-5 rounded-[7px] border border-ochre/40 bg-ochre/10 px-4 py-3 text-[0.8125rem] leading-relaxed text-ink2">
-            Tu as ajouté plus de séries dures que d&apos;habitude cette semaine. Ralentis ou garde
-            une sortie facile : c&apos;est la montée rapide qui blesse, pas le volume.
+            {ts("acwrWarning")}
           </p>
         )}
       </Section>
@@ -266,7 +267,7 @@ export default async function StrengthPage() {
         {/* ---------------------------------------------- Équilibre du coureur */}
         <Section
           title={t("chain")}
-          note="Séries dures par semaine (moyenne sur 4 semaines) face à une fourchette de complément à la course : assez pour gagner en force et en solidité des tendons, sans empiéter sur la récupération."
+          note={ts("chainNote")}
         >
           <div className="space-y-1">
             {runnerRows.map((r) => {
@@ -301,7 +302,7 @@ export default async function StrengthPage() {
         {/* ---------------------------------------------- Chaîne du coureur · évolution */}
         <Section
           title={t("chain12")}
-          note="Séries dures par semaine, muscle par muscle — repère les groupes qui progressent et ceux qui s'endorment."
+          note={ts("muscleNote")}
         >
           <div className="space-y-2.5">
             {(Object.keys(RUNNER_WEEKLY_SETS) as Muscle[]).map((m) => (
@@ -319,7 +320,7 @@ export default async function StrengthPage() {
         {/* ---------------------------------------------- Objectifs de force */}
         <Section
           title={t("strengthGoals")}
-          note="Une cible de 1RM à atteindre — en kg absolus ou en multiple de ton poids de corps."
+          note={ts("goalNote")}
         >
           {goals.length > 0 && (
             <div className="mb-5">
@@ -339,7 +340,7 @@ export default async function StrengthPage() {
                       <form action={deleteStrengthGoal}>
                         <input type="hidden" name="id" value={g.id} />
                         <button type="submit" className="text-micro text-ink3 transition-colors hover:text-rust">
-                          supprimer
+                          {ts("deleteSmall")}
                         </button>
                       </form>
                     </div>
@@ -351,7 +352,7 @@ export default async function StrengthPage() {
                         <span className="whitespace-nowrap font-mono text-[0.8125rem] tabular-nums text-ink2">
                           {p.unit === "kg"
                             ? `${kg(p.current)} / ${kg(p.target)} kg`
-                            : `${p.current.toLocaleString("fr-FR")}× / ${p.target.toLocaleString("fr-FR")}×`}
+                            : `${p.current.toLocaleString(locale)}× / ${p.target.toLocaleString(locale)}×`}
                         </span>
                         <span className={`w-12 text-right font-mono text-sm font-semibold tabular-nums ${p.done ? "text-sage" : "text-ink"}`}>
                           {p.percent} %
@@ -360,8 +361,8 @@ export default async function StrengthPage() {
                     ) : (
                       <p className="mt-1.5 text-micro text-ink3">
                         {g.targetKg
-                          ? "Saisis une séance avec cet exercice pour voir ta progression."
-                          : "Renseigne ton poids dans les réglages pour mesurer le ratio."}
+                          ? ts("noSessionYet")
+                          : ts("noWeight")}
                       </p>
                     )}
                   </div>
@@ -373,7 +374,7 @@ export default async function StrengthPage() {
           <form action={createStrengthGoal} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div>
               <label className="field-label" htmlFor="gexercise">
-                Exercice
+                {ts("exerciseLabel")}
               </label>
               <select id="gexercise" name="exercise" className="field">
                 {EXERCISES.filter((e) => !e.bodyweight && e.unit !== "seconds").map((e) => (
@@ -385,7 +386,7 @@ export default async function StrengthPage() {
             </div>
             <div>
               <label className="field-label" htmlFor="gmode">
-                Cible
+                {ts("targetLabel")}
               </label>
               <select id="gmode" name="mode" className="field">
                 <option value="weight">{t("optWeight")}</option>
@@ -394,13 +395,13 @@ export default async function StrengthPage() {
             </div>
             <div>
               <label className="field-label" htmlFor="gtarget">
-                Objectif
+                {ts("goalLabel")}
               </label>
               <input id="gtarget" name="target" type="number" step="0.1" min="0.1" required placeholder="100" className="field" />
             </div>
             <div className="flex items-end">
               <button type="submit" className="btn-solid w-full">
-                Ajouter
+                {ts("add")}
               </button>
             </div>
           </form>
@@ -409,26 +410,26 @@ export default async function StrengthPage() {
         {/* ---------------------------------------------- RPE × charge */}
         {rpe.length >= 2 && (
           <Section
-            title="RPE × charge"
-            note="Effort perçu (1-10) contre la charge de la séance (séries dures). Plus de séries au même RPE = tu progresses ; même charge mais RPE qui grimpe = fatigue."
+            title={ts("rpeChargeTitle")}
+            note={ts("rpeNote")}
           >
-            <RpeScatter points={rpe} />
+            <RpeScatter points={rpe} ts={ts} locale={locale} />
           </Section>
         )}
 
         {/* ---------------------------------------------- Exercices */}
         {histories.length > 0 && (
-          <Section title="Tes exercices" note="Meilleur 1RM estimé (Epley/Brzycki, répétitions en réserve incluses) et son évolution séance après séance.">
+          <Section title={ts("yourExercisesTitle")} note={ts("exercisesNote")}>
             <div className="overflow-x-auto">
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Exercice</th>
-                    <th className="text-right">Séances</th>
-                    <th className="text-right">Dernière</th>
-                    <th className="text-right">Meilleure série</th>
-                    <th className="text-right">1RM est.</th>
-                    <th className="text-right">Tendance</th>
+                    <th>{ts("thExercise")}</th>
+                    <th className="text-right">{ts("thSessions")}</th>
+                    <th className="text-right">{ts("thLast")}</th>
+                    <th className="text-right">{ts("thBest")}</th>
+                    <th className="text-right">{ts("thE1rm")}</th>
+                    <th className="text-right">{ts("thTrend")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -446,15 +447,15 @@ export default async function StrengthPage() {
                           </Link>
                         </td>
                         <td className="num text-right text-ink2">{h.sessions.length}</td>
-                        <td className="num text-right text-ink2">{fmtDateShort(h.lastDate)}</td>
+                        <td className="num text-right text-ink2">{fmtDateShort(h.lastDate, locale)}</td>
                         <td className="num text-right">
-                          {top.topWeight > 0 ? `${top.topReps} × ${kg(top.topWeight)} kg` : `${h.bestReps}${info.unit === "seconds" ? " s" : " reps"}`}
+                          {top.topWeight > 0 ? `${top.topReps} × ${kg(top.topWeight)} kg` : `${h.bestReps}${info.unit === "seconds" ? " s" : ` ${ts("repsUnit")}`}`}
                         </td>
                         <td className="num text-right font-medium">
                           {h.bestE1rm ? `${kg(Math.round(h.bestE1rm))} kg` : "—"}
                           {rel != null && (
                             <div className="font-mono text-micro font-normal tabular-nums text-ink3">
-                              {rel.toLocaleString("fr-FR")} × poids
+                              {rel.toLocaleString(locale)} {ts("xWeight")}
                               {level && <span className="ml-1 text-sage">{level}</span>}
                             </div>
                           )}
@@ -474,13 +475,13 @@ export default async function StrengthPage() {
         )}
 
         {/* ---------------------------------------------- Régularité */}
-        <Section title="Régularité" note="16 dernières semaines — séances détaillées et séances Strava sans détail.">
+        <Section title={ts("regularity")} note={ts("regularityNote")}>
           <div className="flex h-[120px] items-end gap-1.5">
             {weeks.map((w) => (
               <div
                 key={w.start.toISOString()}
                 className="mx-auto flex w-full max-w-[22px] flex-1 flex-col-reverse gap-[3px]"
-                title={`Semaine du ${fmtDateShort(w.start)} : ${w.detailed} détaillée(s), ${w.strava} Strava`}
+                title={ts("weekDetail", { date: fmtDateShort(w.start, locale), detailed: w.detailed, strava: w.strava })}
               >
                 {Array.from({ length: w.detailed }, (_, i) => (
                   <span key={`d${i}`} className="block rounded-[2px] bg-plum" style={{ height: `${110 / maxWeek - 3}px` }} />
@@ -493,21 +494,21 @@ export default async function StrengthPage() {
             ))}
           </div>
           <div className="mt-2 flex justify-between text-[10px] text-ink3">
-            <span>{fmtDateShort(weeks[0].start)}</span>
+            <span>{fmtDateShort(weeks[0].start, locale)}</span>
             <span className="flex gap-3">
               <span className="flex items-center gap-1">
-                <span className="h-2 w-2 rounded-[2px] bg-plum" /> détaillée
+                <span className="h-2 w-2 rounded-[2px] bg-plum" /> {ts("detailedLabel")}
               </span>
               <span className="flex items-center gap-1">
                 <span className="h-2 w-2 rounded-[2px] bg-plum/35" /> Strava
               </span>
             </span>
-            <span>cette semaine</span>
+            <span>{ts("thisWeek")}</span>
           </div>
         </Section>
 
         {/* ---------------------------------------------- Historique */}
-        <Section title="Historique">
+        <Section title={ts("history")}>
           {history.slice(0, 40).map((h) =>
             h.kind === "detailed" ? (
               <Link
@@ -523,8 +524,8 @@ export default async function StrengthPage() {
                   </span>
                 </span>
                 <span className="text-right font-mono text-micro text-ink2">
-                  {Math.round(tonnage(h.w.sets)).toLocaleString("fr-FR")} kg
-                  {workoutPRs(h.w, workouts).length > 0 && <span className="ml-2 text-clay">★ record</span>}
+                  {Math.round(tonnage(h.w.sets)).toLocaleString(locale)} kg
+                  {workoutPRs(h.w, workouts).length > 0 && <span className="ml-2 text-clay">{ts("recordStar")}</span>}
                 </span>
               </Link>
             ) : (
@@ -541,20 +542,20 @@ export default async function StrengthPage() {
                   </span>
                 </span>
                 <Link href={`/strength/new?activity=${h.s.id}`} className="btn-quiet">
-                  Détailler →
+                  {ts("detailArrow")}
                 </Link>
               </div>
             )
           )}
         </Section>
 
-        <Templates />
+        <Templates ts={ts} />
       </div>
     </>
   );
 }
 
-function RpeScatter({ points }: { points: Array<{ date: Date; rpe: number; hardSets: number; tonnage: number }> }) {
+function RpeScatter({ points, ts, locale }: { points: Array<{ date: Date; rpe: number; hardSets: number; tonnage: number }>; ts: (k: string, p?: Record<string, string | number>) => string; locale: string }) {
   const W = 720;
   const H = 240;
   const P = { l: 40, r: 16, t: 14, b: 32 };
@@ -565,7 +566,7 @@ function RpeScatter({ points }: { points: Array<{ date: Date; rpe: number; hardS
   const xTicks = Array.from({ length: Math.ceil(maxX) + 1 }, (_, i) => i).filter((t) => t % 2 === 0);
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label="RPE contre charge">
+    <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={ts("rpeCharge")}>
       {rpeTicks.map((t) => (
         <g key={t}>
           <line x1={P.l} x2={W - P.r} y1={y(t)} y2={y(t)} stroke="rgb(var(--hair))" />
@@ -590,22 +591,22 @@ function RpeScatter({ points }: { points: Array<{ date: Date; rpe: number; hardS
           stroke="rgb(var(--clay))"
           strokeWidth={1}
         >
-          <title>{`${fmtDateShort(p.date)} · ${p.hardSets} séries dures · ${p.tonnage.toLocaleString("fr-FR")} kg · RPE ${p.rpe}`}</title>
+          <title>{ts("pointTitle", { date: fmtDateShort(p.date, locale), hardSets: p.hardSets, tonnage: p.tonnage.toLocaleString(locale), rpe: p.rpe })}</title>
         </circle>
       ))}
       <text x={P.l} y={14} fontSize={10} fill="rgb(var(--ink-3))">
         RPE
       </text>
       <text x={W - P.r} y={H - 10} textAnchor="end" fontSize={10} fill="rgb(var(--ink-3))">
-        séries dures
+        {ts("hardSetsShort")}
       </text>
     </svg>
   );
 }
 
-function Templates() {
+function Templates({ ts }: { ts: (k: string, p?: Record<string, string | number>) => string }) {
   return (
-    <Section title="Modèles de séance" note="Choisis-en un en créant une séance : les charges sont préremplies d'après ta dernière fois.">
+    <Section title={ts("templatesTitle")} note={ts("templatesNote")}>
       <div className="grid gap-x-10 gap-y-4 md:grid-cols-2">
         {TEMPLATES.map((t) => (
           <div key={t.key} className="border-b border-hair pb-4">

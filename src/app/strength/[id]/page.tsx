@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Section } from "@/components/ui/Layout";
 import { Metric, MetricBand } from "@/components/ui/Metric";
 import { requireUserId } from "@/lib/auth";
@@ -22,6 +23,8 @@ export const dynamic = "force-dynamic";
 const kg = (v: number) => (v % 1 ? v.toFixed(1).replace(".", ",") : String(v));
 
 export default async function StrengthWorkoutPage({ params }: { params: Promise<{ id: string }> }) {
+  const t = await getTranslations("strength");
+  const locale = await getLocale();
   const { id } = await params;
   const userId = await requireUserId();
   const workouts = await loadWorkouts(userId);
@@ -54,12 +57,12 @@ export default async function StrengthWorkoutPage({ params }: { params: Promise<
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
           <Link href="/strength" className="text-micro uppercase tracking-[0.1em] text-ink3 hover:text-clay">
-            ← Muscu
+            {t("backToStrength")}
           </Link>
           <h1 className="mt-2 text-[1.75rem] font-semibold tracking-[-0.02em]">{w.name}</h1>
           <p className="mt-1.5 text-sm text-ink2">
             <span className="inline-block first-letter:uppercase">
-              {w.date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+              {w.date.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
             </span>
             {activity && <span className="ml-2.5 tag border-sage/40 text-sage">Strava · {activity.name}</span>}
           </p>
@@ -76,31 +79,31 @@ export default async function StrengthWorkoutPage({ params }: { params: Promise<
             </Link>
           )}
           <Link href={`/strength/new?from=${w.id}`} className="btn-outline">
-            Refaire cette séance
+            {t("redo")}
           </Link>
           <Link href={`/strength/${w.id}/edit`} className="btn-solid">
-            Modifier
+            {t("edit")}
           </Link>
         </div>
       </div>
 
       <MetricBand>
-        <Metric label="Exercices" value={blocks.length} note={`${work.length} séries de travail`} />
-        <Metric label="Tonnage" value={Math.round(tonnage(w.sets)).toLocaleString("fr-FR")} unit="kg" />
+        <Metric label={t("exercises")} value={blocks.length} note={t("workSets", { n: work.length })} />
+        <Metric label={t("tonnage")} value={Math.round(tonnage(w.sets)).toLocaleString(locale)} unit="kg" />
         <Metric
-          label="Durée"
+          label={t("duration")}
           value={w.durationMin ? w.durationMin : activity ? Math.round(activity.movingTime / 60) : "—"}
           unit="min"
-          note={activity?.averageHr ? `FC moy. ${Math.round(activity.averageHr)} bpm` : undefined}
+          note={activity?.averageHr ? t("avgHr", { hr: Math.round(activity.averageHr) }) : undefined}
         />
-        <Metric label="Effort perçu" value={w.rpe ?? "—"} unit={w.rpe ? "/10" : undefined} />
+        <Metric label={t("effort")} value={w.rpe ?? "—"} unit={w.rpe ? "/10" : undefined} />
       </MetricBand>
 
       <div className="mt-10 space-y-10">
         {prs.length > 0 && (
           <section className="rise relative overflow-hidden rounded-card border border-clay/30 bg-clay/[.05] p-6">
             <div className="text-micro font-medium uppercase tracking-[0.14em] text-clay">
-              {prs.length > 1 ? `${prs.length} records` : "Record"}
+              {prs.length > 1 ? t("records", { n: prs.length }) : t("record")}
             </div>
             <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {prs.map((p) => (
@@ -109,18 +112,18 @@ export default async function StrengthWorkoutPage({ params }: { params: Promise<
                   <div className="mt-1 flex items-baseline gap-1.5">
                     <span className="display text-d3 text-clay">{kg(p.value)}</span>
                     <span className="text-sm text-ink3">
-                      {p.kind === "reps" ? (exerciseInfo(p.exercise).unit === "seconds" ? "s" : "reps") : "kg"}
+                      {p.kind === "reps" ? (exerciseInfo(p.exercise).unit === "seconds" ? "s" : t("repsUnit")) : "kg"}
                     </span>
                   </div>
                   <div className="mt-1 text-micro text-ink3">
                     {p.kind === "e1rm"
-                      ? "1RM estimé"
+                      ? t("e1rmLabel")
                       : p.kind === "weight"
-                        ? "charge max"
+                        ? t("maxLoad")
                         : exerciseInfo(p.exercise).unit === "seconds"
-                          ? "durée tenue"
-                          : "répétitions"}{" "}
-                    · avant{" "}
+                          ? t("held")
+                          : t("repetitions")}{" "}
+                    · {t("before")}{" "}
                     {p.previous != null ? kg(p.previous) : "—"}
                   </div>
                 </div>
@@ -133,7 +136,7 @@ export default async function StrengthWorkoutPage({ params }: { params: Promise<
         )}
 
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-          <Section title="Exercices">
+          <Section title={t("exercises")}>
             {blocks.map((b, i) => {
               const info = exerciseInfo(b.exercise);
               const secs = info.unit === "seconds";
@@ -157,7 +160,7 @@ export default async function StrengthWorkoutPage({ params }: { params: Promise<
                           }`}
                           title={s.rir != null ? `RIR ${s.rir}` : undefined}
                         >
-                          {s.weightKg > 0 ? `${s.reps}${secs ? "s" : ""} × ${kg(s.weightKg)}` : `${s.reps}${secs ? " s" : " reps"}`}
+                          {s.weightKg > 0 ? `${s.reps}${secs ? "s" : ""} × ${kg(s.weightKg)}` : `${s.reps}${secs ? " s" : ` ${t("repsUnit")}`}`}
                         </span>
                       ))}
                     </div>
@@ -183,7 +186,7 @@ export default async function StrengthWorkoutPage({ params }: { params: Promise<
             })}
           </Section>
 
-          <Section title="Muscles sollicités" note="Séries dures (RIR ≤ 4) ; un muscle secondaire compte pour une demi-série.">
+          <Section title={t("musclesUsed")} note={t("musclesNote")}>
             {MUSCLE_ORDER.filter((m) => muscles[m] > 0).map((m) => (
               <div key={m} className="grid grid-cols-[120px_minmax(0,1fr)_32px] items-center gap-3 py-1.5 text-[0.8125rem]">
                 <span className="text-ink2">{MUSCLE_LABELS[m]}</span>
@@ -197,12 +200,12 @@ export default async function StrengthWorkoutPage({ params }: { params: Promise<
         </div>
 
         {w.notes && (
-          <Section title="Notes">
+          <Section title={t("notes")}>
             <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink2">{w.notes}</p>
           </Section>
         )}
         {activity?.calories ? (
-          <p className="text-micro text-ink3">{Math.round(activity.calories)} kcal selon Strava · {fmtDuration(activity.movingTime)}</p>
+          <p className="text-micro text-ink3">{t("kcalStrava", { kcal: Math.round(activity.calories), time: fmtDuration(activity.movingTime) })}</p>
         ) : null}
       </div>
     </div>

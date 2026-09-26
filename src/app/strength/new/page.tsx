@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { WorkoutLogger } from "@/components/strength/WorkoutLogger";
 import { requireUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -19,6 +20,7 @@ export default async function NewStrengthPage({
   searchParams: Promise<{ activity?: string; from?: string; planned?: string }>;
 }) {
   const userId = await requireUserId();
+  const t = await getTranslations("strength");
   const { activity: activityParam, from, planned: plannedParam } = await searchParams;
   const workouts = await loadWorkouts(userId);
 
@@ -48,7 +50,7 @@ export default async function NewStrengthPage({
   return (
     <>
       <Link href="/strength" className="text-micro uppercase tracking-[0.1em] text-ink3 hover:text-clay">
-        ← Muscu
+        {t("backToStrength")}
       </Link>
       <div className="mt-4">
         <WorkoutLogger
@@ -67,7 +69,7 @@ export default async function NewStrengthPage({
                 ? {
                     date: planned.date.toISOString(),
                     durationMin: planned.durationMin,
-                    name: planned.title || "Renforcement",
+                    name: planned.title || t("defaultName"),
                   }
                 : null
           }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   EXERCISES,
@@ -86,6 +87,8 @@ export function WorkoutLogger({
   prefill?: { date?: string; durationMin?: number | null; activityId?: string | null; name?: string } | null;
 }) {
   const router = useRouter();
+  const t = useTranslations("strength");
+  const locale = useLocale();
   const [name, setName] = useState(initial?.name ?? prefill?.name ?? "");
   const [date, setDate] = useState(localDate(new Date(initial?.date ?? prefill?.date ?? Date.now())));
   const [duration, setDuration] = useState<string>(
@@ -197,11 +200,11 @@ export function WorkoutLogger({
 
   async function save() {
     setErr(null);
-    if (!blocks.length) return setErr("Ajoute au moins un exercice.");
+    if (!blocks.length) return setErr(t("errorAddExercise"));
     setSaving(true);
     const payload = {
       date: new Date(date).toISOString(),
-      name: name.trim() || "Séance de renforcement",
+      name: name.trim() || t("defaultName"),
       durationMin: duration ? Math.round(Number(duration)) : null,
       rpe,
       notes: notes || null,
@@ -230,7 +233,7 @@ export function WorkoutLogger({
     ).catch(() => null);
     const data = res ? await res.json().catch(() => null) : null;
     setSaving(false);
-    if (!data?.ok) return setErr(data?.error ?? "Enregistrement impossible");
+    if (!data?.ok) return setErr(data?.error ?? t("errorSave"));
     try {
       localStorage.removeItem(DRAFT_KEY);
     } catch {
@@ -241,7 +244,7 @@ export function WorkoutLogger({
   }
 
   async function remove() {
-    if (!initial || !confirm("Supprimer cette séance ?")) return;
+    if (!initial || !confirm(t("confirmDelete"))) return;
     await fetch(`/api/strength/workouts/${initial.id}`, { method: "DELETE" });
     router.push("/strength");
     router.refresh();
@@ -253,8 +256,8 @@ export function WorkoutLogger({
       {draftFound && (
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-card border border-ochre/40 bg-ochre/[.07] px-4 py-3 text-[0.8125rem]">
           <span>
-            Un brouillon non enregistré a été retrouvé
-            {draftFound.name ? ` : « ${draftFound.name} »` : ""} ({draftFound.blocks.length} exercices).
+            {t("draftFound")}
+            {draftFound.name ? ` : « ${draftFound.name} »` : ""} ({t("draftExercises", { n: draftFound.blocks.length })}).
           </span>
           <span className="flex gap-2">
             <button
@@ -266,7 +269,7 @@ export function WorkoutLogger({
                 setDraftFound(null);
               }}
             >
-              Reprendre
+              {t("resume")}
             </button>
             <button
               className="btn-quiet"
@@ -275,7 +278,7 @@ export function WorkoutLogger({
                 setDraftFound(null);
               }}
             >
-              Ignorer
+              {t("ignore")}
             </button>
           </span>
         </div>
@@ -286,17 +289,17 @@ export function WorkoutLogger({
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Nom de la séance"
+          placeholder={t("namePlaceholder")}
           className="w-full bg-transparent text-[1.75rem] font-semibold tracking-[-0.02em] outline-none placeholder:text-ink3"
-          aria-label="Nom de la séance"
+          aria-label={t("namePlaceholder")}
         />
         <div className="flex flex-wrap items-end gap-3">
           <label>
-            <span className="field-label">Date</span>
+            <span className="field-label">{t("date")}</span>
             <input type="datetime-local" value={date} onChange={(e) => setDate(e.target.value)} className="field w-auto" />
           </label>
           <label>
-            <span className="field-label">Durée</span>
+            <span className="field-label">{t("duration")}</span>
             <span className="flex items-center gap-1.5">
               <input
                 inputMode="numeric"
@@ -305,7 +308,7 @@ export function WorkoutLogger({
                 className="field w-16 text-right"
                 placeholder="45"
               />
-              <span className="text-micro text-ink3">min</span>
+              <span className="text-micro text-ink3">{t("min")}</span>
             </span>
           </label>
         </div>
@@ -313,14 +316,14 @@ export function WorkoutLogger({
 
       {activityId && (
         <p className="mt-3 text-micro text-ink3">
-          Rattachée à la séance Strava du même jour — la durée et la FC viennent de ta montre.
+          {t("linkedStrava")}
         </p>
       )}
 
       {/* ---------------------------------------------- Démarrage */}
       {blocks.length === 0 && (
         <div className="mt-8">
-          <div className="eyebrow mb-4">Partir d&apos;un modèle</div>
+          <div className="eyebrow mb-4">{t("startFromTemplate")}</div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {lastWorkout && (
               <button
@@ -328,12 +331,12 @@ export function WorkoutLogger({
                 onClick={repeatLast}
                 className="group rounded-card border border-clay/40 bg-clay/[.05] p-4 text-left transition-colors hover:bg-clay/10"
               >
-                <div className="text-micro font-medium uppercase tracking-[0.1em] text-clay">Répéter</div>
+                <div className="text-micro font-medium uppercase tracking-[0.1em] text-clay">{t("repeat")}</div>
                 <div className="mt-1.5 font-medium">{lastWorkout.name}</div>
                 <div className="mt-1 text-micro leading-relaxed text-ink3">
                   {lastWorkout.blocks.map((b) => exerciseInfo(b.exercise).name).join(" · ")}
                 </div>
-                <div className="mt-3 text-micro text-ink2">avec la progression suggérée →</div>
+                <div className="mt-3 text-micro text-ink2">{t("withProgression")}</div>
               </button>
             )}
             {TEMPLATES.map((t) => (
@@ -355,7 +358,7 @@ export function WorkoutLogger({
               onClick={() => setPicker(true)}
               className="flex items-center justify-center rounded-card border border-dashed border-hairStrong p-4 text-[0.8125rem] text-ink2 transition-colors hover:text-ink"
             >
-              + Séance libre, exercice par exercice
+              + {t("freeSession")}
             </button>
           </div>
         </div>
@@ -379,21 +382,21 @@ export function WorkoutLogger({
                   <div className="flex items-baseline gap-3">
                     <span className="font-mono text-micro text-ink3">{String(bi + 1).padStart(2, "0")}</span>
                     <h3 className="text-[1.0625rem] font-medium">{info.name}</h3>
-                    {isPR && <span className="tag border-clay/40 text-clay">record en vue</span>}
+                    {isPR && <span className="tag border-clay/40 text-clay">{t("prInSight")}</span>}
                   </div>
                   <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-micro text-ink3 sm:pl-8">
                     {info.primary.map((m) => MUSCLE_LABELS[m]).join(" · ")}
-                    {info.runner && <span className="text-sage">coureur : {info.runner}</span>}
+                    {info.runner && <span className="text-sage">{t("runnerHint", { hint: info.runner })}</span>}
                   </div>
                 </div>
                 <div className="flex items-center gap-0.5">
-                  <IconBtn label="Monter" disabled={bi === 0} onClick={() => setBlocks((all) => swap(all, bi, bi - 1))}>
+                  <IconBtn label={t("moveUp")} disabled={bi === 0} onClick={() => setBlocks((all) => swap(all, bi, bi - 1))}>
                     ↑
                   </IconBtn>
-                  <IconBtn label="Descendre" disabled={bi === blocks.length - 1} onClick={() => setBlocks((all) => swap(all, bi, bi + 1))}>
+                  <IconBtn label={t("moveDown")} disabled={bi === blocks.length - 1} onClick={() => setBlocks((all) => swap(all, bi, bi + 1))}>
                     ↓
                   </IconBtn>
-                  <IconBtn label="Retirer" onClick={() => setBlocks((all) => all.filter((x) => x.key !== b.key))}>
+                  <IconBtn label={t("remove")} onClick={() => setBlocks((all) => all.filter((x) => x.key !== b.key))}>
                     ×
                   </IconBtn>
                 </div>
@@ -402,7 +405,7 @@ export function WorkoutLogger({
               {memo && (
                 <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-micro text-ink2 sm:pl-8">
                   <span>
-                    Dernière fois ({new Date(memo.lastDate).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}) :{" "}
+                    {t("lastTime", { date: new Date(memo.lastDate).toLocaleDateString(locale, { day: "numeric", month: "short" }) })} :{" "}
                     <span className="font-mono">
                       {memo.lastSets
                         .filter((s) => !s.isWarmup)
@@ -410,7 +413,7 @@ export function WorkoutLogger({
                         .join("  ")}
                     </span>
                   </span>
-                  {memo.bestE1rm && <span className="text-ink3">1RM est. record {fmtKg(memo.bestE1rm)} kg</span>}
+                  {memo.bestE1rm && <span className="text-ink3">{t("e1rmRecord", { kg: fmtKg(memo.bestE1rm) })}</span>}
                   {memo.suggestion && (
                     <button
                       type="button"
@@ -425,9 +428,12 @@ export function WorkoutLogger({
                       className="rounded-full border border-sage/40 bg-sage/10 px-2 py-0.5 text-sage transition-colors hover:bg-sage/20"
                       title={memo.suggestion.reason}
                     >
-                      Suggestion : {memo.suggestion.sets} × {memo.suggestion.reps}
-                      {secs ? " s" : ""}
-                      {memo.suggestion.weightKg > 0 && ` @ ${fmtKg(memo.suggestion.weightKg)} kg`}
+                      {t("suggestion", {
+                        sets: memo.suggestion.sets,
+                        reps: memo.suggestion.reps,
+                        secs: secs ? " s" : "",
+                        at: memo.suggestion.weightKg > 0 ? t("atKg", { kg: fmtKg(memo.suggestion.weightKg) }) : "",
+                      })}
                     </button>
                   )}
                 </div>
@@ -438,12 +444,12 @@ export function WorkoutLogger({
                 <div className="grid grid-cols-[24px_minmax(0,1fr)_minmax(0,1fr)_52px_32px] sm:grid-cols-[32px_minmax(0,1fr)_minmax(0,1fr)_64px_60px_40px] items-center gap-2 pb-1.5 text-micro uppercase tracking-[0.08em] text-ink3">
                   <span>
                     <span className="sm:hidden">#</span>
-                    <span className="hidden sm:inline">Série</span>
+                    <span className="hidden sm:inline">{t("series")}</span>
                   </span>
-                  <span>Charge</span>
-                  <span>{secs ? "Durée" : "Reps"}</span>
-                  <span title="Répétitions en réserve : combien tu aurais encore pu en faire">RIR</span>
-                  <span className="hidden text-right sm:block">{secs ? "" : "1RM"}</span>
+                  <span>{t("charge")}</span>
+                  <span>{secs ? t("durationLabel") : t("reps")}</span>
+                  <span title={t("rirTitle")}>{t("rir")}</span>
+                  <span className="hidden text-right sm:block">{secs ? "" : t("e1rm")}</span>
                   <span />
                 </div>
                 {b.sets.map((s, si) => {
@@ -461,15 +467,15 @@ export function WorkoutLogger({
                         className={`h-7 w-7 rounded-full text-micro font-medium transition-colors ${
                           s.isWarmup ? "bg-ochre/15 text-ochre" : "text-ink2 hover:bg-sunken"
                         }`}
-                        title={s.isWarmup ? "Échauffement (non compté) — cliquer pour en faire une série de travail" : "Cliquer pour marquer comme échauffement"}
+                        title={s.isWarmup ? t("warmupTitle") : t("warmupClickTitle")}
                       >
-                        {s.isWarmup ? "É" : si + 1 - b.sets.slice(0, si).filter((x) => x.isWarmup).length}
+                        {s.isWarmup ? t("warmupShort") : si + 1 - b.sets.slice(0, si).filter((x) => x.isWarmup).length}
                       </button>
                       <NumField
                         value={s.weightKg}
                         step={info.step || 2.5}
                         unit="kg"
-                        placeholder={info.bodyweight ? "PdC" : "0"}
+                        placeholder={info.bodyweight ? t("bodyweight") : "0"}
                         onChange={(v) => patchSet(b.key, s.key, { weightKg: v })}
                       />
                       <NumField
@@ -482,7 +488,7 @@ export function WorkoutLogger({
                         value={s.rir ?? ""}
                         onChange={(e) => patchSet(b.key, s.key, { rir: e.target.value === "" ? null : Number(e.target.value) })}
                         className="field px-1.5 py-1 text-[0.8125rem]"
-                        aria-label="Répétitions en réserve"
+                        aria-label={t("rir")}
                       >
                         <option value="">—</option>
                         {[0, 1, 2, 3, 4, 5].map((v) => (
@@ -499,7 +505,7 @@ export function WorkoutLogger({
                           className={`flex h-7 w-7 items-center justify-center rounded-full border transition-all ${
                             s.done ? "border-sage bg-sage text-white" : "border-hairStrong text-ink3 hover:border-sage hover:text-sage"
                           }`}
-                          aria-label={s.done ? "Série faite" : "Marquer la série comme faite"}
+                          aria-label={s.done ? t("setDone") : t("markDone")}
                           aria-pressed={s.done}
                         >
                           <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden>
@@ -527,7 +533,7 @@ export function WorkoutLogger({
                       })
                     }
                   >
-                    + Série
+                    + {t("addSet")}
                   </button>
                   {b.sets.length > 1 && (
                     <button
@@ -535,7 +541,7 @@ export function WorkoutLogger({
                       className="btn-quiet"
                       onClick={() => update(b.key, (x) => ({ ...x, sets: x.sets.slice(0, -1) }))}
                     >
-                      − Retirer la dernière
+                      − {t("removeLast")}
                     </button>
                   )}
                 </div>
@@ -551,7 +557,7 @@ export function WorkoutLogger({
           onClick={() => setPicker(true)}
           className="mt-8 w-full rounded-card border border-dashed border-hairStrong py-4 text-[0.8125rem] text-ink2 transition-colors hover:border-clay hover:text-clay"
         >
-          + Ajouter un exercice
+          + {t("addExercise")}
         </button>
       )}
 
@@ -559,7 +565,7 @@ export function WorkoutLogger({
       {blocks.length > 0 && (
         <div className="mt-10 grid gap-6 border-t border-hair pt-6 md:grid-cols-2">
           <div>
-            <span className="field-label">Effort global de la séance</span>
+            <span className="field-label">{t("sessionEffort")}</span>
             <div className="flex gap-1">
               {Array.from({ length: 10 }, (_, i) => i + 1).map((v) => (
                 <button
@@ -576,13 +582,13 @@ export function WorkoutLogger({
             </div>
           </div>
           <label>
-            <span className="field-label">Notes</span>
+            <span className="field-label">{t("notes")}</span>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
               className="field resize-y"
-              placeholder="Sensations, douleur, matériel…"
+              placeholder={t("notesPlaceholder")}
             />
           </label>
         </div>
@@ -593,24 +599,24 @@ export function WorkoutLogger({
         <div className="mx-auto flex max-w-[1240px] items-center gap-4 px-gutter py-3">
           <div className="flex items-baseline gap-4 text-[0.8125rem] text-ink2">
             <span>
-              <span className="font-mono font-medium text-ink">{blocks.length}</span> exercices
+              <span className="font-mono font-medium text-ink">{blocks.length}</span> {t("exercisesCount")}
             </span>
             <span>
-              <span className="font-mono font-medium text-ink">{totals.sets}</span> séries
+              <span className="font-mono font-medium text-ink">{totals.sets}</span> {t("seriesCount")}
             </span>
             <span className="hidden sm:inline">
-              <span className="font-mono font-medium text-ink">{totals.tonnage.toLocaleString("fr-FR")}</span> kg soulevés
+              <span className="font-mono font-medium text-ink">{totals.tonnage.toLocaleString(locale)}</span> {t("liftedKg")}
             </span>
           </div>
           {err && <span className="text-[0.8125rem] text-rust">{err}</span>}
           <div className="ml-auto flex items-center gap-2">
             {mode === "edit" && (
               <button type="button" className="btn-quiet text-rust" onClick={remove}>
-                Supprimer
+                {t("delete")}
               </button>
             )}
             <button type="button" className="btn-solid" onClick={save} disabled={saving || !blocks.length}>
-              {saving ? "Enregistrement…" : mode === "edit" ? "Enregistrer les modifications" : "Enregistrer la séance"}
+              {saving ? t("saving") : mode === "edit" ? t("saveEdit") : t("save")}
             </button>
           </div>
         </div>
@@ -678,6 +684,7 @@ function NumField({
   unit: string;
   placeholder?: string;
 }) {
+  const t = useTranslations("strength");
   const [text, setText] = useState(value ? String(value).replace(".", ",") : "");
   useEffect(() => {
     const parsed = Number(text.replace(",", "."));
@@ -687,7 +694,7 @@ function NumField({
   const bump = (d: number) => onChange(Math.max(0, Math.round((value + d) * 100) / 100));
   return (
     <div className="flex items-center rounded-[7px] border border-hair bg-panel transition-colors focus-within:border-clay hover:border-hairStrong">
-      <button type="button" tabIndex={-1} onClick={() => bump(-step)} className="px-1 py-1 text-ink3 hover:text-ink sm:px-1.5" aria-label="Moins">
+      <button type="button" tabIndex={-1} onClick={() => bump(-step)} className="px-1 py-1 text-ink3 hover:text-ink sm:px-1.5" aria-label={t("less")}>
         −
       </button>
       <input
@@ -704,7 +711,7 @@ function NumField({
         className="w-full min-w-0 bg-transparent py-1 text-center font-mono text-[0.8125rem] outline-none placeholder:text-ink3"
       />
       <span className="hidden pr-1 text-[10px] text-ink3 sm:inline">{unit}</span>
-      <button type="button" tabIndex={-1} onClick={() => bump(step)} className="px-1 py-1 text-ink3 hover:text-ink sm:px-1.5" aria-label="Plus">
+      <button type="button" tabIndex={-1} onClick={() => bump(step)} className="px-1 py-1 text-ink3 hover:text-ink sm:px-1.5" aria-label={t("more")}>
         +
       </button>
     </div>
@@ -718,6 +725,7 @@ function RestTimer({
   rest: { until: number; total: number };
   onChange: (r: { until: number; total: number } | null) => void;
 }) {
+  const t = useTranslations("strength");
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 250);
@@ -753,7 +761,7 @@ function RestTimer({
       </svg>
       <div>
         <div className={`text-[10px] uppercase tracking-[0.1em] ${done ? "text-white/80" : "text-ink3"}`}>
-          {done ? "C'est reparti" : "Repos"}
+          {done ? t("restOver") : t("rest")}
         </div>
         <div className="font-mono text-[0.9375rem] font-medium tabular-nums">
           {Math.floor(left / 60)}:{String(left % 60).padStart(2, "0")}
@@ -772,7 +780,7 @@ function RestTimer({
         type="button"
         className={`rounded-full px-2 py-1 text-micro ${done ? "text-white hover:bg-white/15" : "text-ink2 hover:bg-sunken"}`}
         onClick={() => onChange(null)}
-        aria-label="Fermer le minuteur"
+        aria-label={t("closeTimer")}
       >
         ×
       </button>
@@ -791,6 +799,7 @@ function ExercisePicker({
   onPick: (slug: string) => void;
   onClose: () => void;
 }) {
+  const t = useTranslations("strength");
   const [q, setQ] = useState("");
   const [runnerOnly, setRunnerOnly] = useState(false);
   const [pinned, setPinned] = useState<string[]>([]);
@@ -838,17 +847,17 @@ function ExercisePicker({
                 else if (custom) onPick(q.trim());
               }
             }}
-            placeholder="Chercher un exercice ou un muscle…"
+            placeholder={t("searchPlaceholder")}
             className="h-12 flex-1 bg-transparent outline-none placeholder:text-ink3"
           />
           <label className="flex cursor-pointer items-center gap-1.5 text-micro text-ink2">
             <input type="checkbox" checked={runnerOnly} onChange={(e) => setRunnerOnly(e.target.checked)} className="accent-[rgb(var(--clay))]" />
-            coureur
+            {t("runnerOnly")}
           </label>
         </div>
         <div className="overflow-y-auto p-2">
           {!q && pinned.length > 0 && (
-            <Group title="Épinglés">
+            <Group title={t("pinned")}>
               {pinned
                 .filter((s) => !exclude.includes(s))
                 .map((slug) => (
@@ -857,7 +866,7 @@ function ExercisePicker({
             </Group>
           )}
           {!q && recent.length > 0 && (
-            <Group title="Tes exercices">
+            <Group title={t("yourExercises")}>
               {recent.map((slug) => (
                 <PickRow key={slug} slug={slug} onPick={onPick} pinned={pinned.includes(slug)} onTogglePin={() => togglePin(slug)} />
               ))}
@@ -870,9 +879,9 @@ function ExercisePicker({
               className="flex w-full items-center justify-between rounded-[8px] px-3 py-2 text-left text-[0.875rem] hover:bg-sunken"
             >
               <span>
-                Créer « <span className="font-medium">{q.trim()}</span> »
+                {t("create", { name: q.trim() })}
               </span>
-              <span className="text-micro text-ink3">exercice libre</span>
+              <span className="text-micro text-ink3">{t("freeExerciseTag")}</span>
             </button>
           )}
           {MUSCLE_ORDER.map((m) => {
@@ -912,6 +921,7 @@ function PickRow({
   pinned?: boolean;
   onTogglePin?: () => void;
 }) {
+  const t = useTranslations("strength");
   const e = exerciseInfo(slug);
   return (
     <div className="group flex items-center gap-1 rounded-[8px] px-3 py-2 text-[0.875rem] transition-colors hover:bg-sunken">
@@ -927,10 +937,10 @@ function PickRow({
             onTogglePin();
           }}
           className={`shrink-0 rounded px-1.5 py-0.5 text-micro transition-colors ${pinned ? "text-clay" : "text-ink3 hover:text-clay"}`}
-          title={pinned ? "Retirer des épinglés" : "Épingler en tête de liste"}
+          title={pinned ? t("unpin") : t("pinTitle")}
           aria-pressed={!!pinned}
         >
-          {pinned ? "Épinglé" : "Épingler"}
+          {pinned ? t("unpin") : t("pin")}
         </button>
       )}
     </div>

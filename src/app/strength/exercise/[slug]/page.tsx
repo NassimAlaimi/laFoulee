@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Section } from "@/components/ui/Layout";
 import { Metric, MetricBand } from "@/components/ui/Metric";
 import { requireUserId } from "@/lib/auth";
@@ -12,6 +13,8 @@ export const dynamic = "force-dynamic";
 const kg = (v: number) => (v % 1 ? v.toFixed(1).replace(".", ",") : String(v));
 
 export default async function ExercisePage({ params }: { params: Promise<{ slug: string }> }) {
+  const t = await getTranslations("strength");
+  const locale = await getLocale();
   const { slug: raw } = await params;
   const slug = decodeURIComponent(raw);
   const userId = await requireUserId();
@@ -33,31 +36,31 @@ export default async function ExercisePage({ params }: { params: Promise<{ slug:
   return (
     <div>
       <Link href="/strength" className="text-micro uppercase tracking-[0.1em] text-ink3 hover:text-clay">
-        ← Muscu
+        {t("backToStrength")}
       </Link>
       <h1 className="mt-2 text-[1.75rem] font-semibold tracking-[-0.02em]">{info.name}</h1>
       <p className="mb-8 mt-1.5 text-sm text-ink2">
-        {info.primary.map((m) => MUSCLE_LABELS[m]).join(" · ") || "Exercice libre"}
-        {info.runner && <span className="ml-3 text-sage">Pour le coureur : {info.runner}</span>}
+        {info.primary.map((m) => MUSCLE_LABELS[m]).join(" · ") || t("freeExercise")}
+        {info.runner && <span className="ml-3 text-sage">{t("runnerFor", { hint: info.runner })}</span>}
       </p>
 
       <MetricBand>
         <Metric
-          label={h.bestE1rm ? "1RM estimé · record" : secs ? "Meilleure tenue" : "Meilleure série"}
+          label={h.bestE1rm ? t("bestE1rm") : secs ? t("bestHold") : t("bestSeries")}
           value={h.bestE1rm ? kg(Math.round(h.bestE1rm)) : h.bestReps}
           unit={unit}
           size="d2"
         />
         <Metric
-          label="Progression"
+          label={t("progression")}
           value={gain == null ? "—" : `${gain > 0 ? "+" : ""}${kg(Math.round(gain * 10) / 10)}`}
           unit={gain == null ? undefined : unit}
-          note={gain == null ? "une seule séance" : `depuis le ${fmtDateShort(first.date)}`}
+          note={gain == null ? t("oneSession") : t("since", { date: fmtDateShort(first.date, locale) })}
           size="d2"
         />
-        <Metric label="Séances" value={h.sessions.length} note={`dernière ${fmtDateShort(last.date)}`} size="d2" />
+        <Metric label={t("sessions")} value={h.sessions.length} note={t("last", { date: fmtDateShort(last.date, locale) })} size="d2" />
         <Metric
-          label="Prochaine fois"
+          label={t("nextTime")}
           value={
             suggestion
               ? suggestion.weightKg > 0
@@ -73,22 +76,24 @@ export default async function ExercisePage({ params }: { params: Promise<{ slug:
 
       <div className="mt-10 space-y-10">
         {h.sessions.length > 1 && (
-          <Section title="Évolution" note={h.bestE1rm ? "1RM estimé par séance (ligne) et tonnage de l'exercice (barres)." : "Meilleure série par séance."}>
+          <Section title={t("evolution")} note={h.bestE1rm ? t("evolutionNoteE1rm") : t("evolutionNoteBest")}>
             <ProgressChart
               points={h.sessions.map((s) => ({ date: s.date, value: metric(s), bar: s.tonnage }))}
               unit={unit}
+              locale={locale}
+              ariaLabel={t("evolution")}
             />
           </Section>
         )}
 
-        <Section title="Toutes les séances">
+        <Section title={t("allSessions")}>
           {[...h.sessions].reverse().map((s) => (
             <Link
               key={s.workoutId}
               href={`/strength/${s.workoutId}`}
               className="group grid grid-cols-[72px_minmax(0,1fr)_auto] items-baseline gap-4 border-b border-hair py-2.5 last:border-b-0"
             >
-              <span className="font-mono text-micro text-ink3">{fmtDateShort(s.date)}</span>
+              <span className="font-mono text-micro text-ink3">{fmtDateShort(s.date, locale)}</span>
               <span className="flex flex-wrap gap-1.5">
                 {s.sets.filter(isWorkSet).map((x, i) => (
                   <span key={i} className="rounded-[4px] bg-sunken px-1.5 py-0.5 font-mono text-micro">
@@ -110,9 +115,13 @@ export default async function ExercisePage({ params }: { params: Promise<{ slug:
 function ProgressChart({
   points,
   unit,
+  locale,
+  ariaLabel,
 }: {
   points: Array<{ date: Date; value: number; bar: number }>;
   unit: string;
+  locale: string;
+  ariaLabel: string;
 }) {
   const W = 900;
   const H = 240;
@@ -130,7 +139,7 @@ function ProgressChart({
   const best = Math.max(...vals);
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label="Évolution">
+    <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={ariaLabel}>
       {ticks.map((t) => (
         <g key={t}>
           <line x1={P.l} x2={W - P.r} y1={y(t)} y2={y(t)} stroke="rgb(var(--hair))" />
@@ -156,14 +165,14 @@ function ProgressChart({
           stroke={p.value === best ? "rgb(var(--clay))" : "rgb(var(--plum))"}
           strokeWidth={1.8}
         >
-          <title>{`${fmtDateShort(p.date)} : ${Math.round(p.value * 10) / 10} ${unit}`}</title>
+          <title>{`${fmtDateShort(p.date, locale)} : ${Math.round(p.value * 10) / 10} ${unit}`}</title>
         </circle>
       ))}
       <text x={P.l} y={H - 8} fontSize={10} fill="rgb(var(--ink-3))">
-        {fmtDateShort(points[0].date)}
+        {fmtDateShort(points[0].date, locale)}
       </text>
       <text x={W - P.r} y={H - 8} fontSize={10} textAnchor="end" fill="rgb(var(--ink-3))">
-        {fmtDateShort(points[points.length - 1].date)}
+        {fmtDateShort(points[points.length - 1].date, locale)}
       </text>
     </svg>
   );
