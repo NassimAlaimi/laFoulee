@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE } from "@/lib/auth-shared";
+import { buildCsp, makeNonce } from "@/lib/security-headers";
 
 /**
  * Garde d'entrée.
@@ -23,15 +24,34 @@ const PUBLIC_PREFIXES = [
   "/api/lang-sync",
 ];
 
+/**
+ * Laisse passer la requête avec une CSP à nonce : le nonce est transmis au
+ * rendu (en-tête de requête `x-nonce`, lu par le layout ; Next le repère
+ * aussi dans la CSP de la requête pour l'apposer à ses propres scripts).
+ */
+function pass(req: NextRequest) {
+  const nonce = makeNonce();
+  const csp = buildCsp(nonce, {
+    dev: process.env.NODE_ENV !== "production",
+    https: (process.env.NEXT_PUBLIC_APP_URL ?? "").startsWith("https://"),
+  });
+  const headers = new Headers(req.headers);
+  headers.set("x-nonce", nonce);
+  headers.set("content-security-policy", csp);
+  const res = NextResponse.next({ request: { headers } });
+  res.headers.set("content-security-policy", csp);
+  return res;
+}
+
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   if (PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
-    return NextResponse.next();
+    return pass(req);
   }
 
   const hasSession = Boolean(req.cookies.get(SESSION_COOKIE)?.value);
-  if (hasSession) return NextResponse.next();
+  if (hasSession) return pass(req);
 
   // Les routes API répondent en JSON : une redirection HTML y serait illisible.
   if (pathname.startsWith("/api/")) {

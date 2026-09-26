@@ -67,6 +67,9 @@ export default async function RootLayout({
       }
     : null;
   const messages = await getMessages();
+  // Nonce de la CSP (posé par le middleware) : sans lui, le script de thème
+  // serait bloqué comme n'importe quel script injecté.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   return (
     <html
@@ -75,7 +78,7 @@ export default async function RootLayout({
       className={`${GeistSans.variable} ${GeistMono.variable}`}
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script nonce={nonce} suppressHydrationWarning dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
