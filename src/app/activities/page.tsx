@@ -8,8 +8,9 @@ import { getRuns } from "@/lib/queries";
 import { periodStats, weeklyVolume } from "@/lib/stats";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
-import { clusterByStart, groupRoutes, overlayPaths, privatePolyline, startOf } from "@/lib/polyline";
+import { clusterByStart, decodePolyline, groupRoutes, overlayPaths, overlayRoads, polylineLength, privatePolyline, startOf } from "@/lib/polyline";
 import { getPrivacyZone } from "@/lib/queries";
+import { getOsmRoads } from "@/lib/route-store";
 import { favoriteRoute } from "@/lib/favorite-route";
 import { FavoriteRoute } from "@/components/route/FavoriteRoute";
 import { RouteGlyph } from "@/components/route/RouteGlyph";
@@ -199,7 +200,7 @@ export default async function ActivitiesPage({
       ) : view === "mosaic" ? (
         <Mosaic runs={runs} poly={poly} locale={locale} t={t} />
       ) : view === "map" ? (
-        <MapView runs={runs} poly={poly} zone={Number(params.zone ?? 0) || 0} qs={(z) => qs({ zone: String(z) })} locale={locale} t={t} />
+        <MapView runs={runs} poly={poly} zone={Number(params.zone ?? 0) || 0} qs={(z) => qs({ zone: String(z) })} locale={locale} t={t} userId={userId} />
       ) : (
         <div className="mt-6">
           <div className="overflow-x-auto">
@@ -357,13 +358,14 @@ function Mosaic({
   );
 }
 
-function MapView({
+async function MapView({
   runs,
   poly,
   zone,
   qs,
   locale,
   t,
+  userId,
 }: {
   runs: Run[];
   poly: Map<string, string | null>;
@@ -371,9 +373,14 @@ function MapView({
   qs: (zone: number) => string;
   locale: string;
   t: (key: string, params?: Record<string, string | number>) => string;
+  userId: string;
 }) {
   const located = runs
-    .map((r) => ({ ...r, polyline: poly.get(r.id) ?? null, start: startOf(poly.get(r.id)) }))
+    .map((r) => ({ ...r, polyline: poly.get(r.id) ?? null }))
+    // Tracé corrompu (GPS qui bascule de ville) : il fausserait les bornes
+    // de la carte de chaleur. On l'écarte, comme pour le graphe de parcours.
+    .filter((r) => r.polyline && !(r.distance > 0 && polylineLength(r.polyline) > r.distance * 2 + 1000))
+    .map((r) => ({ ...r, start: startOf(r.polyline) }))
     .filter((r): r is typeof r & { start: [number, number] } => r.start !== null);
 
   if (!located.length) {
@@ -384,6 +391,15 @@ function MapView({
   const active = clusters[Math.min(zone, clusters.length - 1)];
   const W = 1200;
   const H = 700;
+
+  // Fond de rues OpenStreetMap autour du secteur (mêmes bornes que les
+  // tracés, pour qu'on reconnaisse où l'on court).
+  const osm: string[] = [];
+  const bbox = traceBbox(active.items);
+  if (bbox) {
+    const roads = await getOsmRoads(userId, bbox);
+    if (roads && roads.length) osm.push(...overlayRoads(active.items, roads, W, H, 28));
+  }
   const paths = overlayPaths(active.items, W, H, 28).map((p) => ({
     id: p.id,
     d: p.d,
@@ -424,7 +440,7 @@ function MapView({
       )}
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
-        <RouteOverlay paths={paths} w={W} h={H} />
+        <RouteOverlay paths={paths} osm={osm} w={W} h={H} />
         <div>
           <div className="eyebrow">{t("onSector")}</div>
           <div className="mt-3 flex items-baseline gap-1.5">
@@ -482,4 +498,20 @@ function MapView({
       )}
     </div>
   );
+}
+
+/** Bornes lat/lon d'un ensemble de tracés (extrémités rognées à 1 %). */
+function traceBbox(items: Array<{ polyline: string | null }>): { minLat: number; maxLat: number; minLon: number; maxLon: number } | null {
+  const pts = items.flatMap((r) => decodePolyline(r.polyline));
+  if (pts.length < 2) return null;
+  const lats = pts.map((p) => p[0]).sort((a, b) => a - b);
+  const lons = pts.map((p) => p[1]).sort((a, b) => a - b);
+  const q = (arr: number[], p: number) => arr[Math.min(arr.length - 1, Math.floor(p * arr.length))];
+  const trim = pts.length > 400 ? 0.01 : 0;
+  return {
+    minLat: q(lats, trim),
+    maxLat: q(lats, 1 - trim),
+    minLon: q(lons, trim),
+    maxLon: q(lons, 1 - trim),
+  };
 }

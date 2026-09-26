@@ -63,9 +63,14 @@ export async function saveRoute(userId: string, input: { name: string; polyline:
   });
 }
 
-/** Fond de rues OpenStreetMap autour de la zone, en cache 24 h. */
+function bboxKey(bbox: ViewBbox): string {
+  return [bbox.minLat, bbox.maxLat, bbox.minLon, bbox.maxLon].map((n) => n.toFixed(4)).join(",");
+}
+
+/** Fond de rues OpenStreetMap autour de la zone, en cache 24 h (par bbox). */
 export async function getOsmRoads(userId: string, bbox: ViewBbox, now = new Date()): Promise<string[] | null> {
-  const cached = await prisma.osmCache.findUnique({ where: { userId } });
+  const key = bboxKey(bbox);
+  const cached = await prisma.osmCache.findUnique({ where: { userId_bbox: { userId, bbox: key } } });
   if (cached && now.getTime() - cached.builtAt.getTime() < 24 * 86400000) {
     try {
       return JSON.parse(cached.data) as string[];
@@ -76,8 +81,8 @@ export async function getOsmRoads(userId: string, bbox: ViewBbox, now = new Date
   const roads = await fetchOverpassRoads(bbox);
   if (roads === null) return cached ? (JSON.parse(cached.data) as string[]) : null;
   await prisma.osmCache.upsert({
-    where: { userId },
-    create: { userId, data: JSON.stringify(roads), builtAt: now },
+    where: { userId_bbox: { userId, bbox: key } },
+    create: { userId, bbox: key, data: JSON.stringify(roads), builtAt: now },
     update: { data: JSON.stringify(roads), builtAt: now },
   });
   return roads;

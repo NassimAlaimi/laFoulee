@@ -204,6 +204,7 @@
     --heat: 186 76 42;
     --heat-hi: 26 25 23;
     --heat-ink: 26 25 23;
+    --heat-street: 199 191 178;
     background:
       radial-gradient(ellipse at 50% 45%, rgb(0 0 0 / 0.03), transparent 70%),
       rgb(var(--heat-bg));
@@ -214,6 +215,7 @@
     --heat: 236 118 74;
     --heat-hi: 255 228 176;
     --heat-ink: 242 240 236;
+    --heat-street: 84 78 71;
     background:
       radial-gradient(ellipse at 50% 45%, rgb(255 255 255 / 0.035), transparent 70%),
       rgb(var(--heat-bg));

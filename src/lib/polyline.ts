@@ -307,21 +307,49 @@ export function overlayPaths<T extends { id: string; polyline: string | null }>(
     .filter((r) => r.pts.length >= 2);
   if (!decoded.length) return [];
 
-  const xs = decoded.flatMap((r) => r.pts.map((p) => p[0])).sort((a, b) => a - b);
-  const ys = decoded.flatMap((r) => r.pts.map((p) => p[1])).sort((a, b) => a - b);
-  const q = (arr: number[], p: number) => arr[Math.min(arr.length - 1, Math.floor(p * arr.length))];
-  const trim = xs.length > 200 ? 0.01 : 0;
-  const bounds: Bounds = {
-    minX: q(xs, trim),
-    maxX: q(xs, 1 - trim),
-    minY: q(ys, trim),
-    maxY: q(ys, 1 - trim),
-  };
+  const bounds = overlayBounds(decoded.map((r) => r.pts));
 
   return decoded.map(({ it, pts }) => {
     const fitted = fitToBox(pts, w, h, pad, bounds).points;
     return { id: it.id, d: toPath(simplify(fitted, 0.25)), item: it };
   });
+}
+
+/** Bornes communes (Mercator) d'un ensemble de tracés, extrémités rognées. */
+function overlayBounds(decoded: XY[][]): Bounds {
+  const xs = decoded.flatMap((pts) => pts.map((p) => p[0])).sort((a, b) => a - b);
+  const ys = decoded.flatMap((pts) => pts.map((p) => p[1])).sort((a, b) => a - b);
+  const q = (arr: number[], p: number) => arr[Math.min(arr.length - 1, Math.floor(p * arr.length))];
+  const trim = xs.length > 200 ? 0.01 : 0;
+  return {
+    minX: q(xs, trim),
+    maxX: q(xs, 1 - trim),
+    minY: q(ys, trim),
+    maxY: q(ys, 1 - trim),
+  };
+}
+
+/**
+ * Projette des rues (polylines lat/lon) dans la MÊME boîte que `overlayPaths`,
+ * pour poser un fond de rues sous la carte de chaleur : mêmes bornes Mercator,
+ * même ajustement.
+ */
+export function overlayRoads(
+  items: Array<{ polyline: string | null }>,
+  roads: string[],
+  w: number,
+  h: number,
+  pad = 16
+): string[] {
+  const decoded = items
+    .map((it) => decodePolyline(it.polyline).map(mercator))
+    .filter((pts) => pts.length >= 2);
+  if (!decoded.length) return [];
+  const bounds = overlayBounds(decoded);
+  const v = fitToBox([], w, h, pad, bounds);
+  return roads
+    .map((r) => toPath(simplify(decodePolyline(r).map(mercator).map(v.project), 0.25)))
+    .filter((d) => d);
 }
 
 /**
