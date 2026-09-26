@@ -9,15 +9,14 @@ import { fmtPace } from "@/lib/format";
 import { graphSectors } from "@/lib/route-graph";
 import {
   getRouteGraph,
-  getOsmRoads,
   listPois,
   listRoutes,
   sectorBbox,
   sectorView,
   graphTotalKm,
 } from "@/lib/route-store";
-import { polylinePath } from "@/lib/route-view";
-import { bboxAround } from "@/lib/osm";
+import { framedBbox, polylinePath } from "@/lib/route-view";
+import { bboxSpanKm, MINOR_WAYS_MAX_KM, tileBbox } from "@/lib/osm";
 import { straightSegments } from "@/lib/route-graph";
 import { encodePolyline } from "@/lib/polyline";
 
@@ -42,23 +41,17 @@ export default async function RoutesPage() {
   const focus = graph ? (graphSectors(graph)[0] ?? null) : null;
 
   // Fond OSM : les rues autour du cœur (borné), en cache 24 h.
-  let osm: string[] | null = null;
-  let view = focus ? sectorView(focus) : null;
+  // Le cadre couvre tout le cœur (marge + proportions lisibles) : plus de bande
+  // écrasée ni de réseau rogné. Le fond de rues est chargé par la carte elle-même,
+  // tuile par tuile : la page ne bloque jamais sur Overpass.
+  let view: ReturnType<typeof sectorView> | null = null;
+  let osmTiles: ReturnType<typeof tileBbox> = [];
+  let osmDetail: "streets" | "all" = "all";
   if (focus) {
-    const b = sectorBbox(focus);
-    const centerLat = (b.minLat + b.maxLat) / 2;
-    const centerLon = (b.minLon + b.maxLon) / 2;
-    const spanKm =
-      Math.max(
-        (b.maxLat - b.minLat) * 111.32,
-        (b.maxLon - b.minLon) * 111.32 * Math.cos((centerLat * Math.PI) / 180)
-      ) + 2;
-    const osmBbox = bboxAround(centerLat, centerLon, spanKm);
-    const roads = await getOsmRoads(userId, osmBbox);
-    if (roads && roads.length) {
-      osm = roads.map((r) => polylinePath(r, osmBbox)).filter((d) => d);
-      view = sectorView(focus, osmBbox);
-    }
+    const frame = framedBbox(sectorBbox(focus));
+    view = sectorView(focus, frame);
+    osmTiles = tileBbox(frame);
+    osmDetail = bboxSpanKm(frame) <= MINOR_WAYS_MAX_KM ? "all" : "streets";
   }
   const straights = graph ? straightSegments(graph, 400).slice(0, 12) : [];
   const start = focus ? mostUsedStartPoint(focus.nodes) : null;
@@ -97,7 +90,9 @@ export default async function RoutesPage() {
         <RouteAtelier
           view={{
             ...view,
-            osm: osm ?? [],
+            osm: [],
+            osmTiles,
+            osmDetail,
             pois: pois.map((p) => ({ id: p.id, kind: p.kind, x: xOf(view, p.lng), y: yOf(view, p.lat), note: p.note })),
           }}
           kinds={(["fountain", "toilet", "car", "bakery", "lit", "danger", "track"] as const).map((k) => [k, t(`poi_${k}`)])}

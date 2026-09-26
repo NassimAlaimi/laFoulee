@@ -400,8 +400,11 @@ async function MapView({
   const osm: string[] = [];
   const bbox = traceBbox(active.items);
   if (bbox) {
-    const roads = await getOsmRoads(userId, bbox);
+    // Jamais d'attente sur Overpass pendant le rendu : cache seulement. En cas
+    // d'absence, la zone est préchargée en tâche de fond pour la prochaine visite.
+    const roads = await getOsmRoads(userId, bbox, new Date(), { cacheOnly: true });
     if (roads && roads.length) osm.push(...overlayRoads(active.items, roads, W, H, 28));
+    else void getOsmRoads(userId, bbox).catch(() => null);
   }
   const paths = overlayPaths(active.items, W, H, 28).map((p) => ({
     id: p.id,

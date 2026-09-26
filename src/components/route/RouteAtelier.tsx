@@ -14,6 +14,9 @@ type View = {
   bbox: { minLat: number; maxLat: number; minLon: number; maxLon: number };
   edges: Array<{ x1: number; y1: number; x2: number; y2: number; passes: number }>;
   osm: string[];
+  /** Tuiles du fond de rues à charger après affichage (voir /api/routes/osm). */
+  osmTiles?: Array<{ minLat: number; maxLat: number; minLon: number; maxLon: number }>;
+  osmDetail?: "streets" | "all";
   pois: Array<{ id: string; kind: string; x: number; y: number; note: string | null }>;
 };
 

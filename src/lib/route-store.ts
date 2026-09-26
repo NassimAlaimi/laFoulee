@@ -7,7 +7,7 @@ import { prisma } from "./prisma";
 import { decodePolyline } from "./polyline";
 import { buildGraph, deserializeGraph, findLoops, serializeGraph, type RouteGraph, type LoopOptions, type RouteNode, type RouteEdge, type GraphSector } from "./route-graph";
 import { viewFor, polylinePath, type ViewBbox } from "./route-view";
-import { fetchOverpassRoads } from "./osm";
+import { fetchOverpassRoads, findOsmZone, parseOsmZones, putOsmZone, zoneKey, type OsmDetail } from "./osm";
 import { sameRoute } from "./polyline";
 
 const DAY = 86400000;
@@ -63,30 +63,57 @@ export async function saveRoute(userId: string, input: { name: string; polyline:
   });
 }
 
-function bboxKey(bbox: ViewBbox): string {
-  return [bbox.minLat, bbox.maxLat, bbox.minLon, bbox.maxLon].map((n) => n.toFixed(4)).join(",");
-}
+const OSM_MAX_AGE = 7 * DAY; // les rues bougent peu
 
-/** Fond de rues OpenStreetMap autour de la zone, en cache 24 h (par bbox). */
-export async function getOsmRoads(userId: string, bbox: ViewBbox, now = new Date()): Promise<string[] | null> {
-  const key = bboxKey(bbox);
+/**
+ * Fond de rues OpenStreetMap pour une zone. Le cache garde plusieurs zones
+ * (atelier de parcours, carte des activités…) et réutilise une zone plus
+ * grande qui contient celle demandée : Overpass n'est appelé qu'en dernier
+ * recours.
+ */
+export async function getOsmRoads(
+  userId: string,
+  bbox: ViewBbox,
+  now = new Date(),
+  { cacheOnly = false, detail }: { cacheOnly?: boolean; detail?: OsmDetail } = {}
+): Promise<string[] | null> {
   const cached = await prisma.osmCache.findUnique({ where: { userId } });
-  // Le cache n'est valable que pour la même zone : sinon on refait la requête.
-  if (cached && cached.bbox === key && now.getTime() - cached.builtAt.getTime() < 24 * 86400000) {
-    try {
-      return JSON.parse(cached.data) as string[];
-    } catch {
-      /* cache illisible : on refait la requête */
-    }
+  const zones = cached ? parseOsmZones(cached.data, cached.bbox, cached.builtAt.getTime()) : [];
+  const hit = findOsmZone(zones, bbox, now.getTime(), OSM_MAX_AGE, detail);
+  if (hit) return hit.roads;
+  // Rendu de page : on ne bloque jamais sur Overpass (jusqu'à 24 s).
+  if (cacheOnly) return null;
+  const roads = await fetchOverpassRoads(bbox, detail ? detail === "all" : undefined);
+  if (roads === null) {
+    // Overpass indisponible : une zone périmée vaut mieux que rien.
+    return findOsmZone(zones, bbox, now.getTime(), Infinity, detail)?.roads ?? null;
   }
-  const roads = await fetchOverpassRoads(bbox);
-  if (roads === null) return cached && cached.bbox === key ? (JSON.parse(cached.data) as string[]) : null;
-  await prisma.osmCache.upsert({
-    where: { userId },
-    create: { userId, bbox: key, data: JSON.stringify(roads), builtAt: now },
-    update: { bbox: key, data: JSON.stringify(roads), builtAt: now },
+  // Écriture sérialisée par utilisateur, cache relu juste avant : deux tuiles
+  // chargées en parallèle ne s'écrasent pas l'une l'autre.
+  await withOsmLock(userId, async () => {
+    const fresh = await prisma.osmCache.findUnique({ where: { userId } });
+    const current = fresh ? parseOsmZones(fresh.data, fresh.bbox, fresh.builtAt.getTime()) : [];
+    const next = putOsmZone(current, { key: zoneKey(bbox, detail), bbox, builtAt: now.getTime(), roads, detail });
+    const data = JSON.stringify({ zones: next });
+    await prisma.osmCache.upsert({
+      where: { userId },
+      create: { userId, bbox: "multi", data, builtAt: now },
+      update: { bbox: "multi", data, builtAt: now },
+    });
   });
   return roads;
+}
+
+const osmLocks = new Map<string, Promise<unknown>>();
+async function withOsmLock<T>(userId: string, fn: () => Promise<T>): Promise<T> {
+  const prev = osmLocks.get(userId) ?? Promise.resolve();
+  const run = prev.catch(() => null).then(fn);
+  osmLocks.set(userId, run);
+  try {
+    return await run;
+  } finally {
+    if (osmLocks.get(userId) === run) osmLocks.delete(userId);
+  }
 }
 
 /** Distance totale réellement courue (somme des activités tracées), en km. */

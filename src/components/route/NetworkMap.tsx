@@ -2,13 +2,17 @@
 
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { fitWindow, polylinePath, zoomWindow, type ViewWindow } from "@/lib/route-view";
 
 type View = {
   viewBox: readonly [number, number];
   bbox: { minLat: number; maxLat: number; minLon: number; maxLon: number };
   edges: Array<{ x1: number; y1: number; x2: number; y2: number; passes: number }>;
   osm: string[];
+  /** Tuiles du fond de rues à charger après affichage (voir /api/routes/osm). */
+  osmTiles?: Array<{ minLat: number; maxLat: number; minLon: number; maxLon: number }>;
+  osmDetail?: "streets" | "all";
   pois: Array<{ id: string; kind: string; x: number; y: number; note: string | null }>;
 };
 
@@ -53,8 +57,90 @@ export function NetworkMap({
   const [pending, setPending] = useState<{ x: number; y: number } | null>(null);
   const [W, H] = view.viewBox;
 
-  // Fenêtre de vue (dans l'espace de coordonnées 0..W / 0..H).
-  const [vb, setVb] = useState({ x: 0, y: 0, w: W, h: H });
+  // Fond de rues : chargé tuile par tuile après l'affichage (la carte et le
+  // réseau sont là tout de suite, les rues arrivent au fil de l'eau, du centre
+  // vers les bords). Une tuile en échec n'empêche pas les autres.
+  const tiles = view.osmTiles ?? [];
+  const [osm, setOsm] = useState<string[]>(view.osm);
+  const [osmTotal, setOsmTotal] = useState(tiles.length);
+  const [osmDone, setOsmDone] = useState(0);
+  const [osmFailed, setOsmFailed] = useState(0);
+  const tilesKey = JSON.stringify(tiles);
+  useEffect(() => {
+    if (view.osm.length || !tiles.length) return;
+    let alive = true;
+    const frame = view.bbox;
+    const queue = tiles.map((b) => ({ b, depth: 0 }));
+    const worker = async () => {
+      for (let item = queue.shift(); item && alive; item = queue.shift()) {
+        const { b: tile, depth } = item;
+        const q = new URLSearchParams({
+          minLat: String(tile.minLat),
+          maxLat: String(tile.maxLat),
+          minLon: String(tile.minLon),
+          maxLon: String(tile.maxLon),
+          detail: view.osmDetail ?? "all",
+        });
+        let ok = false;
+        try {
+          const j = (await (await fetch(`/api/routes/osm?${q}`)).json()) as { ok: boolean; roads: string[] };
+          if (!alive) return;
+          // Une tuile = un seul <path> (sous-chemins « M… ») : des milliers de
+          // rues sans des milliers de nœuds DOM.
+          const d = j.roads.map((r) => polylinePath(r, frame)).join("");
+          if (d) setOsm((cur) => [...cur, d]);
+          ok = j.ok;
+        } catch {
+          ok = false;
+        }
+        if (!alive) return;
+        if (!ok && depth === 0) {
+          // Tuile refusée (serveur chargé, quartier dense) : quatre plus petites.
+          const subs = splitInFour(tile).map((b) => ({ b, depth: 1 }));
+          queue.push(...subs);
+          setOsmTotal((n) => n + subs.length);
+        } else if (!ok) {
+          setOsmFailed((n) => n + 1);
+        }
+        setOsmDone((n) => n + 1);
+      }
+    };
+    void Promise.all([worker(), worker()]);
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tilesKey]);
+  const osmLoading = osmTotal > 0 && osmDone < osmTotal;
+  const osmStatus = osmLoading
+    ? t("streetsLoading", { n: osmDone, total: osmTotal })
+    : osmFailed === 0
+      ? null
+      : osm.length === 0
+        ? t("streetsFailed")
+        : t("streetsPartial");
+
+  // Cadre à l'écran : sur ordinateur, tout le territoire (jamais plus plat que
+  // 1,9:1) ; sur mobile, une carte haute qu'on déplace au doigt plutôt qu'un
+  // bandeau de 140 px. La fenêtre de vue a toujours le ratio du cadre.
+  const [aspect, setAspect] = useState(Math.min(W / H, 1.9));
+  const [fitMode, setFitMode] = useState<"contain" | "crop">("contain");
+  const fit: ViewWindow = useMemo(() => fitWindow(W, H, aspect, fitMode), [W, H, aspect, fitMode]);
+  const [vb, setVb] = useState<ViewWindow>(() => fitWindow(W, H, Math.min(W / H, 1.9), "contain"));
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 640px)");
+    const apply = () => {
+      const narrow = mq.matches;
+      const a = narrow ? 0.85 : Math.min(W / H, 1.9);
+      const m = narrow ? "crop" : "contain";
+      setAspect(a);
+      setFitMode(m);
+      setVb(fitWindow(W, H, a, m));
+    };
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, [W, H]);
   const drag = useRef<{ startX: number; startY: number; vbX: number; vbY: number; moved: boolean } | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
 
@@ -68,16 +154,22 @@ export function NetworkMap({
     return () => el.removeEventListener("wheel", blockScroll);
   }, []);
 
-  const maxPasses = Math.max(1, ...view.edges.map((e) => e.passes));
+  // Réseau : quelques calques par palier d'opacité (fréquence de passage)
+  // plutôt qu'un <line> par segment — même rendu, DOM ~1000× plus léger.
+  const edgeLayers = useMemo(() => {
+    const maxPasses = Math.max(1, ...view.edges.map((e) => e.passes));
+    const layers = new Map<string, string[]>();
+    for (const e of view.edges) {
+      const o = (0.1 + 0.5 * Math.round(Math.sqrt(e.passes / maxPasses) * 6) / 6).toFixed(2);
+      let arr = layers.get(o);
+      if (!arr) layers.set(o, (arr = []));
+      arr.push(`M${e.x1},${e.y1}L${e.x2},${e.y2}`);
+    }
+    return [...layers.entries()].sort((a, b) => Number(a[0]) - Number(b[0])).map(([o, parts]) => ({ o, d: parts.join("") }));
+  }, [view.edges]);
 
-  const zoom = (factor: number, cx = W / 2, cy = H / 2) => {
-    setVb((cur) => {
-      const w = Math.max(W / 40, Math.min(W, cur.w * factor));
-      const h = Math.max(H / 40, Math.min(H, cur.h * factor));
-      const kx = w / cur.w;
-      const ky = h / cur.h;
-      return { x: cx - (cx - cur.x) * kx, y: cy - (cy - cur.y) * ky, w, h };
-    });
+  const zoom = (factor: number, cx?: number, cy?: number) => {
+    setVb((cur) => zoomWindow(cur, factor, cx ?? cur.x + cur.w / 2, cy ?? cur.y + cur.h / 2, fit));
   };
 
   const toLatLng = (px: number, py: number) => {
@@ -127,7 +219,7 @@ export function NetworkMap({
 
   // Échelle pixel/unité de la fenêtre affichée : garde les points d'intérêt
   // à taille constante à l'écran quel que soit le niveau de zoom.
-  const pxScale = vb.w / W;
+  const pxScale = vb.w / fit.w;
 
   return (
     <div>
@@ -140,7 +232,7 @@ export function NetworkMap({
         >
           {t("onlyProposed")}
         </button>
-        {!onlyProposed && view.osm.length > 0 && (
+        {!onlyProposed && osm.length > 0 && (
           <button
             type="button"
             className={`btn-quiet btn-sm ${showStreets ? "text-clay" : "text-ink3"}`}
@@ -170,13 +262,13 @@ export function NetworkMap({
           </>
         )}
         <div className="ml-auto flex items-center gap-1">
-          <button type="button" className="btn-quiet px-2" onClick={() => zoom(0.7)} aria-label="Zoomer en arrière" title={t("zoomOut")}>
+          <button type="button" className="btn-quiet px-2" onClick={() => zoom(1 / 0.7)} aria-label={t("zoomOut")} title={t("zoomOut")}>
             −
           </button>
-          <button type="button" className="btn-quiet px-2" onClick={() => setVb({ x: 0, y: 0, w: W, h: H })} aria-label={t("resetZoom")} title={t("resetZoom")}>
+          <button type="button" className="btn-quiet px-2" onClick={() => setVb(fit)} aria-label={t("resetZoom")} title={t("resetZoom")}>
             ⤢
           </button>
-          <button type="button" className="btn-quiet px-2" onClick={() => zoom(1 / 0.7)} aria-label="Zoomer" title={t("zoomIn")}>
+          <button type="button" className="btn-quiet px-2" onClick={() => zoom(0.7)} aria-label={t("zoomIn")} title={t("zoomIn")}>
             +
           </button>
         </div>
@@ -187,7 +279,8 @@ export function NetworkMap({
           ref={svgRef}
           viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`}
           className={`block w-full ${mode === "add" ? "cursor-crosshair" : drag.current ? "cursor-grabbing" : "cursor-grab"}`}
-          style={{ touchAction: "none" }}
+          style={{ touchAction: "none", aspectRatio: String(aspect) }}
+          preserveAspectRatio="xMidYMid meet"
           role="img"
           aria-label={t("mapAria")}
           onClick={click}
@@ -204,14 +297,13 @@ export function NetworkMap({
         >
           <rect x={vb.x} y={vb.y} width={vb.w} height={vb.h} fill="transparent" />
           {!onlyProposed && showStreets &&
-            view.osm.map((d, i) => (
+            osm.map((d, i) => (
               <path key={`o${i}`} d={d} fill="none" stroke="rgb(var(--ink) / 0.14)" strokeWidth={1} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
             ))}
           {!onlyProposed &&
-            view.edges.map((e, i) => {
-              const o = 0.1 + 0.5 * Math.sqrt(e.passes / maxPasses);
-              return <line key={i} x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} stroke={`rgb(var(--clay) / ${o.toFixed(2)})`} strokeWidth={1.5} strokeLinecap="round" vectorEffect="non-scaling-stroke" />;
-            })}
+            edgeLayers.map((l) => (
+              <path key={l.o} d={l.d} fill="none" stroke={`rgb(var(--clay) / ${l.o})`} strokeWidth={1.5} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+            ))}
           {routes.map((r) => (
             <path key={r.id} d={r.d} fill="none" stroke="rgb(var(--clay))" strokeWidth={3.5} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke">
               <title>{`${r.name} · ${(r.meters / 1000).toFixed(1)} km`}</title>
@@ -234,6 +326,16 @@ export function NetworkMap({
           ))}
           {pending && <circle cx={pending.x} cy={pending.y} r={8 * pxScale} fill="none" stroke="rgb(var(--rust))" strokeWidth="2" vectorEffect="non-scaling-stroke" />}
         </svg>
+        {!onlyProposed && osmStatus && (
+          <span className="pointer-events-none absolute bottom-2 left-3 font-mono text-micro text-ink3" role="status">
+            {osmStatus}
+          </span>
+        )}
+        {onlyProposed && routes.length === 0 && loops.length === 0 && (
+          <p className="pointer-events-none absolute inset-0 flex items-center justify-center px-6 text-center text-[0.8125rem] text-ink3">
+            {t("onlyProposedEmpty")}
+          </p>
+        )}
       </div>
 
       {(routes.length > 0 || loops.length > 0) && (
@@ -254,4 +356,16 @@ export function NetworkMap({
       )}
     </div>
   );
+}
+
+/** Coupe une bbox en quatre quarts. */
+function splitInFour(b: { minLat: number; maxLat: number; minLon: number; maxLon: number }) {
+  const midLat = (b.minLat + b.maxLat) / 2;
+  const midLon = (b.minLon + b.maxLon) / 2;
+  return [
+    { minLat: b.minLat, maxLat: midLat, minLon: b.minLon, maxLon: midLon },
+    { minLat: b.minLat, maxLat: midLat, minLon: midLon, maxLon: b.maxLon },
+    { minLat: midLat, maxLat: b.maxLat, minLon: b.minLon, maxLon: midLon },
+    { minLat: midLat, maxLat: b.maxLat, minLon: midLon, maxLon: b.maxLon },
+  ];
 }

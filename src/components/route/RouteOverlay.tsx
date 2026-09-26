@@ -66,13 +66,13 @@ export function RouteOverlay({
   return (
     <div>
       <div className="mb-2 flex justify-end gap-1">
-        <button type="button" className="btn-quiet px-2" onClick={() => zoom(0.7)} aria-label={t("zoomOut")}>
+        <button type="button" className="btn-quiet px-2" onClick={() => zoom(1 / 0.7)} aria-label={t("zoomOut")} title={t("zoomOut")}>
           −
         </button>
         <button type="button" className="btn-quiet px-2" onClick={() => setVb({ x: 0, y: 0, w, h })} aria-label={t("resetZoom")}>
           ⤢
         </button>
-        <button type="button" className="btn-quiet px-2" onClick={() => zoom(1 / 0.7)} aria-label={t("zoomIn")}>
+        <button type="button" className="btn-quiet px-2" onClick={() => zoom(0.7)} aria-label={t("zoomIn")} title={t("zoomIn")}>
           +
         </button>
       </div>
