@@ -92,6 +92,73 @@ export function haversine(a: LatLng, b: LatLng): number {
   return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
+/**
+ * Zone de confidentialité : masque le début et la fin d'un tracé, jusqu'à
+ * sortir d'un disque de `meters` autour du point de départ (resp. d'arrivée).
+ * C'est la même idée que « masquer le départ et l'arrivée » de Strava : une
+ * capture d'écran ne doit pas désigner la porte de chez soi.
+ *
+ * Rayon à vol d'oiseau (et non distance le long du tracé) : sur une boucle
+ * qui tourne autour du pâté de maisons, 500 m parcourus peuvent rester à
+ * 100 m du domicile. Le point de coupe est interpolé sur le cercle.
+ *
+ * Renvoie aussi les distances retirées le long du tracé, pour que les bornes
+ * kilométriques restent justes. `polyline: null` : il ne reste rien à montrer.
+ */
+export function hideEnds(
+  encoded: string | null | undefined,
+  meters: number
+): { polyline: string | null; cutStart: number; cutEnd: number } {
+  if (!encoded) return { polyline: null, cutStart: 0, cutEnd: 0 };
+  if (!(meters > 0)) return { polyline: encoded, cutStart: 0, cutEnd: 0 };
+  const pts = decodePolyline(encoded);
+  if (pts.length < 2) return { polyline: null, cutStart: 0, cutEnd: 0 };
+
+  // Premier point hors du disque autour de `origin`, en parcourant `order`.
+  const exit = (order: LatLng[]): { at: LatLng; index: number; along: number } | null => {
+    const origin = order[0];
+    let along = 0;
+    for (let i = 1; i < order.length; i++) {
+      const step = haversine(order[i - 1], order[i]);
+      const r0 = haversine(origin, order[i - 1]);
+      const r1 = haversine(origin, order[i]);
+      if (r1 >= meters) {
+        const t = r1 > r0 ? Math.min(1, Math.max(0, (meters - r0) / (r1 - r0))) : 1;
+        const at: LatLng = [
+          order[i - 1][0] + (order[i][0] - order[i - 1][0]) * t,
+          order[i - 1][1] + (order[i][1] - order[i - 1][1]) * t,
+        ];
+        return { at, index: i, along: along + step * t };
+      }
+      along += step;
+    }
+    return null;
+  };
+
+  const head = exit(pts);
+  const tail = exit([...pts].reverse());
+  if (!head || !tail) return { polyline: null, cutStart: 0, cutEnd: 0 };
+  const first = head.index; // premier point conservé
+  const last = pts.length - 1 - tail.index; // dernier point conservé
+  if (last < first) return { polyline: null, cutStart: 0, cutEnd: 0 };
+  const kept: LatLng[] = [head.at, ...pts.slice(first, last + 1), tail.at];
+  if (kept.length < 2) return { polyline: null, cutStart: 0, cutEnd: 0 };
+  return { polyline: encodePolyline(kept), cutStart: head.along, cutEnd: tail.along };
+}
+
+/** Raccourci d'affichage : le tracé masqué, ou `null`. */
+export function privatePolyline(encoded: string | null | undefined, meters: number): string | null {
+  return hideEnds(encoded, meters).polyline;
+}
+
+/** Longueur d'un tracé encodé, en mètres. */
+export function polylineLength(encoded: string | null | undefined): number {
+  const pts = decodePolyline(encoded);
+  let d = 0;
+  for (let i = 1; i < pts.length; i++) d += haversine(pts[i - 1], pts[i]);
+  return d;
+}
+
 export type Bounds = { minX: number; minY: number; maxX: number; maxY: number };
 
 export function boundsOf(points: XY[]): Bounds {
@@ -270,7 +337,9 @@ export function kmSegments(
   totalMeters: number,
   w: number,
   h: number,
-  pad = 24
+  pad = 24,
+  /** Mètres masqués avant le début du tracé (zone de confidentialité). */
+  offset = 0
 ): {
   segments: Array<{ km: number; d: string }>;
   markers: Array<{ km: number; at: XY }>;
@@ -292,11 +361,11 @@ export function kmSegments(
   const segments: Array<{ km: number; d: string }> = [];
   const markers: Array<{ km: number; at: XY }> = [];
   let current: XY[] = [pts[0]];
-  let km = 1;
+  let km = Math.floor(offset / 1000) + 1;
 
   for (let i = 1; i < pts.length; i++) {
-    const d0 = cum[i - 1] * ratio;
-    const d1 = cum[i] * ratio;
+    const d0 = offset + cum[i - 1] * ratio;
+    const d1 = offset + cum[i] * ratio;
     // Un segment GPS peut franchir une (ou plusieurs) bornes kilométriques :
     // on interpole le point exact de la borne pour couper proprement.
     while (d1 >= km * 1000 && d1 > d0) {

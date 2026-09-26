@@ -6,6 +6,8 @@ import {
   encodePolyline,
   groupRoutes,
   haversine,
+  hideEnds,
+  polylineLength,
   kmSegments,
   niceScale,
   routePath,
@@ -175,5 +177,49 @@ describe("même parcours", () => {
     ]);
     assert.equal(c.length, 2);
     assert.equal(c[0].items.length, 2);
+  });
+});
+
+describe("zone de confidentialité (hideEnds)", () => {
+  // Aller-retour plein est depuis (45, 5) : ~11 m par 1e-4 de longitude à 45°N.
+  const line: Array<[number, number]> = [];
+  for (let i = 0; i <= 300; i++) line.push([45, 5 + i * 1e-4]); // ~2,36 km
+  const enc = encodePolyline(line);
+
+  it("sans rayon, le tracé est intact", () => {
+    assert.deepEqual(hideEnds(enc, 0), { polyline: enc, cutStart: 0, cutEnd: 0 });
+  });
+
+  it("coupe à 500 m à vol d'oiseau du départ et de l'arrivée", () => {
+    const r = hideEnds(enc, 500);
+    const pts = decodePolyline(r.polyline);
+    assert.ok(Math.abs(haversine(line[0], pts[0]) - 500) < 2);
+    assert.ok(Math.abs(haversine(line[line.length - 1], pts[pts.length - 1]) - 500) < 2);
+    assert.ok(Math.abs(r.cutStart - 500) < 2 && Math.abs(r.cutEnd - 500) < 2);
+  });
+
+  it("boucle autour de chez soi : aucun point conservé dans le disque", () => {
+    // Petite boucle de 150 m de rayon puis départ au loin et retour.
+    const loop: Array<[number, number]> = [];
+    for (let k = 0; k <= 36; k++) {
+      const a = (k / 36) * 2 * Math.PI;
+      loop.push([45 + 0.00135 * Math.sin(a), 5 + 0.0019 * (1 - Math.cos(a))]);
+    }
+    for (let i = 1; i <= 100; i++) loop.push([45, 5 + i * 1e-4]);
+    for (let i = 99; i >= 0; i--) loop.push([45, 5 + i * 1e-4]);
+    const r = hideEnds(encodePolyline(loop), 500);
+    for (const p of decodePolyline(r.polyline)) assert.ok(haversine(loop[0], p) >= 499);
+  });
+
+  it("sortie entièrement dans le disque : rien à montrer", () => {
+    assert.equal(hideEnds(encodePolyline([[45, 5], [45, 5.001], [45, 5.002]]), 500).polyline, null);
+  });
+
+  it("les bornes kilométriques tiennent compte de la partie masquée", () => {
+    const r = hideEnds(enc, 500);
+    const total = polylineLength(enc);
+    const seg = kmSegments(r.polyline, total - r.cutStart - r.cutEnd, 300, 200, 10, r.cutStart);
+    assert.equal(seg.segments[0].km, 1); // 500 m masqués : on est encore dans le 1er km
+    assert.deepEqual(seg.markers.map((m) => m.km), [1]); // borne du km 1 à 1000 m ; km 2 (2000 m) masqué
   });
 });

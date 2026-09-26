@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
+import { privatePolyline } from "@/lib/polyline";
+import { getPrivacyZone } from "@/lib/queries";
 import { RouteGlyph } from "@/components/route/RouteGlyph";
 import { fmtDuration, fmtPace, pacePerKm } from "@/lib/format";
 import { actualKmForWeek, getActivePlan, linkActivities } from "@/lib/plan-store";
@@ -174,7 +176,7 @@ export async function TodayHero({
                   href={`/activities/${doneActivity.id}`}
                   className="group mt-6 inline-flex items-center gap-4 rounded-card border border-sage/35 bg-panel/70 py-2 pl-2 pr-4 transition-colors hover:border-sage"
                 >
-                  <RouteGlyph polyline={doneActivity.polyline} size={44} className="text-ink2" />
+                  <RouteGlyph polyline={privatePolyline(doneActivity.polyline, await getPrivacyZone(userId))} size={44} className="text-ink2" />
                   <span>
                     <span className="block text-[0.8125rem] font-medium group-hover:text-clay">{doneActivity.name}</span>
                     <span className="block font-mono text-micro text-ink3">

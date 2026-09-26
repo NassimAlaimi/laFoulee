@@ -136,7 +136,13 @@
     "disconnect": "Déconnecter",
     "kick": "Compte & préférences",
     "disconnectWarn": "Tes activités venues de Strava et ton équipement seront effacés de Foulée (tes fichiers importés, ton carnet et tes plans restent). Confirmer ?",
-    "disconnectDone": "Strava déconnecté. {n, plural, =0 {Aucune activité Strava n'était stockée} one {# activité Strava a été effacée} other {# activités Strava ont été effacées}}, ainsi que l'équipement et les jetons d'accès."
+    "disconnectDone": "Strava déconnecté. {n, plural, =0 {Aucune activité Strava n'était stockée} one {# activité Strava a été effacée} other {# activités Strava ont été effacées}}, ainsi que l'équipement et les jetons d'accès.",
+    "privacyTitle": "Confidentialité des tracés",
+    "privacyNote": "Le début et la fin de chaque tracé sont masqués à l'affichage, pour qu'une capture d'écran ne désigne pas ta porte. Tes données restent intactes (export, analyses).",
+    "privacyLabel": "Masquer autour du départ et de l'arrivée",
+    "privacyOff": "Désactivé",
+    "privacyMeters": "{m} m",
+    "save": "Enregistrer"
   },
   "help": {
     "today": {

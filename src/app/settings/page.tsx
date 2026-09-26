@@ -87,6 +87,19 @@ export default async function SettingsPage({
     revalidatePath("/records");
   }
 
+  async function savePrivacy(formData: FormData) {
+    "use server";
+    const v = Number(formData.get("privacyZoneM"));
+    if (![0, 200, 500, 1000].includes(v)) return;
+    const owner = await requireUserId();
+    await prisma.settings.upsert({
+      where: { userId: owner },
+      create: { userId: owner, privacyZoneM: v },
+      update: { privacyZoneM: v },
+    });
+    revalidatePath("/", "layout");
+  }
+
   async function freeStravaSeat(formData: FormData) {
     "use server";
     const targetId = formData.get("userId");
@@ -360,6 +373,33 @@ export default async function SettingsPage({
               Enregistrer
             </button>
           </div>
+        </form>
+      </Section>
+
+      {/* -------------------------------------------------- Confidentialité */}
+      <Section>
+        <SectionHead title={t("privacyTitle")} note={t("privacyNote")} />
+        <form action={savePrivacy} className="flex flex-wrap items-end gap-3">
+          <div>
+            <label htmlFor="privacyZoneM" className="eyebrow">
+              {t("privacyLabel")}
+            </label>
+            <select
+              id="privacyZoneM"
+              name="privacyZoneM"
+              defaultValue={String(settings.privacyZoneM)}
+              className="field mt-2 w-auto"
+            >
+              {[0, 200, 500, 1000].map((m) => (
+                <option key={m} value={m}>
+                  {m === 0 ? t("privacyOff") : t("privacyMeters", { m })}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button type="submit" className="btn-outline">
+            {t("save")}
+          </button>
         </form>
       </Section>
 

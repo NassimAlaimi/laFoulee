@@ -421,6 +421,11 @@ model Settings {
   longRunDay  Int   @default(6)
   ceilingKm   Float @default(0)
 
+  /// Zone de confidentialité des tracés, en mètres : début et fin masqués à
+  /// l'affichage (0 = désactivée). Activée par défaut (protection des données
+  /// dès la conception) ; les données stockées restent intactes.
+  privacyZoneM Int @default(500)
+
   updatedAt DateTime @updatedAt
 }
 

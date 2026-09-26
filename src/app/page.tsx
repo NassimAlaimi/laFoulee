@@ -24,6 +24,7 @@ import {
 import { fmtDateShort, fmtDuration, fmtPace, pacePerKm } from "@/lib/format";
 import { buildInsights } from "@/lib/insights";
 import { getBestEfforts, getRuns, getSettings, getStravaAccount } from "@/lib/queries";
+import { privatePolyline } from "@/lib/polyline";
 import { fitnessProfile, isMaximalEffort, personalRecords } from "@/lib/records";
 import {
   formSeries,
@@ -340,7 +341,7 @@ export default async function SummaryPage() {
         where: { id: { in: recent.map((r) => r.id) }, userId },
         select: { id: true, polyline: true },
       })
-    ).map((a) => [a.id, a.polyline])
+    ).map((a) => [a.id, privatePolyline(a.polyline, settings.privacyZoneM)])
   );
 
   const loadBlock = (

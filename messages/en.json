@@ -136,7 +136,13 @@
     "disconnect": "Disconnect",
     "kick": "Account & preferences",
     "disconnectWarn": "Your activities from Strava and your gear will be erased from Foulée (imported files, log and plans stay). Confirm?",
-    "disconnectDone": "Strava disconnected. {n, plural, =0 {No Strava activity was stored} one {# Strava activity was erased} other {# Strava activities were erased}}, along with gear and access tokens."
+    "disconnectDone": "Strava disconnected. {n, plural, =0 {No Strava activity was stored} one {# Strava activity was erased} other {# Strava activities were erased}}, along with gear and access tokens.",
+    "privacyTitle": "Route privacy",
+    "privacyNote": "The start and end of every route are hidden on screen, so a screenshot doesn't point to your front door. Your data stays intact (export, analysis).",
+    "privacyLabel": "Hide around start and finish",
+    "privacyOff": "Off",
+    "privacyMeters": "{m} m",
+    "save": "Save"
   },
   "help": {
     "today": {

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { privatePolyline } from "@/lib/polyline";
+import { getPrivacyZone } from "@/lib/queries";
 import { getTranslations } from "next-intl/server";
 import { Empty } from "@/components/ui/Layout";
 import { RouteGlyph } from "@/components/route/RouteGlyph";
@@ -36,11 +38,15 @@ export default async function RecapPage({ searchParams }: { searchParams: Promis
   const params = await searchParams;
   const now = new Date();
 
-  const all = await prisma.activity.findMany({
-    where: { userId, type: { in: [...RUN_TYPES] } },
-    orderBy: { startDate: "asc" },
-    select: { id: true, name: true, startDate: true, distance: true, movingTime: true, totalElevation: true, polyline: true, isRace: true },
-  });
+  const zone = await getPrivacyZone(userId);
+  // Tracés servis masqués (zone de confidentialité) : ils ne servent ici qu'à l'affichage.
+  const all = (
+    await prisma.activity.findMany({
+      where: { userId, type: { in: [...RUN_TYPES] } },
+      orderBy: { startDate: "asc" },
+      select: { id: true, name: true, startDate: true, distance: true, movingTime: true, totalElevation: true, polyline: true, isRace: true },
+    })
+  ).map((a) => ({ ...a, polyline: privatePolyline(a.polyline, zone) }));
   if (!all.length) {
     return <Empty title={t("nothingYet")} body={t("nothingBody")} />;
   }

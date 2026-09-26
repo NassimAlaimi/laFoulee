@@ -79,6 +79,15 @@ export async function getSettings(userId?: string) {
   return prisma.settings.create({ data: { userId: id } });
 }
 
+/** Rayon de la zone de confidentialité des tracés (mètres, 0 = aucune). */
+export async function getPrivacyZone(userId?: string): Promise<number> {
+  const s = await prisma.settings.findUnique({
+    where: { userId: await scope(userId) },
+    select: { privacyZoneM: true },
+  });
+  return s?.privacyZoneM ?? 500;
+}
+
 export async function getStravaAccount(userId?: string) {
   return prisma.stravaAccount.findUnique({ where: { userId: await scope(userId) } });
 }

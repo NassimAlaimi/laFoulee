@@ -8,7 +8,8 @@ import { getRuns } from "@/lib/queries";
 import { periodStats, weeklyVolume } from "@/lib/stats";
 import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
-import { clusterByStart, groupRoutes, overlayPaths, startOf } from "@/lib/polyline";
+import { clusterByStart, groupRoutes, overlayPaths, privatePolyline, startOf } from "@/lib/polyline";
+import { getPrivacyZone } from "@/lib/queries";
 import { favoriteRoute } from "@/lib/favorite-route";
 import { FavoriteRoute } from "@/components/route/FavoriteRoute";
 import { RouteGlyph } from "@/components/route/RouteGlyph";
@@ -115,7 +116,9 @@ export default async function ActivitiesPage({
     where: { userId, id: { in: runs.map((r) => r.id) } },
     select: { id: true, polyline: true },
   });
-  const poly = new Map(polyRows.map((p) => [p.id, p.polyline]));
+  // Zone de confidentialité : début et fin des tracés masqués à l'affichage.
+  const zone = await getPrivacyZone(userId);
+  const poly = new Map(polyRows.map((p) => [p.id, privatePolyline(p.polyline, zone)]));
 
   const stats = periodStats(runs);
   const weekly = weeklyVolume(runs, 12);

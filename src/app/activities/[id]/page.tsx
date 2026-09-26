@@ -14,7 +14,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUserId } from "@/lib/auth";
 import { getSettings } from "@/lib/queries";
 import { RUN_TYPES } from "@/lib/strava";
-import { kmSegments, niceScale, routeSignature, sameRoute } from "@/lib/polyline";
+import { hideEnds, kmSegments, niceScale, polylineLength, routeSignature, sameRoute } from "@/lib/polyline";
 import { estimateMaxHr, round, trainingLoad } from "@/lib/stats";
 import { vdotFromPerformance } from "@/lib/vdot";
 import { KIND_LABELS, type SessionKind } from "@/lib/workouts";
@@ -80,7 +80,20 @@ export default async function ActivityDetailPage({
   const maxHr = settings.maxHr ?? estimateMaxHr([], settings.birthYear);
 
   // ------------------------------------------------------------ Tracé
-  const seg = kmSegments(activity.polyline, activity.distance, MAP_W, MAP_H, 34);
+  // Zone de confidentialité : début et fin masqués ; les bornes kilométriques
+  // restent calées sur la distance réelle (la polyline Strava, simplifiée, est
+  // un peu plus courte que la sortie : on remet à l'échelle).
+  const hidden = hideEnds(activity.polyline, settings.privacyZoneM);
+  const fullLen = polylineLength(activity.polyline);
+  const scale = fullLen > 0 ? activity.distance / fullLen : 1;
+  const seg = kmSegments(
+    hidden.polyline,
+    (fullLen - hidden.cutStart - hidden.cutEnd) * scale,
+    MAP_W,
+    MAP_H,
+    34,
+    hidden.cutStart * scale
+  );
   const geometry: RouteGeometry | null = seg.segments.length
     ? {
         w: MAP_W,
@@ -310,7 +323,7 @@ export default async function ActivityDetailPage({
                 </div>
               ) : (
                 <div className="flex items-center gap-4 text-[0.8125rem] text-ink3">
-                  <RouteGlyph polyline={activity.polyline} size={56} stroke="rgb(var(--ink-3))" />
+                  <RouteGlyph polyline={hidden.polyline} size={56} stroke="rgb(var(--ink-3))" />
                   Premier passage sur ce parcours : les prochains y seront comparés.
                 </div>
               )}
