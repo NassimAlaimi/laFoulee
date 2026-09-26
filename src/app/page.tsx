@@ -218,11 +218,12 @@ export default async function SummaryPage() {
     prisma.gear.findMany({ where: { userId, retired: false }, select: { name: true, stravaDistance: true, retireAtKm: true } }),
     prisma.dailyLog.count({ where: { userId, date: { gte: new Date(now.getTime() - 7 * 86400000) } } }),
   ]);
-  const advice = adviceOfTheDay({
+  const feelingMissing = recentFeel.filter((r) => r.feeling === null).length;
+  let advice = adviceOfTheDay({
     tsb: form?.tsb ?? null,
     acwr: current.ratio,
     logDays: log7,
-    feelingMissing: recentFeel.filter((r) => r.feeling === null).length,
+    feelingMissing,
     nextRace: nextRace
       ? { days: Math.ceil((nextRace.raceDate.getTime() - now.getTime()) / 86400000), distanceKm: nextRace.distance / 1000, hasRacePlan: Boolean(nextRace.racePlan) }
       : null,
@@ -257,6 +258,23 @@ export default async function SummaryPage() {
       ? { ...n, params: { month: new Date(now.getFullYear(), Number(n.params.month), 1).toLocaleDateString(locale, { month: "long" }) } }
       : n
   );
+
+  // Le rappel « ressenti manquant » (À ne pas oublier) et le conseil du jour
+  // ne doivent pas répéter la même chose : si le rappel est déjà affiché, on
+  // choisit le conseil suivant le plus utile.
+  advice = advice?.key === "feeling" && nudges.some((n) => n.key === "feeling")
+    ? adviceOfTheDay({
+        tsb: form?.tsb ?? null,
+        acwr: current.ratio,
+        logDays: log7,
+        feelingMissing: 0,
+        nextRace: nextRace
+          ? { days: Math.ceil((nextRace.raceDate.getTime() - now.getTime()) / 86400000), distanceKm: nextRace.distance / 1000, hasRacePlan: Boolean(nextRace.racePlan) }
+          : null,
+        phase: planned.find((s) => s.date.getTime() > now.getTime())?.phase ?? null,
+        pain: todayLog?.painLevel ?? 0,
+      })
+    : advice;
 
   // Zones : un seul modèle (lib/zones), temps passé réel (courbe > splits > moyenne).
   const zoneCtx = await loadZoneContext({ userId, now, records, vdot: profile.vdot, settings, runs });

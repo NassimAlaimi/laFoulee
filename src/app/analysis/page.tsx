@@ -79,7 +79,7 @@ export default async function FormePage() {
         <FormChart data={formRows} height={300} legend={false} marks={marks} />
         <div className="mt-4 grid gap-4 border-t border-hair pt-4 sm:grid-cols-3">
           <Legend color="rgb(var(--slate))" label={t("ctlLegend")} note={t("ctlNote")} />
-          <Legend color="rgb(var(--clay))" label={t("atlLegend")} note={t("atlNote")} />
+          <Legend color="rgb(var(--ochre))" label={t("atlLegend")} note={t("atlNote")} />
           <Legend color="rgb(var(--sage))" label={t("tsbLegend")} note={t("tsbNote")} />
           {marks.some((m) => m.kind === "race") && (
             <Legend color="rgb(var(--rust))" label={t("raceLegend")} note={t("raceNote")} />

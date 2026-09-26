@@ -109,7 +109,7 @@ export function FormChart({
             label={`${label}${d.projected ? " · prévu" : ""}`}
             rows={[
               { label: "Condition (CTL)", value: d.ctl.toFixed(0), color: t.slate },
-              { label: "Fatigue (ATL)", value: d.atl.toFixed(0), color: t.clay },
+              { label: "Fatigue (ATL)", value: d.atl.toFixed(0), color: t.ochre },
               { label: "Fraîcheur (TSB)", value: `${d.tsb > 0 ? "+" : ""}${d.tsb.toFixed(0)}`, color: d.tsb >= 0 ? t.sage : t.rust },
             ]}
           />
@@ -155,7 +155,7 @@ export function FormChart({
             connectNulls
             isAnimationActive={false}
           />
-          <Line type="monotone" dataKey="atl" stroke={t.clay} strokeWidth={1} strokeOpacity={0.85} dot={false} isAnimationActive={false} />
+          <Line type="monotone" dataKey="atl" stroke={t.ochre} strokeWidth={1} strokeOpacity={0.85} dot={false} isAnimationActive={false} />
           {tooltip}
         </ComposedChart>
       </ResponsiveContainer>
@@ -209,7 +209,7 @@ export function FormChart({
       {legend && (
         <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-micro text-ink3">
           <Key color={t.slate} label={tt("condition")} />
-          <Key color={t.clay} label={tt("fatigue")} thin />
+          <Key color={t.ochre} label={tt("fatigue")} thin />
           <Key color={t.sage} label={tt("freshness")} area />
           {hasRace && <Key color={t.rust} label={tt("race")} dashed />}
           {hasPr && <Key color={t.plum} label={tt("record")} dashed />}
