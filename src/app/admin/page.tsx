@@ -1,11 +1,16 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
+import { pageMeta } from "@/lib/page-meta";
 import { PageHead, Section } from "@/components/ui/Layout";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { fmtDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata() {
+  return pageMeta("admin");
+}
 
 /** Pôle admin : qui est inscrit, qui est connecté, quand. */
 export default async function AdminPage() {

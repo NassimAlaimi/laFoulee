@@ -15,8 +15,13 @@ import { LanguageSwitcher } from "@/components/settings/LanguageSwitcher";
 import { AdminErrors } from "@/components/settings/AdminErrors";
 import { authErrorCode } from "@/lib/auth-errors";
 import { headers } from "next/headers";
+import { pageMeta } from "@/lib/page-meta";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata() {
+  return pageMeta("settings");
+}
 
 export default async function SettingsPage({
   searchParams,
