@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { buildGraph, findLoops, nearestNode, shortestPath, straightSegments, serializeGraph, deserializeGraph, graphSectors, MAX_EDGE_METERS } from "../src/lib/route-graph.ts";
+import { buildGraph, findLoops, nearestNode, shortestPath, straightSegments, serializeGraph, deserializeGraph, graphSectors, MAX_EDGE_METERS, sectorCore, territoryStats, usualStart } from "../src/lib/route-graph.ts";
 import { encodePolyline, decodePolyline } from "../src/lib/polyline.ts";
 
 // Grille 5×5 d'intersections espacées de 100 m, autour de (48.0, 2.0).
@@ -113,5 +113,74 @@ describe("straightSegments", () => {
     assert.ok(segs.length >= 1);
     assert.ok(segs[0].meters >= 400);
     assert.ok(decodePolyline(encodePolyline(segs[0].points)).length >= 2);
+  });
+});
+
+describe("straightSegments : lignes utiles", () => {
+  // Une longue avenue droite de 4 km, courue 3 fois, et un virage.
+  const lon0 = 2.0;
+  const k = 1 / (111_320 * Math.cos((48 * Math.PI) / 180));
+  const avenue = encodePolyline(Array.from({ length: 81 }, (_, i) => [48.0, lon0 + i * 50 * k] as [number, number]));
+  const acts = [0, 1, 2].map((d) => ({ polyline: avenue, startDate: new Date(2026, 0, d + 1) }));
+  const g = buildGraph(acts);
+  const segs = straightSegments(g, 400);
+  it("borne la longueur (pas de « ligne droite » de 4 km)", () => {
+    assert.ok(segs.length >= 1);
+    for (const s of segs) assert.ok(s.meters <= 1700, `${s.meters} m`);
+  });
+  it("ne propose pas dix fois la même rue", () => {
+    // 4 km d'avenue = au plus 3 portions distinctes de ~1,6 km
+    assert.ok(segs.length <= 3, `${segs.length} lignes`);
+  });
+  it("un trou de GPS n'est pas une ligne droite", () => {
+    const jump = encodePolyline([[48.0, lon0], [48.0, lon0 + 800 * k], [48.0, lon0 + 1600 * k]]);
+    const gj = buildGraph([{ polyline: jump, startDate: new Date(2026, 0, 1) }]);
+    assert.equal(straightSegments(gj, 400).length, 0);
+  });
+});
+
+describe("version du cache du graphe", () => {
+  it("un graphe sérialisé par une ancienne version est reconstruit", () => {
+    const g = buildGraph(grid());
+    const raw = JSON.parse(serializeGraph(g));
+    assert.ok(deserializeGraph(JSON.stringify(raw)));
+    delete raw.v;
+    assert.equal(deserializeGraph(JSON.stringify(raw)), null);
+  });
+});
+
+describe("sectorCore / territoryStats", () => {
+  it("le cœur ignore une sortie isolée lointaine", () => {
+    const k = 1 / (111_320 * Math.cos((48 * Math.PI) / 180));
+    const home = encodePolyline(Array.from({ length: 41 }, (_, i) => [48.0, 2.0 + i * 25 * k] as [number, number]));
+    const trip = encodePolyline(Array.from({ length: 401 }, (_, i) => [48.0, 2.0 + i * 50 * k] as [number, number]));
+    const acts = [...Array.from({ length: 200 }, (_, d) => ({ polyline: home, startDate: new Date(2026, 0, 1 + (d % 28)) })), { polyline: trip, startDate: new Date(2026, 1, 1) }];
+    const g = buildGraph(acts);
+    const c = sectorCore(graphSectors(g)[0])!;
+    const widthKm = (c.bbox.maxLon - c.bbox.minLon) / k / 1000;
+    assert.ok(widthKm < 4, `cœur de ${widthKm.toFixed(1)} km (la sortie fait 20 km)`);
+  });
+  it("territoryStats : km de rues différentes et concentration", () => {
+    const g = buildGraph(grid());
+    const s = territoryStats(g);
+    assert.ok(s.uniqueKm > 0.5 && s.uniqueKm < 6, `${s.uniqueKm}`);
+    assert.ok(s.halfKm > 0 && s.halfKm <= s.uniqueKm);
+  });
+});
+
+describe("usualStart", () => {
+  it("le départ le plus fréquent, pas le point le plus couru", () => {
+    const home: [number, number] = [47.21, -1.72];
+    const starts: Array<[number, number]> = [
+      ...Array.from({ length: 8 }, (_, i) => [home[0] + i * 0.00002, home[1]] as [number, number]),
+      [47.3, -1.5], [47.3, -1.5001], // deux départs ailleurs
+    ];
+    const s = usualStart(starts)!;
+    assert.ok(Math.abs(s[0] - home[0]) < 0.001 && Math.abs(s[1] - home[1]) < 0.001);
+  });
+  it("ignore les départs loin du cœur (vacances)", () => {
+    const s = usualStart([[43.0, 3.0], [43.0, 3.0], [43.0, 3.0], [47.21, -1.72]], [47.2, -1.7])!;
+    assert.ok(Math.abs(s[0] - 47.21) < 0.001);
+    assert.equal(usualStart([[43, 3]], [47.2, -1.7]), null);
   });
 });

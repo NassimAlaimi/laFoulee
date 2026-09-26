@@ -71,7 +71,30 @@ export function overpassQuery(bbox: Bbox, minor = bboxSpanKm(bbox) <= MINOR_WAYS
     .replace("{east}", bbox.maxLon.toFixed(5));
 }
 
-type OsmWay = { type: string; tags?: { highway?: string }; geometry?: Array<{ lat: number; lon: number }> };
+type OsmWay = { type: string; tags?: { highway?: string }; nodes?: number[]; geometry?: Array<{ lat: number; lon: number }> };
+
+/**
+ * Classe d'une voie, gardée en cache avec sa géométrie : 0 grand axe,
+ * 1 rue, 2 chemin/trottoir/piste cyclable, 3 escaliers. Sert au rendu
+ * (hiérarchie visuelle) et au tracé des boucles (on évite les grands axes).
+ */
+export type RoadClass = 0 | 1 | 2 | 3;
+const HIGHWAY_CLASS: Record<string, RoadClass> = {
+  trunk: 0, primary: 0, secondary: 0,
+  tertiary: 1, unclassified: 1, residential: 1, living_street: 1, pedestrian: 1,
+  cycleway: 2, track: 2, footway: 2, path: 2, steps: 3,
+};
+export const roadClassOf = (highway?: string): RoadClass => HIGHWAY_CLASS[highway ?? ""] ?? 1;
+
+/** « 1:<polyline> » — « : » n'apparaît jamais dans une polyline encodée. */
+export function formatRoad(cls: RoadClass, polyline: string): string {
+  return `${cls}:${polyline}`;
+}
+/** Voie en cache → classe + polyline ; l'ancien format (polyline seule) vaut « rue ». */
+export function parseRoad(s: string): { cls: RoadClass; polyline: string } {
+  if (s.length > 2 && s[1] === ":" && s[0] >= "0" && s[0] <= "3") return { cls: Number(s[0]) as RoadClass, polyline: s.slice(2) };
+  return { cls: 1, polyline: s };
+}
 
 /** Importance d'une voie : quand il faut couper, on perd d'abord les sentiers. */
 const HIGHWAY_RANK: Record<string, number> = {
@@ -102,10 +125,16 @@ export async function fetchOverpassRoads(bbox: Bbox, minor?: boolean, maxWays = 
       const json = (await res.json()) as { elements?: OsmWay[] };
       const ways = (json.elements ?? []).filter((e) => e.type === "way" && e.geometry && e.geometry.length >= 2);
       if (!ways.length) return [];
+      // Carrefours : nœuds OSM partagés par plusieurs voies, toujours gardés
+      // au rééchantillonnage (sinon deux rues qui se croisent ne se touchent
+      // plus et le réseau n'est plus routable).
+      const seen = new Map<number, number>();
+      for (const w of ways) for (const n of w.nodes ?? []) seen.set(n, (seen.get(n) ?? 0) + 1);
       const out: string[] = [];
       for (const w of rankWays(ways, maxWays)) {
-        const line = downsample(w.geometry!.map((g) => [g.lat, g.lon] as LatLng));
-        if (line.length >= 2) out.push(encodePolyline(line));
+        const keep = (w.nodes ?? []).map((n) => (seen.get(n) ?? 0) > 1);
+        const line = downsample(w.geometry!.map((g) => [g.lat, g.lon] as LatLng), keep);
+        if (line.length >= 2) out.push(formatRoad(roadClassOf(w.tags?.highway), encodePolyline(line)));
       }
       return out;
     } catch {
@@ -115,11 +144,12 @@ export async function fetchOverpassRoads(bbox: Bbox, minor?: boolean, maxWays = 
   return null;
 }
 
-function downsample(points: LatLng[]): LatLng[] {
+/** Un point tous les ~18 m, extrémités et points `keep` (carrefours) toujours gardés. */
+export function downsample(points: LatLng[], keep: boolean[] = []): LatLng[] {
   const out: LatLng[] = [points[0]];
   let last = points[0];
   for (let i = 1; i < points.length; i++) {
-    if (haversine(last, points[i]) >= 18 || i === points.length - 1) {
+    if (keep[i] || haversine(last, points[i]) >= 18 || i === points.length - 1) {
       out.push(points[i]);
       last = points[i];
     }
@@ -136,7 +166,9 @@ function downsample(points: LatLng[]): LatLng[] {
 
 /** `detail` : « streets » (rues) ou « all » (+ trottoirs et sentiers) ; absent = ancien cache. */
 export type OsmDetail = "streets" | "all";
-export type OsmZone = { key: string; bbox: Bbox; builtAt: number; roads: string[]; detail?: OsmDetail };
+export type OsmZone = { key: string; bbox: Bbox; builtAt: number; roads: string[]; detail?: OsmDetail; fmt?: number };
+/** Format courant des voies en cache (2 : classe + carrefours conservés). */
+export const OSM_FMT = 2;
 
 /** Clé de zone en cache : la bbox et le niveau de détail. */
 export function zoneKey(b: Bbox, detail?: OsmDetail): string {
@@ -176,7 +208,9 @@ function contains(outer: Bbox, inner: Bbox): boolean {
  */
 export function findOsmZone(zones: OsmZone[], bbox: Bbox, now: number, maxAgeMs: number, detail?: OsmDetail): OsmZone | null {
   // Une zone « all » (ou ancienne) contient aussi les rues : elle sert une demande « streets ».
-  const fits = (z: OsmZone) => !detail || !z.detail || z.detail === detail || z.detail === "all";
+  // Ancien format (sans classe de voie) : seulement en secours, quand Overpass ne répond pas.
+  const fits = (z: OsmZone) =>
+    (!detail || !z.detail || z.detail === detail || z.detail === "all") && (z.fmt === OSM_FMT || maxAgeMs === Infinity);
   const fresh = zones.filter((z) => now - z.builtAt < maxAgeMs && fits(z));
   const key = zoneKey(bbox, detail);
   return fresh.find((z) => z.key === key) ?? fresh.find((z) => contains(z.bbox, bbox)) ?? null;
@@ -187,6 +221,24 @@ export function putOsmZone(zones: OsmZone[], zone: OsmZone): OsmZone[] {
   return [zone, ...zones.filter((z) => z.key !== zone.key)]
     .sort((a, b) => b.builtAt - a.builtAt)
     .slice(0, MAX_ZONES);
+}
+
+/** Deux zones se chevauchent-elles ? */
+export function intersects(a: Bbox, b: Bbox): boolean {
+  return a.minLat < b.maxLat && a.maxLat > b.minLat && a.minLon < b.maxLon && a.maxLon > b.minLon;
+}
+
+/**
+ * Toutes les voies en cache qui touchent `bbox` (plusieurs tuiles), sans
+ * doublon — une voie à cheval sur deux tuiles est identique dans les deux.
+ */
+export function roadsInCache(zones: OsmZone[], bbox: Bbox, now: number, maxAgeMs: number): string[] {
+  const out = new Set<string>();
+  for (const z of zones) {
+    if (now - z.builtAt >= maxAgeMs || z.fmt !== OSM_FMT || !intersects(z.bbox, bbox)) continue;
+    for (const r of z.roads) out.add(r);
+  }
+  return [...out];
 }
 
 /** Bbox centrée sur un point ; `spanKm` est la largeur totale, bornée. */

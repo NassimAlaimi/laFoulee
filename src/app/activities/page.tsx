@@ -12,6 +12,7 @@ import { requireUserId } from "@/lib/auth";
 import { clusterByStart, decodePolyline, groupRoutes, overlayPaths, overlayRoads, polylineLength, privatePolyline, startOf } from "@/lib/polyline";
 import { getPrivacyZone } from "@/lib/queries";
 import { getOsmRoads } from "@/lib/route-store";
+import { parseRoad } from "@/lib/osm";
 import { favoriteRoute } from "@/lib/favorite-route";
 import { FavoriteRoute } from "@/components/route/FavoriteRoute";
 import { RouteGlyph } from "@/components/route/RouteGlyph";
@@ -403,7 +404,7 @@ async function MapView({
     // Jamais d'attente sur Overpass pendant le rendu : cache seulement. En cas
     // d'absence, la zone est préchargée en tâche de fond pour la prochaine visite.
     const roads = await getOsmRoads(userId, bbox, new Date(), { cacheOnly: true });
-    if (roads && roads.length) osm.push(...overlayRoads(active.items, roads, W, H, 28));
+    if (roads && roads.length) osm.push(...overlayRoads(active.items, roads.map((r) => parseRoad(r).polyline), W, H, 28));
     else void getOsmRoads(userId, bbox).catch(() => null);
   }
   const paths = overlayPaths(active.items, W, H, 28).map((p) => ({

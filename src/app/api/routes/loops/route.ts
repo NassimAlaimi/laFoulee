@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { authed } from "@/lib/api";
 import { generateLoops } from "@/lib/route-store";
-import { loopToRoute } from "@/lib/route-graph";
+import { encodePolyline } from "@/lib/polyline";
 
 export const dynamic = "force-dynamic";
 
@@ -13,20 +13,28 @@ const Body = z.object({
   startLng: z.number().min(-180).max(180).nullable().optional(),
 });
 
-/** Génère trois boucles de distance cible sur le réseau personnel. */
+/** Jusqu'à trois boucles distinctes de distance cible (vraies rues, sinon réseau personnel). */
 export async function POST(req: Request) {
   const { userId, error } = await authed();
   if (error) return error;
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ ok: false, error: "invalid" }, { status: 400 });
   const ref: [number, number] = parsed.data.startLat != null && parsed.data.startLng != null ? [parsed.data.startLat, parsed.data.startLng] : [0, 0];
-  const loops = await generateLoops(userId, {
+  const { loops, source } = await generateLoops(userId, {
     targetMeters: parsed.data.distanceM,
     explore: parsed.data.explore,
-    attempts: 160,
-    seed: Math.floor(Math.random() * 1e9),
     start: parsed.data.startLat != null ? { x: 0, y: 0 } : null,
     ref,
   });
-  return NextResponse.json({ ok: true, loops: loops.map((l) => ({ polyline: loopToRoute({} as never, l).polyline, meters: l.meters, score: Math.round(l.score * 100) / 100, novelty: Math.round(l.novelty * 100) })) });
+  return NextResponse.json({
+    ok: true,
+    source,
+    loops: loops.map((l) => ({
+      polyline: encodePolyline(l.points),
+      meters: l.meters,
+      score: Math.round(l.score * 100) / 100,
+      novelty: l.novelty,
+      direction: l.direction,
+    })),
+  });
 }

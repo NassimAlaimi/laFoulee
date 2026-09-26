@@ -19,7 +19,7 @@
  * Fonctions pures, testées dans tests/route-graph.test.ts.
  */
 
-import { decodePolyline, encodePolyline, haversine, polylineLength, type LatLng } from "./polyline";
+import { decodePolyline, haversine, polylineLength, type LatLng } from "./polyline";
 
 export const CELL = 15; // m
 
@@ -44,6 +44,8 @@ export type RouteEdge = {
   lastPassed: number;
   /** centre de la cellule */
   points: LatLng[];
+  /** coût de routage (défaut : la longueur) — rues OSM : classe × familiarité */
+  cost?: number;
 };
 
 export type RouteNode = { id: string; lat: number; lon: number; edges: RouteEdge[] };
@@ -157,6 +159,8 @@ export type LoopOptions = {
   seed?: number;
   /** 0 = plus fréquent, sinon cellule de départ {x,y} en mètres */
   start?: { x: number; y: number } | null;
+  /** points de demi-tour essayés (défaut 70) */
+  samples?: number;
 };
 
 export type GeneratedLoop = {
@@ -165,11 +169,13 @@ export type GeneratedLoop = {
   score: number;
   /** part d'arêtes reprises (aller-retour) */
   reuse: number;
-  /** part d'arêtes peu courues (1 = tout nouveau) */
+  /** part de la distance sur des rues jamais courues (1 = tout nouveau) */
   novelty: number;
+  /** cap du point le plus éloigné vu du départ : N, NE, E… */
+  direction: Compass;
 };
 
-export type RouteResult = { polyline: string; meters: number; score: number; reuse: number; novelty: number };
+export type Compass = "N" | "NE" | "E" | "SE" | "S" | "SW" | "W" | "NW";
 
 function nodeCenter(g: RouteGraph, id: string, ref: LatLng): { x: number; y: number } {
   const n = g.nodes.get(id)!;
@@ -235,7 +241,7 @@ class MinHeap {
 }
 
 /** Dijkstra depuis `from` vers tous : distances et arbre de plus courts chemins. */
-function dijkstraAll(g: RouteGraph, from: string, forbidden = new Set<string>()) {
+function dijkstraAll(g: RouteGraph, from: string, forbidden = new Set<string>(), forbiddenNodes?: Set<string>) {
   const heap = new MinHeap();
   const dist = new Map<string, number>([[from, 0]]);
   const prev = new Map<string, RouteEdge | null>([[from, null]]);
@@ -246,7 +252,8 @@ function dijkstraAll(g: RouteGraph, from: string, forbidden = new Set<string>())
     for (const e of g.nodes.get(cur.n)!.edges) {
       if (forbidden.has(e.id)) continue;
       const v = e.a === cur.n ? e.b : e.a;
-      const nd = cur.d + e.meters;
+      if (forbiddenNodes?.has(v)) continue;
+      const nd = cur.d + (e.cost ?? e.meters);
       if (nd < (dist.get(v) ?? Infinity)) {
         dist.set(v, nd);
         prev.set(v, e);
@@ -313,42 +320,126 @@ export function findLoops(g: RouteGraph, ref: LatLng, opts: LoopOptions): Genera
   // Tous les plus courts chemins depuis le départ.
   const fromStart = dijkstraAll(g, startId);
   const candidates = [...fromStart.dist.entries()]
-    .filter(([, d]) => d >= target * 0.3 && d <= target * 0.7)
+    // Demi-tour sur un carrefour : depuis un cul-de-sac, le retour serait
+    // forcément un aller-retour.
+    .filter(([id, d]) => d >= target * 0.25 && d <= target * 0.75 && g.nodes.get(id)!.edges.length >= 3)
     .sort((a, b) => a[1] - b[1]);
-  // Échantillon étalé : jusqu'à 70 nœuds répartis sur la plage de distance.
+  // Échantillon étalé : jusqu'à `samples` nœuds répartis sur la plage de distance.
+  const samples = opts.samples ?? 70;
   const sample: string[] = [];
   if (candidates.length) {
-    const stride = Math.max(1, Math.floor(candidates.length / 70));
+    const stride = Math.max(1, Math.floor(candidates.length / samples));
     for (let i = 0; i < candidates.length; i += stride) sample.push(candidates[i][0]);
   }
 
-  const raw: GeneratedLoop[] = [];
+  const raw: Array<GeneratedLoop & { cells: Set<string> }> = [];
+  const startCell = parseCell(startId);
   for (const x of sample) {
     const p1 = reconstruct(g, fromStart.prev, startId, x);
     if (!p1) continue;
-    const forbidden = new Set(p1.map((e) => e.id));
-    const back = dijkstraAll(g, x, forbidden);
-    const p2 = reconstruct(g, back.prev, x, startId);
+    const outNodes = pathNodes(startId, p1);
+    // Le retour ne doit pas longer l'aller : les tracés d'une même rue ne
+    // tombent pas toujours sur les mêmes cellules (brins parallèles à 15 m),
+    // interdire les seules arêtes de l'aller laissait passer des allers-retours
+    // déguisés. On interdit donc un couloir de ±45 m autour de l'aller, sauf
+    // près du départ et du demi-tour.
+    const xCell = parseCell(x);
+    const corridor = new Set<string>();
+    for (const n of outNodes) {
+      const c = parseCell(n);
+      if (!c) continue;
+      for (let dx = -CORRIDOR; dx <= CORRIDOR; dx++)
+        for (let dy = -CORRIDOR; dy <= CORRIDOR; dy++) {
+          const k = `${c[0] + dx}:${c[1] + dy}`;
+          if (cellDist(k, startCell) > FREE_ZONE && cellDist(k, xCell) > FREE_ZONE) corridor.add(k);
+        }
+    }
+    // Les premiers mètres peuvent se reprendre au retour (« queue de poêle ») :
+    // un départ au bout d'une impasse ou d'un chemin n'a qu'une seule sortie.
+    const edgeBan = new Set(p1.filter((e) => cellDist(e.a, startCell) > FREE_ZONE || cellDist(e.b, startCell) > FREE_ZONE).map((e) => e.id));
+    let p2 = reconstruct(g, dijkstraAll(g, x, edgeBan, corridor).prev, x, startId);
+    let strict = true;
+    if (!p2) {
+      p2 = reconstruct(g, dijkstraAll(g, x, edgeBan).prev, x, startId);
+      strict = false;
+    }
     if (!p2) continue;
     const total = p1.reduce((a, e) => a + e.meters, 0) + p2.reduce((a, e) => a + e.meters, 0);
     if (total < minD || total > maxD) continue;
     const allEdges = [...p1, ...p2];
-    const reuse = countReuse(allEdges);
-    const novelty = allEdges.reduce((a, e) => a + (e.passes <= 2 ? 1 : 0), 0) / allEdges.length;
+    // Part du retour qui longe l'aller (0 quand le couloir a été respecté).
+    const backNodes = pathNodes(x, p2);
+    const alongside = strict ? 0 : backNodes.filter((n) => corridor.has(n)).length / Math.max(1, backNodes.length);
+    const reuse = Math.max(countReuse(allEdges), alongside / 2);
+    const novelty = allEdges.reduce((a, e) => a + (e.passes === 0 ? e.meters : 0), 0) / total;
+    // Rues rares (≤ 2 passages) : ce que le curseur « découverte » recherche.
+    const rare = allEdges.reduce((a, e) => a + (e.passes <= 2 ? e.meters : 0), 0) / total;
     const fit = 1 - Math.abs(total - target) / target;
-    const score = fit * 0.5 + (1 - reuse) * 0.3 + novelty * (explore > 0.5 ? 0.2 : 0.05);
-    raw.push({ points: edgePathPoints(g, startId, allEdges), meters: Math.round(total), score, reuse, novelty });
+    const score = fit * 0.5 + (1 - reuse) * 0.3 + rare * (explore > 0.5 ? 0.2 : 0.05) + (1 - rare) * (explore < 0.4 ? 0.1 : 0);
+    const cells = new Set([...outNodes, ...backNodes].map(coarseCell));
+    raw.push({ points: edgePathPoints(g, startId, allEdges), meters: Math.round(total), score, reuse, novelty, direction: compass(g, startId, x), cells });
   }
-  const seen = new Set<string>();
-  const uniq: GeneratedLoop[] = [];
-  for (const r of raw.sort((a, b) => b.score - a.score)) {
-    const sig = `${r.meters}-${r.points[0][0].toFixed(3)},${r.points[0][1].toFixed(3)}-${r.points[Math.floor(r.points.length / 2)][0].toFixed(3)}`;
-    if (seen.has(sig)) continue;
-    seen.add(sig);
-    uniq.push(r);
-    if (uniq.length >= 3) break;
+  return pickDistinct(raw, 3).map(({ cells: _c, ...l }) => l);
+}
+
+/** Couloir interdit au retour, en cellules (3 × 15 m). */
+const CORRIDOR = 3;
+/** Zone libre autour du départ et du demi-tour, en cellules (~150 m). */
+const FREE_ZONE = 10;
+
+function parseCell(id: string): [number, number] | null {
+  const i = id.indexOf(":");
+  if (i < 0) return null;
+  const x = Number(id.slice(0, i));
+  const y = Number(id.slice(i + 1));
+  return Number.isFinite(x) && Number.isFinite(y) ? [x, y] : null;
+}
+function cellDist(k: string, c: [number, number] | null): number {
+  const d = parseCell(k);
+  return d && c ? Math.max(Math.abs(d[0] - c[0]), Math.abs(d[1] - c[1])) : Infinity;
+}
+/** Maille grossière (~60 m) pour comparer deux boucles malgré les brins parallèles. */
+function coarseCell(id: string): string {
+  const c = parseCell(id);
+  return c ? `${Math.round(c[0] / 4)}:${Math.round(c[1] / 4)}` : id;
+}
+function pathNodes(from: string, edges: RouteEdge[]): string[] {
+  const out = [from];
+  let cur = from;
+  for (const e of edges) {
+    cur = e.a === cur ? e.b : e.a;
+    out.push(cur);
   }
-  return uniq;
+  return out;
+}
+function compass(g: RouteGraph, from: string, to: string): Compass {
+  const a = g.nodes.get(from)!;
+  const b = g.nodes.get(to)!;
+  const dx = (b.lon - a.lon) * Math.cos((a.lat * Math.PI) / 180);
+  const dy = b.lat - a.lat;
+  const deg = ((Math.atan2(dx, dy) * 180) / Math.PI + 360) % 360;
+  return (["N", "NE", "E", "SE", "S", "SW", "W", "NW"] as const)[Math.round(deg / 45) % 8];
+}
+
+/** Recouvrement de deux boucles : part commune rapportée à la plus courte. */
+export function loopOverlap(a: Set<string>, b: Set<string>): number {
+  let inter = 0;
+  for (const c of a) if (b.has(c)) inter++;
+  return inter / Math.max(1, Math.min(a.size, b.size));
+}
+
+/**
+ * Les `n` meilleures boucles **distinctes** : on prend la meilleure, puis les
+ * suivantes seulement si elles recouvrent peu celles déjà retenues. Mieux vaut
+ * proposer une ou deux boucles que trois fois la même.
+ */
+export function pickDistinct<T extends { score: number; cells: Set<string> }>(loops: T[], n: number, maxOverlap = 0.45): T[] {
+  const out: T[] = [];
+  for (const l of [...loops].sort((a, b) => b.score - a.score)) {
+    if (out.every((o) => loopOverlap(o.cells, l.cells) <= maxOverlap)) out.push(l);
+    if (out.length >= n) break;
+  }
+  return out;
 }
 
 function countReuse(edges: RouteEdge[]): number {
@@ -432,6 +523,134 @@ export function graphSectors(g: RouteGraph): GraphSector[] {
   return [...groups.values()].sort((a, b) => b.passes - a.passes);
 }
 
+/**
+ * Le cœur d'un secteur : là où l'on court vraiment. Le secteur est découpé en
+ * mailles de `cellKm` ; chaque maille pèse longueur × passages de ses
+ * tronçons. On garde les mailles les plus lourdes jusqu'à `share` du poids :
+ * une sortie isolée vers la ville voisine (1 passage étalé sur 20 km) ne pèse
+ * presque rien par maille et reste dehors, alors qu'une médiane ou un
+ * quantile se laissaient tirer par elle. Bornée entre `minKm` et `maxKm`.
+ */
+export function sectorCore(
+  sector: Pick<GraphSector, "nodes" | "edges">,
+  { share = 0.72, cellKm = 0.5, minKm = 2, maxKm = 9, padKm = 0.5 }: { share?: number; cellKm?: number; minKm?: number; maxKm?: number; padKm?: number } = {}
+): { center: LatLng; bbox: { minLat: number; maxLat: number; minLon: number; maxLon: number } } | null {
+  const cells = new Map<string, { w: number; lat: number; lon: number }>();
+  let total = 0;
+  let refLat: number | null = null;
+  for (const e of sector.edges) {
+    const a = sector.nodes.get(e.a);
+    const b = sector.nodes.get(e.b);
+    if (!a || !b) continue;
+    const lat = (a.lat + b.lat) / 2;
+    const lon = (a.lon + b.lon) / 2;
+    refLat ??= lat;
+    const w = Math.max(1, e.meters) * e.passes;
+    const kx = 111.32 * Math.cos((refLat * Math.PI) / 180);
+    const key = `${Math.floor((lat * 111.32) / cellKm)}:${Math.floor((lon * kx) / cellKm)}`;
+    const c = cells.get(key);
+    if (c) {
+      c.w += w;
+      c.lat += lat * w;
+      c.lon += lon * w;
+    } else cells.set(key, { w, lat: lat * w, lon: lon * w });
+    total += w;
+  }
+  if (!cells.size || refLat === null) return null;
+  const sorted = [...cells.values()].sort((x, y) => y.w - x.w);
+  const kept: typeof sorted = [];
+  let acc = 0;
+  for (const c of sorted) {
+    kept.push(c);
+    acc += c.w;
+    if (acc >= share * total) break;
+  }
+  let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity, sw = 0, slat = 0, slon = 0;
+  for (const c of kept) {
+    const lat = c.lat / c.w;
+    const lon = c.lon / c.w;
+    minLat = Math.min(minLat, lat); maxLat = Math.max(maxLat, lat);
+    minLon = Math.min(minLon, lon); maxLon = Math.max(maxLon, lon);
+    sw += c.w; slat += c.lat; slon += c.lon;
+  }
+  const kmLat = 111.32;
+  const kmLon = 111.32 * Math.cos((refLat * Math.PI) / 180);
+  // Marge d'une demi-maille (les centres de maille ne sont pas les bords) + padKm.
+  const pad = cellKm / 2 + padKm;
+  let w = (maxLon - minLon) * kmLon + 2 * pad;
+  let h = (maxLat - minLat) * kmLat + 2 * pad;
+  const cLat = (minLat + maxLat) / 2;
+  const cLon = (minLon + maxLon) / 2;
+  w = Math.min(maxKm, Math.max(minKm, w));
+  h = Math.min(maxKm, Math.max(minKm, h));
+  return {
+    center: [slat / sw, slon / sw],
+    bbox: { minLat: cLat - h / 2 / kmLat, maxLat: cLat + h / 2 / kmLat, minLon: cLon - w / 2 / kmLon, maxLon: cLon + w / 2 / kmLon },
+  };
+}
+
+/**
+ * Chiffres du territoire, sur une maille de ~60 m (les brins parallèles d'une
+ * même rue comptent une fois) :
+ * - `uniqueKm` : kilomètres de rues différentes déjà courues ;
+ * - `halfKm`   : la moitié de tes kilomètres tient dans ces km de rues.
+ */
+export function territoryStats(g: Pick<RouteGraph, "nodes" | "edges">): { uniqueKm: number; halfKm: number } {
+  const size = CELL * 4;
+  const weight = new Map<string, number>();
+  for (const e of g.edges) {
+    const a = g.nodes.get(e.a);
+    const b = g.nodes.get(e.b);
+    if (!a || !b) continue;
+    // Le tronçon est découpé en pas de ~30 m, chacun versé dans sa maille.
+    const steps = Math.max(1, Math.ceil(e.meters / (size / 2)));
+    for (let i = 0; i < steps; i++) {
+      const t = (i + 0.5) / steps;
+      const lat = a.lat + (b.lat - a.lat) * t;
+      const lon = a.lon + (b.lon - a.lon) * t;
+      const key = `${Math.round((lat * 111_320) / size)}:${Math.round((lon * 111_320 * Math.cos((lat * Math.PI) / 180)) / size)}`;
+      weight.set(key, (weight.get(key) ?? 0) + (e.passes * e.meters) / steps);
+    }
+  }
+  const w = [...weight.values()].sort((x, y) => y - x);
+  const total = w.reduce((s, x) => s + x, 0);
+  let acc = 0;
+  let half = 0;
+  for (const x of w) {
+    acc += x;
+    half++;
+    if (acc >= total / 2) break;
+  }
+  return { uniqueKm: (w.length * size) / 1000, halfKm: (half * size) / 1000 };
+}
+
+/**
+ * Départ habituel : la maille de ~150 m (avec ses voisines) où commencent le
+ * plus de sorties, limitée aux départs à moins de `maxKm` de `near` (le cœur
+ * du territoire). Renvoie le centre des départs de cette maille.
+ */
+export function usualStart(starts: LatLng[], near?: LatLng | null, maxKm = 15, cellM = 150): LatLng | null {
+  const pts = near ? starts.filter((p) => haversine(p, near) <= maxKm * 1000) : starts;
+  if (!pts.length) return null;
+  const key = (p: LatLng) => [Math.round((p[0] * 111_320) / cellM), Math.round((p[1] * 111_320 * Math.cos((p[0] * Math.PI) / 180)) / cellM)];
+  const cells = new Map<string, LatLng[]>();
+  for (const p of pts) {
+    const [a, b] = key(p);
+    const k = `${a}:${b}`;
+    const arr = cells.get(k);
+    if (arr) arr.push(p);
+    else cells.set(k, [p]);
+  }
+  let best: LatLng[] = [];
+  for (const k of cells.keys()) {
+    const [a, b] = k.split(":").map(Number);
+    const group: LatLng[] = [];
+    for (let da = -1; da <= 1; da++) for (let db = -1; db <= 1; db++) group.push(...(cells.get(`${a + da}:${b + db}`) ?? []));
+    if (group.length > best.length) best = group;
+  }
+  return [best.reduce((s, p) => s + p[0], 0) / best.length, best.reduce((s, p) => s + p[1], 0) / best.length];
+}
+
 /** Plus court chemin entre deux points (dessin guidé). */
 export function shortestPath(g: RouteGraph, ref: LatLng, a: LatLng, b: LatLng): { points: LatLng[]; meters: number } | null {
   const na = nearestNode(g, ref, a, 120);
@@ -443,18 +662,29 @@ export function shortestPath(g: RouteGraph, ref: LatLng, a: LatLng, b: LatLng): 
   return { points: pts, meters: Math.round(edges.reduce((s, e) => s + e.meters, 0)) };
 }
 
-export type StraightSegment = { points: LatLng[]; meters: number; straightness: number };
+export type StraightSegment = { points: LatLng[]; meters: number; straightness: number; passes: number };
 
 /**
- * Lignes quasi droites de ≥ `minMeters` (fractionné) : suites de cellules dont
- * le cap varie peu. La rectitude = 1 − (écart de cap moyen / 45°), bornée.
+ * Lignes droites pour le fractionné : suites de tronçons dont le cap varie
+ * peu, entre `minMeters` et `maxMeters` (une « ligne droite » de 4 km n'aide
+ * personne à caler ses 400 m). Un tronçon de plus de `maxEdge` est un trou de
+ * GPS, pas une rue : il interrompt la ligne. Les lignes qui se recouvrent
+ * (la même rue prise dans l'autre sens, ou décalée d'une cellule) ne sont
+ * gardées qu'une fois. Classement : longueur utile × rectitude × habitude.
  */
-export function straightSegments(g: RouteGraph, minMeters = 400): StraightSegment[] {
-  const out: StraightSegment[] = [];
+export function straightSegments(
+  g: Pick<RouteGraph, "nodes">,
+  minMeters = 400,
+  { maxMeters = 1600, maxEdge = 250, limit = 8, near }: { maxMeters?: number; maxEdge?: number; limit?: number; near?: LatLng | null } = {}
+): StraightSegment[] {
+  const out: Array<StraightSegment & { cells: Set<string>; rank: number }> = [];
   for (const start of g.nodes.values()) {
     for (const e0 of start.edges) {
+      if (e0.meters > maxEdge) continue;
       const pts: LatLng[] = [[start.lat, start.lon]];
+      const cells = new Set<string>([coarseCell(start.id)]);
       let meters = 0;
+      let passes = 0;
       let heading = bearing(e0, start, g);
       let cur = e0;
       let from = start.id;
@@ -463,49 +693,55 @@ export function straightSegments(g: RouteGraph, minMeters = 400): StraightSegmen
       for (let i = 0; i < 200; i++) {
         const n = g.nodes.get(cur.a === from ? cur.b : cur.a)!;
         pts.push([n.lat, n.lon]);
+        cells.add(coarseCell(n.id));
         meters += cur.meters;
+        passes += cur.passes * cur.meters;
+        if (meters >= maxMeters) break;
         // Choix de la suite la plus rectiligne
-        const nexts = n.edges.filter((e) => !used.has(e.id));
+        const nexts = n.edges.filter((e) => !used.has(e.id) && e.meters <= maxEdge);
         if (!nexts.length) break;
         let best: RouteEdge | null = null;
         let bestDiff = Infinity;
         for (const e of nexts) {
-          const d = bearing(e, n, g);
-          let diff = Math.abs(angleDiff(heading, d));
+          const diff = Math.abs(angleDiff(heading, bearing(e, n, g)));
           if (diff < bestDiff) {
             bestDiff = diff;
             best = e;
           }
         }
-        if (bestDiff > 30) break;
+        if (bestDiff > 25) break;
         turn += bestDiff;
-        heading = bearing(best!, n, g);
+        // Cap lissé : une ligne qui tourne lentement n'est pas une ligne droite.
+        heading = heading + angleDiff(heading, bearing(best!, n, g)) * 0.3;
         from = n.id;
         cur = best!;
         used.add(cur.id);
       }
-      if (meters >= minMeters - 1) {
-        out.push({ points: pts, meters: Math.round(meters), straightness: Math.max(0, 1 - turn / pts.length / 45) });
-      }
+      if (meters < minMeters - 1) continue;
+      // Vol d'oiseau / distance : 1 pour une vraie ligne droite.
+      const chord = haversine(pts[0], pts[pts.length - 1]) / meters;
+      if (chord < 0.93) continue;
+      const straightness = Math.max(0, Math.min(1, chord * (1 - turn / pts.length / 45)));
+      const avgPasses = passes / meters;
+      // Une ligne à deux pas du départ vaut mieux qu'une ligne à 10 km.
+      const away = near ? haversine(near, pts[Math.floor(pts.length / 2)]) : 0;
+      const rank = (Math.min(meters, 1200) * straightness * (1 + 0.35 * Math.log1p(avgPasses))) / (1 + away / 3000);
+      out.push({ points: pts, meters: Math.round(meters), straightness, passes: Math.round(avgPasses * 10) / 10, cells, rank });
     }
   }
-  out.sort((a, b) => b.meters - a.meters);
-  // Dédupliquer les sous-segments d'une même ligne.
-  const uniq: StraightSegment[] = [];
-  const seen = new Set<string>();
+  out.sort((a, b) => b.rank - a.rank);
+  const kept: typeof out = [];
   for (const s of out) {
-    const sig = s.points[0][0].toFixed(3) + s.points[s.points.length - 1][0].toFixed(3) + s.meters;
-    if (seen.has(sig)) continue;
-    seen.add(sig);
-    uniq.push(s);
-    if (uniq.length >= 40) break;
+    if (kept.some((k) => loopOverlap(k.cells, s.cells) > 0.3)) continue;
+    kept.push(s);
+    if (kept.length >= limit) break;
   }
-  return uniq;
+  return kept.map(({ cells: _c, rank: _r, ...s }) => s);
 }
 
-function bearing(e: RouteEdge, at: RouteNode, g: RouteGraph): number {
+function bearing(e: RouteEdge, at: RouteNode, g: Pick<RouteGraph, "nodes">): number {
   const other = g.nodes.get(e.a === at.id ? e.b : e.a)!;
-  const dx = other.lon - at.lon;
+  const dx = (other.lon - at.lon) * Math.cos((at.lat * Math.PI) / 180);
   const dy = other.lat - at.lat;
   return (Math.atan2(dx, dy) * 180) / Math.PI;
 }
@@ -517,8 +753,17 @@ function angleDiff(a: number, b: number): number {
 }
 
 /** Sérialisation du graphe pour le cache base (RouteGraph.data). */
+/**
+ * Version de construction du graphe. À incrémenter à chaque changement de
+ * `buildGraph` : un cache construit par l'ancien code (ex. avant la coupure
+ * des sauts GPS — des « lignes droites » de 500 km) est alors reconstruit au
+ * lieu d'être servi pendant 24 h.
+ */
+export const GRAPH_VERSION = 2;
+
 export function serializeGraph(g: RouteGraph): string {
   return JSON.stringify({
+    v: GRAPH_VERSION,
     cell: g.cellMeters,
     nodes: [...g.nodes.values()].map((n) => ({ id: n.id, lat: n.lat, lon: n.lon })),
     edges: g.edges.map((e) => ({ id: e.id, a: e.a, b: e.b, m: Math.round(e.meters), p: e.passes, t: e.lastPassed })),
@@ -528,6 +773,7 @@ export function serializeGraph(g: RouteGraph): string {
 export function deserializeGraph(raw: string): RouteGraph | null {
   try {
     const o = JSON.parse(raw);
+    if (o?.v !== GRAPH_VERSION) return null;
     const nodes = new Map<string, RouteNode>();
     for (const n of o.nodes) nodes.set(n.id, { id: n.id, lat: n.lat, lon: n.lon, edges: [] });
     const edges: RouteEdge[] = o.edges.map((e: any) => ({ id: e.id, a: e.a, b: e.b, meters: e.m, passes: e.p, lastPassed: e.t, points: [] }));
@@ -539,9 +785,4 @@ export function deserializeGraph(raw: string): RouteGraph | null {
   } catch {
     return null;
   }
-}
-
-/** Boucle générée → polyline encodée. */
-export function loopToRoute(g: RouteGraph, loop: GeneratedLoop): RouteResult {
-  return { polyline: encodePolyline(loop.points), meters: loop.meters, score: loop.score, reuse: loop.reuse, novelty: loop.novelty };
 }

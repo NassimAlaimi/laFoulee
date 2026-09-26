@@ -5,9 +5,10 @@
 
 import { prisma } from "./prisma";
 import { decodePolyline } from "./polyline";
-import { buildGraph, deserializeGraph, findLoops, serializeGraph, type RouteGraph, type LoopOptions, type RouteNode, type RouteEdge, type GraphSector } from "./route-graph";
+import { buildGraph, deserializeGraph, findLoops, serializeGraph, type GeneratedLoop, type RouteGraph, type LoopOptions, type RouteNode, type RouteEdge, type GraphSector } from "./route-graph";
+import { buildStreetGraph, knownPoints } from "./street-graph";
 import { viewFor, polylinePath, type ViewBbox } from "./route-view";
-import { fetchOverpassRoads, findOsmZone, parseOsmZones, putOsmZone, zoneKey, type OsmDetail } from "./osm";
+import { bboxAround, fetchOverpassRoads, findOsmZone, OSM_FMT, parseOsmZones, putOsmZone, roadsInCache, tileBbox, zoneKey, type OsmDetail } from "./osm";
 import { sameRoute } from "./polyline";
 
 const DAY = 86400000;
@@ -39,11 +40,49 @@ export async function getRouteGraph(userId: string, now = new Date()): Promise<{
   return { graph, ref: [0, 0] };
 }
 
-/** Trois boucles générées depuis le réseau. */
-export async function generateLoops(userId: string, opts: LoopOptions & { ref?: [number, number] }) {
-  const { graph, ref } = (await getRouteGraph(userId)) ?? {};
-  if (!graph) return [];
-  return findLoops(graph, opts.ref ?? ref ?? [0, 0], opts);
+/**
+ * Boucles proposées. D'abord sur les **vraies rues** (OSM en cache autour du
+ * départ, complété si besoin), avec le réseau personnel comme mesure de
+ * familiarité ; sinon sur le seul réseau personnel.
+ */
+export async function generateLoops(
+  userId: string,
+  opts: LoopOptions & { ref?: [number, number] }
+): Promise<{ loops: GeneratedLoop[]; source: "streets" | "network" }> {
+  const got = await getRouteGraph(userId);
+  if (!got) return { loops: [], source: "network" };
+  const { graph } = got;
+  const start = opts.ref && opts.start ? opts.ref : null;
+  if (start) {
+    const radiusM = Math.min(9000, Math.max(1200, opts.targetMeters * 0.45));
+    const bbox = bboxAround(start[0], start[1], (2 * radiusM) / 1000);
+    let roads = await cachedRoads(userId, bbox);
+    if (roads.length < MIN_STREET_ROADS) {
+      // Rien en cache (carte jamais ouverte) : on charge la zone, tuile par
+      // tuile, dans une limite de temps raisonnable.
+      const deadline = Date.now() + 25_000;
+      for (const tile of tileBbox(bbox, 5)) {
+        if (Date.now() > deadline) break;
+        await getOsmRoads(userId, tile, new Date(), { detail: "all" }).catch(() => null);
+      }
+      roads = await cachedRoads(userId, bbox);
+    }
+    if (roads.length >= MIN_STREET_ROADS) {
+      const streets = buildStreetGraph(roads, knownPoints(graph), { center: start, radiusM, explore: opts.explore });
+      const loops = findLoops(streets, start, { ...opts, start: { x: 0, y: 0 }, samples: 90 });
+      if (loops.length) return { loops, source: "streets" };
+    }
+  }
+  return { loops: findLoops(graph, opts.ref ?? [0, 0], opts), source: "network" };
+}
+
+/** En dessous, le fond OSM est trop maigre pour y tracer des boucles. */
+const MIN_STREET_ROADS = 300;
+
+async function cachedRoads(userId: string, bbox: ViewBbox): Promise<string[]> {
+  const row = await prisma.osmCache.findUnique({ where: { userId } });
+  if (!row) return [];
+  return roadsInCache(parseOsmZones(row.data, row.bbox, row.builtAt.getTime()), bbox, Date.now(), OSM_MAX_AGE);
 }
 
 export async function saveRoute(userId: string, input: { name: string; polyline: string; distance: number; tags?: string | null; elevationGain?: number }) {
@@ -93,7 +132,7 @@ export async function getOsmRoads(
   await withOsmLock(userId, async () => {
     const fresh = await prisma.osmCache.findUnique({ where: { userId } });
     const current = fresh ? parseOsmZones(fresh.data, fresh.bbox, fresh.builtAt.getTime()) : [];
-    const next = putOsmZone(current, { key: zoneKey(bbox, detail), bbox, builtAt: now.getTime(), roads, detail });
+    const next = putOsmZone(current, { key: zoneKey(bbox, detail), bbox, builtAt: now.getTime(), roads, detail, fmt: OSM_FMT });
     const data = JSON.stringify({ zones: next });
     await prisma.osmCache.upsert({
       where: { userId },
@@ -114,6 +153,24 @@ async function withOsmLock<T>(userId: string, fn: () => Promise<T>): Promise<T> 
   } finally {
     if (osmLocks.get(userId) === run) osmLocks.delete(userId);
   }
+}
+
+/** Premier point de chaque sortie tracée (départ habituel). */
+export async function activityStarts(userId: string): Promise<Array<[number, number]>> {
+  const acts = await prisma.activity.findMany({ where: { userId, polyline: { not: null } }, select: { polyline: true } });
+  const out: Array<[number, number]> = [];
+  for (const a of acts) {
+    const first = firstPoint(a.polyline);
+    if (first) out.push(first);
+  }
+  return out;
+}
+
+/** Premier point d'une polyline, sans la décoder entière. */
+function firstPoint(encoded: string | null): [number, number] | null {
+  if (!encoded) return null;
+  const pts = decodePolyline(encoded.slice(0, 24));
+  return pts.length ? pts[0] : null;
 }
 
 /** Distance totale réellement courue (somme des activités tracées), en km. */
