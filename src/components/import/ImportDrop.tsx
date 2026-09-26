@@ -35,7 +35,7 @@ export function ImportDrop() {
     setBusy(null);
     const j = res ? await res.json().catch(() => null) : null;
     if (!res || !res.ok || !j?.ok) {
-      setError(t(j?.error === "tooLarge" ? "tooLarge" : "failed"));
+      setError(t(j?.error === "tooLarge" || j?.error === "quota" || j?.error === "rate" ? j.error : "failed"));
       return;
     }
     setResult(j);
@@ -89,7 +89,7 @@ export function ImportDrop() {
             <ul className="col-span-full space-y-0.5 text-micro text-ink3">
               {result.errors.map((e, i) => (
                 <li key={i}>
-                  {e.file} — {t(`err.${["format", "zip", "short", "header", "signature", "undefined-local"].includes(e.error) ? e.error : "other"}`)}
+                  {e.file} — {t(`err.${["format", "zip", "too-large", "quota", "short", "header", "signature", "undefined-local"].includes(e.error) ? e.error : "other"}`)}
                 </li>
               ))}
             </ul>

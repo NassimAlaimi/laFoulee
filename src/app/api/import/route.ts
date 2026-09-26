@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { authed } from "@/lib/api";
 import { importFiles } from "@/lib/import-store";
+import { prisma } from "@/lib/prisma";
+import { importAllowed } from "@/lib/quota";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -15,6 +17,12 @@ const MAX_BYTES = 250 * 1024 * 1024;
 export async function POST(req: Request) {
   const { userId, error } = await authed();
   if (error) return error;
+  const [activityCount, importsLastHour] = await Promise.all([
+    prisma.activity.count({ where: { userId } }),
+    prisma.importBatch.count({ where: { userId, createdAt: { gt: new Date(Date.now() - 3600_000) } } }),
+  ]);
+  const refusal = importAllowed({ activityCount, importsLastHour });
+  if (refusal) return NextResponse.json({ ok: false, error: refusal }, { status: 429 });
   const form = await req.formData().catch(() => null);
   if (!form) return NextResponse.json({ ok: false, error: "form" }, { status: 400 });
   const files: Array<{ name: string; bytes: Uint8Array }> = [];

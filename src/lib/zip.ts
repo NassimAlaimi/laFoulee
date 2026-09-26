@@ -5,6 +5,10 @@
  * d'activité dans des zips à l'intérieur du zip).
  *
  * ZIP64 non géré : au-delà de 4 Go, il faut découper l'export.
+ *
+ * Bombes de décompression : chaque entrée est plafonnée à la décompression
+ * (`maxOutputLength`) et l'archive entière, imbrications comprises, partage
+ * un budget total — un zip de 1 Mo ne peut pas se déplier en 50 Go.
  */
 
 import { inflateRawSync } from "node:zlib";
@@ -13,6 +17,14 @@ export type ZipEntry = { name: string; bytes: Uint8Array };
 
 export class ZipError extends Error {}
 
+/** Une entrée décompressée ne dépasse jamais cette taille (une activité FIT
+ *  pèse quelques centaines de Ko ; un zip imbriqué Garmin, quelques dizaines de Mo). */
+export const MAX_ENTRY_BYTES = 200 * 1024 * 1024;
+/** Budget total décompressé pour une archive, imbrications comprises. */
+export const MAX_TOTAL_BYTES = 1024 * 1024 * 1024;
+
+export type ZipBudget = { left: number };
+
 export function isZip(b: Uint8Array): boolean {
   return b.length > 4 && b[0] === 0x50 && b[1] === 0x4b && b[2] === 0x03 && b[3] === 0x04;
 }
@@ -20,7 +32,8 @@ export function isZip(b: Uint8Array): boolean {
 export function readZip(
   buf: Uint8Array,
   accept: (name: string) => boolean = () => true,
-  depth = 0
+  depth = 0,
+  budget: ZipBudget = { left: MAX_TOTAL_BYTES }
 ): ZipEntry[] {
   const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
   let eocd = -1;
@@ -54,10 +67,21 @@ export function readZip(
     const start = local + 30 + lName + lExtra;
     const raw = buf.subarray(start, start + csize);
     let bytes: Uint8Array;
+    const cap = Math.min(MAX_ENTRY_BYTES, budget.left);
     if (method === 0) bytes = raw;
-    else if (method === 8) bytes = new Uint8Array(inflateRawSync(raw));
-    else continue;
-    if (nested) out.push(...readZip(bytes, accept, depth + 1));
+    else if (method === 8) {
+      try {
+        bytes = new Uint8Array(inflateRawSync(raw, { maxOutputLength: Math.max(1, cap) }));
+      } catch (e) {
+        if (e instanceof RangeError || (e as { code?: string }).code === "ERR_BUFFER_TOO_LARGE") {
+          throw new ZipError("too-large");
+        }
+        throw e;
+      }
+    } else continue;
+    if (bytes.length > cap) throw new ZipError("too-large");
+    budget.left -= bytes.length;
+    if (nested) out.push(...readZip(bytes, accept, depth + 1, budget));
     else out.push({ name, bytes });
   }
   return out;

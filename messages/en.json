@@ -1694,7 +1694,7 @@
     "errors": {
       "invalid": "Incomplete form.",
       "credentials": "Wrong email or password.",
-      "throttled": "Too many attempts. Try again in fifteen minutes.",
+      "throttled": "Too many attempts. Try again a little later.",
       "email-taken": "An account already exists with this email.",
       "email-invalid": "This email doesn't look valid.",
       "password-short": "Password too short (at least 10 characters).",
@@ -1928,7 +1928,9 @@
       "header": "invalid FIT header",
       "signature": "not a FIT file",
       "undefined-local": "corrupted FIT file",
-      "other": "unreadable"
+      "other": "unreadable",
+      "too-large": "archive too large once decompressed",
+      "quota": "20,000-activity limit reached — the rest were skipped"
     },
     "history": "Recent imports",
     "batchLine": "+{created} · {merged} completed · {wellness} log days · {failed} errors",
@@ -1960,7 +1962,9 @@
         "body": "Any app that exports GPX or TCX works. From Strava: activity → ⋯ → Export GPX (already synced here anyway)."
       }
     },
-    "privacy": "Files are read on this server and then discarded: only the run's numbers, curve and track are kept, in your account only."
+    "privacy": "Files are read on this server and then discarded: only the run's numbers, curve and track are kept, in your account only.",
+    "quota": "Limit reached: 20,000 activities per account.",
+    "rate": "Many imports in one hour: try again a little later."
   },
   "nutrition": {
     "title": "Race nutrition",

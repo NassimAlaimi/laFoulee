@@ -8,7 +8,8 @@
  */
 
 import { prisma } from "./prisma";
-import { isZip, readZip } from "./zip";
+import { isZip, readZip, ZipError } from "./zip";
+import { activitiesRoom } from "./quota";
 import { parseTrackFile, sameActivity, toActivity, type ImportedActivity } from "./track-import";
 import { extractWellness } from "./wellness-import";
 
@@ -32,9 +33,9 @@ export async function importFiles(userId: string, files: Array<{ name: string; b
     if (isZip(f.bytes)) {
       try {
         entries.push(...readZip(f.bytes, (n) => TRACK_RE.test(n) || JSON_RE.test(n)));
-      } catch {
+      } catch (e) {
         res.failed++;
-        res.errors.push({ file: f.name, error: "zip" });
+        res.errors.push({ file: f.name, error: e instanceof ZipError && e.message === "too-large" ? "too-large" : "zip" });
       }
     } else entries.push(f);
   }
@@ -68,7 +69,9 @@ export async function importFiles(userId: string, files: Array<{ name: string; b
     }
   }
 
-  for (const { a } of activities) {
+  // Plafond d'activités par compte (lib/quota.ts) : au-delà, on n'en crée plus.
+  let room = activitiesRoom(await prisma.activity.count({ where: { userId } }));
+  for (const { file, a } of activities) {
     const around = await prisma.activity.findMany({
       where: {
         userId,
@@ -112,6 +115,12 @@ export async function importFiles(userId: string, files: Array<{ name: string; b
       else res.skipped++;
       continue;
     }
+    if (room <= 0) {
+      res.skipped++;
+      if (!res.errors.some((x) => x.error === "quota")) res.errors.push({ file: file.split("/").pop() ?? file, error: "quota" });
+      continue;
+    }
+    room--;
     const created = await prisma.activity.create({
       data: {
         userId,

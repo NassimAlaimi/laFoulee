@@ -1694,7 +1694,7 @@
     "errors": {
       "invalid": "Formulaire incomplet.",
       "credentials": "Email ou mot de passe incorrect.",
-      "throttled": "Trop de tentatives. Réessaie dans un quart d'heure.",
+      "throttled": "Trop de tentatives. Réessaie un peu plus tard.",
       "email-taken": "Un compte existe déjà avec cet email.",
       "email-invalid": "Cet email n'a pas l'air valide.",
       "password-short": "Mot de passe trop court (10 caractères minimum).",
@@ -1928,7 +1928,9 @@
       "header": "en-tête FIT invalide",
       "signature": "ce n'est pas un fichier FIT",
       "undefined-local": "fichier FIT corrompu",
-      "other": "illisible"
+      "other": "illisible",
+      "too-large": "archive trop volumineuse une fois décompressée",
+      "quota": "plafond de 20 000 activités atteint — les suivantes sont ignorées"
     },
     "history": "Derniers imports",
     "batchLine": "+{created} · {merged} complétées · {wellness} j. carnet · {failed} erreurs",
@@ -1960,7 +1962,9 @@
         "body": "Toute app qui exporte du GPX ou du TCX fonctionne. Depuis Strava : activité → ⋯ → Exporter le GPX (déjà synchronisé ici de toute façon)."
       }
     },
-    "privacy": "Les fichiers sont lus sur ce serveur puis jetés : seuls les chiffres de la sortie, sa courbe et son tracé sont gardés, dans ton compte uniquement."
+    "privacy": "Les fichiers sont lus sur ce serveur puis jetés : seuls les chiffres de la sortie, sa courbe et son tracé sont gardés, dans ton compte uniquement.",
+    "quota": "Plafond atteint : 20 000 activités par compte.",
+    "rate": "Beaucoup d'imports en une heure : réessaie un peu plus tard."
   },
   "nutrition": {
     "title": "Nutrition de course",

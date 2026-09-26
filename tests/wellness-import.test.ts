@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { extractWellness } from "../src/lib/wellness-import.ts";
-import { readZip, isZip } from "../src/lib/zip.ts";
+import { readZip, isZip, ZipError } from "../src/lib/zip.ts";
 import { deflateRawSync } from "node:zlib";
 
 describe("extractWellness", () => {
@@ -60,5 +60,13 @@ describe("readZip", () => {
     assert.equal(entries.length, 1);
     assert.equal(entries[0].name, "run.gpx");
     assert.equal(new TextDecoder().decode(entries[0].bytes), "<gpx>ok</gpx>");
+  });
+
+  it("refuse une bombe de décompression (budget dépassé, imbrication comprise)", () => {
+    const big = new Uint8Array(4096); // se compresse en quelques octets
+    const outer = makeZip("UploadedFiles_1.zip", makeZip("run.gpx", big));
+    assert.throws(() => readZip(outer, () => true, 0, { left: 1000 }), ZipError);
+    // Budget suffisant : lecture normale.
+    assert.equal(readZip(outer, () => true, 0, { left: 1 << 20 }).length, 1);
   });
 });
