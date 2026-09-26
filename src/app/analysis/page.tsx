@@ -1,7 +1,6 @@
-import { Bar } from "@/components/ui/Metric";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Section, SectionHead } from "@/components/ui/Layout";
-import { ConsistencyHeatmap } from "@/components/analysis/ConsistencyHeatmap";
+import { TrainingCalendar } from "@/components/TrainingCalendar";
 import { Legend, Stat } from "@/components/analysis/Bits";import {
   FormChart,
   PaceZoneChart,
@@ -28,7 +27,7 @@ export default async function FormePage() {
   const data = await loadForme(now, userId, await getLocale());
   if (data.runs.length < 5) return <NotEnough title={t("title")} />;
 
-  const { form, formRows, marks, yoy, polar, polarSum, paceZones, grid, timeline, fitness } = data;
+  const { runs, form, formRows, marks, yoy, polar, polarSum, paceZones, grid, timeline } = data;
 
   return (
     <div className="space-y-6">
@@ -170,18 +169,11 @@ export default async function FormePage() {
           title={t("consistency")}
           note={t("consistencyNote")}
         />
-        <ConsistencyHeatmap grid={grid} />
+        <TrainingCalendar activities={runs} now={now} />
         <div className="mt-5 grid gap-4 border-t border-hair pt-4 sm:grid-cols-3">
-          <Stat label={t("currentStreak")} value={`${grid.currentStreak} sem.`} note={t("streakNote")} />
           <Stat label={t("bestStreak")} value={`${grid.bestStreak} sem.`} />
-          <Stat
-            label={t("activeWeeks")}
-            value={`${grid.activeRate} %`}
-            note={`${fitness.sessionsPerWeek} sorties/sem en moyenne`}
-          />
-        </div>
-        <div className="mt-4">
-          <Bar value={grid.activeRate} height={4} />
+          <Stat label={t("activeWeeks")} value={`${grid.activeRate} %`} />
+          <Stat label={t("currentStreak")} value={`${grid.currentStreak} sem.`} note={t("streakNote")} />
         </div>
       </Section>
 

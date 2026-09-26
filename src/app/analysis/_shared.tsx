@@ -138,7 +138,7 @@ export async function loadForme(now: Date, userId: string, locale = "fr") {
     paceByIntensity(runs, profile.vdot, { months: 12, now, locale }),
     (r) => r.easy == null && r.quality == null
   );
-  const grid = consistencyGrid(runs, { weeks: 26, now, locale });
+  const grid = consistencyGrid(runs, { weeks: 52, now, locale });
   const timeline = recordTimeline(efforts, { locale }).slice(0, 8);
 
   return { runs, form, formRows, marks, yoy, polar, polarSum, paceZones, grid, timeline, fitness };

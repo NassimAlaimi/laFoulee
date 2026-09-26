@@ -1,8 +1,6 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import type { ConsistencyGrid } from "@/lib/analysis";
 
-const DAYS = ["L", "M", "M", "J", "V", "S", "D"];
-
 /**
  * Carte de chaleur jour × semaine.
  *
@@ -14,6 +12,10 @@ export async function ConsistencyHeatmap({ grid }: { grid: ConsistencyGrid }) {
   const t = await getTranslations("common");
   const locale = await getLocale();
   const max = Math.max(grid.max, 1);
+  // Initiales des jours localisées (lundi…dimanche), comme le calendrier.
+  const DAYS = Array.from({ length: 7 }, (_, i) =>
+    new Date(2024, 0, 1 + i).toLocaleDateString(locale, { weekday: "narrow" })
+  );
 
   return (
     <div className="overflow-x-auto">
