@@ -1,0 +1,12 @@
+# Sauvegarde quotidienne de la base (voir deploy/backup.sh et DEPLOY.md).
+# À copier dans /etc/systemd/system/ avec foulee-backup.timer.
+[Unit]
+Description=Sauvegarde de la base La Foulée
+
+[Service]
+Type=oneshot
+User=foulee
+Group=foulee
+# Décommente pour copier hors du serveur (clé SSH de l'utilisateur foulee) :
+# Environment=BACKUP_REMOTE=backup@nas.maison:/srv/foulee/
+ExecStart=/opt/foulee/deploy/backup.sh

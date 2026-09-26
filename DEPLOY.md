@@ -131,6 +131,44 @@ Les événements ne sont pas signés par Strava : l'app ne supprime rien sans
 avoir vérifié auprès de l'API que l'accès est réellement révoqué (ou
 l'activité réellement supprimée).
 
+## 5. Sauvegardes (indispensable)
+
+Toute l'instance tient dans **un fichier** (`/opt/foulee/prisma/dev.db`) :
+disque mort ou mauvaise commande = tout perdu. `deploy/backup.sh` en fait une
+copie cohérente à chaud (API de sauvegarde SQLite), vérifie son intégrité, la
+compresse et garde 14 jours.
+
+```bash
+sudo apt install sqlite3
+sudo install -d -o foulee -g foulee -m 700 /var/backups/foulee
+sudo cp /opt/foulee/deploy/foulee-backup.{service,timer} /etc/systemd/system/
+sudo systemctl daemon-reload && sudo systemctl enable --now foulee-backup.timer
+
+sudo systemctl start foulee-backup      # premier essai tout de suite
+ls -lh /var/backups/foulee              # un foulee-AAAA-MM-JJ_HHMM.db.gz
+systemctl list-timers foulee-backup     # prochaine exécution (03:30)
+```
+
+**Hors du serveur** : une sauvegarde sur le même disque ne protège pas d'une
+panne de disque. Renseigne `BACKUP_REMOTE` dans `foulee-backup.service`
+(rsync via SSH vers un NAS, un autre serveur…) — ou, a minima, rapatrie de
+temps en temps : `rsync -a serveur:/var/backups/foulee/ ~/sauvegardes-foulee/`.
+
+**Le `.env` aussi**, une fois, dans un gestionnaire de mots de passe :
+sans `TOKEN_SECRET`, les jetons Strava de la sauvegarde sont illisibles
+(les utilisateurs devraient reconnecter Strava) ; sans `AUTH_SECRET`, tout le
+monde est déconnecté.
+
+**Restaurer** (à tester une fois, avant d'en avoir besoin) :
+
+```bash
+sudo systemctl stop foulee
+sudo -u foulee cp /opt/foulee/prisma/dev.db /opt/foulee/prisma/dev.db.avant-restauration
+gunzip -c /var/backups/foulee/foulee-AAAA-MM-JJ_HHMM.db.gz | sudo -u foulee tee /opt/foulee/prisma/dev.db >/dev/null
+sudo -u foulee rm -f /opt/foulee/prisma/dev.db-journal /opt/foulee/prisma/dev.db-wal /opt/foulee/prisma/dev.db-shm
+sudo systemctl start foulee
+```
+
 ## Mise à jour
 
 ```bash
